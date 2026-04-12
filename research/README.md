@@ -11,7 +11,7 @@ This folder preserves the research lineage that produced ACW v0.1.0. Every primi
 
 ## What is in here
 
-Seven files covering the research arc from problem framing through ship decision. Each file is a synthesized summary — not a transcript of the research process, not a verbatim copy of source documents, not a blog post. Think of them as the methodology archive a teacher would hand a student after a semester: "here is why we did what we did, in the order it happened."
+Eight files covering the research arc from problem framing through ship decision, plus a post-ship completeness audit. Each file is a synthesized summary — not a transcript of the research process, not a verbatim copy of source documents, not a blog post. Think of them as the methodology archive a teacher would hand a student after a semester: "here is why we did what we did, in the order it happened."
 
 ## What is NOT in here
 
@@ -34,4 +34,6 @@ The source material for these files lived in a private research project with ope
 5. `05-ship-decision.md` — why v0.1.0 ships what it ships and defers what it defers
 6. `sources.md` — annotated bibliography
 
-A reader who only has time for one file should read `03-synthesis.md`. A reader who wants to argue with a specific primitive should read `02-literature-survey.md` first.
+7. `06-completeness-audit.md` — post-ship gap analysis: what the five problems miss, the two-foundation insight, 22 additional sources
+
+A reader who only has time for one file should read `03-synthesis.md`. A reader who wants to argue with a specific primitive should read `02-literature-survey.md` first. A reader who wants to know what ACW got wrong should read `06-completeness-audit.md`.
