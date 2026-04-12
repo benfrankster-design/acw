@@ -1,0 +1,100 @@
+# ---
+# class: operational
+# authority: canonical
+# stability: stable
+# loaded_by_agent: yes
+# ---
+#
+# acw-state.yaml — ACW self-contract
+#
+# Single authoritative statement of the current release truth. Prose files
+# may describe mechanisms, rationale, and examples, but this file is the
+# machine-checkable source of truth for "what is ACW right now."
+#
+# When a prose file disagrees with this file, this file wins and the prose
+# gets a decision-log entry to reconcile. This is ACW applying its own
+# contract-registry thesis to itself — the smallest possible self-contract.
+#
+# Edited only via a decision-log entry. Every edit bumps `version` or
+# `last_reconciled`.
+
+version: "0.1.0"
+last_reconciled: "2026-04-12"
+
+# Classification of every file in the runtime path. Files not listed here
+# are reference, archive, or derived. Headers on each file also declare
+# class/authority/stability/loaded_by_agent — this list is the index.
+canonical_runtime_files:
+  - rules/pipeline-roles.md
+  - rules/canon-governance.md
+  - rules/canon-schema.yaml
+  - rules/canon.yaml
+  - rules/instance-hard-rules.md
+  - rules/vocabulary-lint.md
+  - rules/capability-broker.md
+  - rules/decision-tracking.md
+  - rules/promotion-ritual.md
+  - decisions/decision-log.md
+  - DEFERRED.md
+  - glossary.md
+  - threat-model.md
+  - incidents.jsonl
+  - tools/lint-vocab.py
+  - tools/log-incident.py
+  - AGENTS.md
+  - README.md
+  - acw-state.yaml
+
+deferred_canonical_source: DEFERRED.md
+deferred_derived_view: deferred/
+deferred_drift_check: tools/log-incident.py check-drift
+
+# Normative shape of the role enum in this release. The sixteen-role finer
+# taxonomy in rules/pipeline-roles.md is explicitly informative, not normative.
+role_schema:
+  mode: four-group-normative
+  normative_groups:
+    - orchestrator
+    - pipeline-worker
+    - guardian
+    - broker-sideband
+  informative_appendix: sixteen-role-taxonomy
+  appendix_status: informative-only
+
+# Approval authority model for the canon. Free-form string, default single-operator.
+# Two-tier, four-tier, and larger structures are valid per-instance configurations.
+canon_authority:
+  mode: n-authority
+  default_value: operator
+  declared_in: rules/instance-hard-rules.md
+  schema_field: approval_authority
+  schema_type: string
+
+# Decision tracking lives in a single file until the promotion ritual earns a split.
+decision_tracking:
+  mode: single-file
+  file: decisions/decision-log.md
+  sections:
+    - "Open Questions"
+    - "Decisions and Rationale"
+    - "Constraints and Gotchas"
+    - "Resolved Questions"
+  split_threshold: "earned by promotion ritual when file is too large to navigate"
+
+# What must be true before this version can be tagged.
+release_gates:
+  - "tools/lint-vocab.py exits 0 on template's own content"
+  - "tools/log-incident.py check-drift exits 0"
+  - "python -m unittest discover tests exits 0"
+  - "grep for operator-specific forbidden strings returns zero matches"
+  - "every .md file has class/authority/stability/loaded_by_agent frontmatter"
+  - "this file reconciles with prose files on all five fields above"
+
+# Earn-by-incident discipline: no deferred primitive promotes without
+# three documented incidents above low severity on that primitive.
+earn_by_incident:
+  enabled: true
+  threshold_severity: med
+  threshold_count: 3
+  ledger: incidents.jsonl
+  exception: "single-incident activation triggers declared per-primitive in DEFERRED.md"

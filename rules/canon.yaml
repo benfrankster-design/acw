@@ -1,0 +1,29 @@
+# ---
+# class: operational
+# authority: canonical
+# stability: experimental
+# loaded_by_agent: yes
+# ---
+#
+# canon.yaml — per-instance canonical concept registry
+#
+# Populate with your instance's canonical concepts.
+# See rules/canon-schema.yaml for field specs and validation rules.
+# See rules/canon-governance.md for the approval state machine and
+# the ingest-time canonicalization gate.
+#
+# Example entry shape (delete this block when adding real entries):
+#
+# concepts:
+#   - concept_id: example-concept
+#     pref_label: Example
+#     alt_labels: [sample, instance]
+#     hidden_labels: [wrong-word]
+#     definition: One-sentence plain-language definition.
+#     scope_note: What this term does and does not cover.
+#     domain: example-domain
+#     disambiguator: ""
+#     state: draft
+#     approval_authority: operator
+
+concepts: []

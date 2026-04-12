@@ -1,0 +1,40 @@
+# ---
+# class: reference
+# authority: canonical
+# stability: stable
+# loaded_by_agent: no
+# ---
+
+concepts:
+  - concept_id: asset
+    pref_label: Asset
+    alt_labels: [unit]
+    hidden_labels: [file, doc]
+    definition: A discrete unit of knowledge at rest.
+    scope_note: Applies only to committed content.
+    domain: core
+    disambiguator: ""
+    state: approved
+    approval_authority: operator
+
+  - concept_id: broker
+    pref_label: Broker
+    alt_labels: []
+    hidden_labels: [gatekeeper]
+    definition: Issues scope-bounded capability references.
+    scope_note: Credential authority, not policy.
+    domain: security
+    disambiguator: ""
+    state: approved
+    approval_authority: operator
+
+  - concept_id: schema
+    pref_label: Schema
+    alt_labels: [shape]
+    hidden_labels: []
+    definition: Deterministic shape an asset must conform to.
+    scope_note: ""
+    domain: core
+    disambiguator: ""
+    state: draft
+    approval_authority: operator

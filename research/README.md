@@ -1,0 +1,37 @@
+---
+class: reference
+authority: canonical
+stability: stable
+loaded_by_agent: no
+---
+
+# Research Archive
+
+This folder preserves the research lineage that produced ACW v0.1.0. Every primitive in `rules/`, every entry in `DEFERRED.md`, every design choice in the schema, and every role in `rules/pipeline-roles.md` traces back to one of the files here. If you disagree with a rule, read the research before editing it.
+
+## What is in here
+
+Seven files covering the research arc from problem framing through ship decision. Each file is a synthesized summary — not a transcript of the research process, not a verbatim copy of source documents, not a blog post. Think of them as the methodology archive a teacher would hand a student after a semester: "here is why we did what we did, in the order it happened."
+
+## What is NOT in here
+
+- Operator-specific context from the original research project
+- Employer-specific examples or scale references
+- Research prompts verbatim
+- LLM chat logs
+- Citations that could not be independently verified
+
+## Sanitization notes
+
+The source material for these files lived in a private research project with operator-specific framing. Every reference to a specific person, organization, tool, ticketing system, chat surface, or geographic location has been removed or generalized. Where a source cited something the operator could not independently verify, the citation was dropped rather than preserved on trust. The seven files here are conservative summaries, not the whole truth of the research.
+
+## Reading order
+
+1. `01-problem-framing.md` — the five frontier problems, why they matter, what collapses them to one foundation
+2. `02-literature-survey.md` — prior art, twenty-eight sources, what ports and what doesn't
+3. `03-synthesis.md` — diagnosis, the typed contract registry as the missing foundation
+4. `04-proposal.md` — the minimum primitive set, the deferred library, and the five-consultant team pattern
+5. `05-ship-decision.md` — why v0.1.0 ships what it ships and defers what it defers
+6. `sources.md` — annotated bibliography
+
+A reader who only has time for one file should read `03-synthesis.md`. A reader who wants to argue with a specific primitive should read `02-literature-survey.md` first.

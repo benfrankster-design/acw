@@ -1,0 +1,18 @@
+# ACW enforces LF line endings across all platforms.
+# Binary-mode writes in tools/log-incident.py depend on LF, and the
+# editorconfig already declares LF — gitattributes makes it enforceable.
+
+* text=auto eol=lf
+
+*.py text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.jsonl text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+
+# Binary files that must never be line-ending converted.
+*.png binary
+*.jpg binary
+*.pdf binary

@@ -1,0 +1,212 @@
+# ---
+# class: operational
+# authority: canonical
+# stability: experimental
+# loaded_by_agent: yes
+# ---
+#
+# canon-schema.yaml — Vocabulary Canon Schema Template
+#
+# Version: 0.1.0
+# Status: Normative template for the rules/canon.yaml instance file.
+#
+# This schema is inspired by W3C SKOS (Simple Knowledge Organization System,
+# https://www.w3.org/TR/skos-reference/) with deliberate simplifications for
+# a markdown-native workspace. See research/summary.md for the SKOS port table
+# naming which fields are faithful subsets and which are workspace extensions.
+#
+# A canon.yaml file is a list of concept entries. Each entry MUST conform to
+# the shape below. Fields marked REQUIRED must be present; fields marked
+# OPTIONAL may be omitted.
+
+# ---------- Example entry (commented out) ----------
+#
+# - concept_id: billing-address
+#   pref_label: billing address
+#   alt_labels:
+#     - customer billing address
+#     - payment address
+#   hidden_labels:
+#     - addr
+#     - addres
+#   definition: The postal address used to determine tax, shipping eligibility, and fraud signals on a transaction. Distinct from the mailing address in contexts where the two can differ.
+#   domain: payments
+#   owner: operator
+#   approval_authority: operator
+#   status: approved
+#   disambiguator: payments-context
+#   source_terms:
+#     - source: payments-onboarding-doc-v2
+#       term: billing address
+#     - source: fraud-rulebook-section-3
+#       term: payment address
+#   valid_from: 2026-04-11
+#
+# ---------- End example ----------
+
+# ---------- Field specifications ----------
+
+schema_version: "0.1.0"
+
+field_specs:
+
+  concept_id:
+    required: true
+    type: string
+    description: |
+      Stable identifier. Immutable once assigned. Does NOT change when the
+      preferred label changes. Use lowercase-kebab-case. This is intentionally
+      a slug, not a dereferenceable URI. See research/summary.md for the SKOS
+      port note on this deviation.
+    constraints:
+      - unique across canon.yaml
+      - lowercase kebab-case
+      - no whitespace
+      - no reserved words (concept_id, pref_label, etc.)
+
+  pref_label:
+    required: true
+    type: string
+    description: |
+      The preferred canonical name for this concept. What the system emits
+      when it wants to name the thing. Maps to skos:prefLabel.
+
+  alt_labels:
+    required: false
+    type: list-of-strings
+    description: |
+      Synonyms that are acceptable in input but canonicalized to pref_label
+      on output. Maps to skos:altLabel.
+
+  hidden_labels:
+    required: false
+    type: list-of-strings
+    description: |
+      Forms that should be caught and corrected at ingest. Deprecated terms,
+      typos, legacy abbreviations. The lint tool treats any occurrence of
+      a hidden_label in committed content as a violation. Maps to
+      skos:hiddenLabel.
+
+  definition:
+    required: true
+    type: string
+    description: |
+      The scoped meaning of this concept. One to three sentences. Scoped
+      to the domain field; the same term in a different domain is a
+      different concept with a different concept_id. Maps roughly to
+      skos:definition.
+
+  domain:
+    required: true
+    type: string
+    description: |
+      The namespace this concept belongs to. Domains are declared in
+      rules/instance-hard-rules.md. A concept exists in exactly one domain.
+      Polysemes across domains become multiple concept_ids, each with its
+      own definition and disambiguator.
+
+  owner:
+    required: true
+    type: string
+    description: |
+      Who ratified this concept. A free-form string naming a specific person,
+      role, or authority. For single-operator instances the value is typically
+      "operator". For multi-authority instances the value names the specific
+      authority (examples: "operator", "cs-lead", "cto", "founders", "legal",
+      "client-sponsor"). The schema does not enforce an enum because the set
+      of valid authorities is an instance-level decision recorded in
+      rules/instance-hard-rules.md.
+
+  approval_authority:
+    required: true
+    type: string
+    description: |
+      Which approval authority governs this concept. Free-form string, not
+      an enum. A single-operator instance may use "operator" for every concept.
+      A multi-authority instance may split concepts across any number of
+      authorities (examples: "operator" for technical decisions, "founders"
+      for organizational decisions, "legal" for compliance decisions,
+      "client-sponsor" for client-facing decisions). The instance declares
+      its valid authority set in rules/instance-hard-rules.md; this field
+      must reference an authority in that declared set. See
+      rules/canon-governance.md for the N-authority approval model and
+      worked examples at single, two-tier, and four-tier instances. The
+      N-authority generalization builds on the two-bucket pattern from
+      Better Rules NZ and DataHub term ownership, extended to any number of
+      authorities.
+
+  status:
+    required: true
+    type: enum
+    values: [draft, proposed, approved, deprecated]
+    description: |
+      State machine position. draft = being authored; proposed = under
+      review by the approval bucket; approved = active in the canon;
+      deprecated = retained for history but no longer used in new content.
+      See rules/canon-governance.md for transition rules.
+
+  disambiguator:
+    required: false
+    type: string
+    description: |
+      A short phrase that resolves polysemy when the same pref_label could
+      refer to different concepts in different domains. Appears in
+      parentheses after the pref_label in generated references.
+
+  source_terms:
+    required: false
+    type: list-of-objects
+    description: |
+      Provenance trail. Each entry is a source (document, session, or
+      artifact) and the original term used in that source before
+      canonicalization. Used for audit trails and for flagging legacy
+      content that uses a pre-canonical term.
+
+  valid_from:
+    required: false
+    type: iso-date
+    description: |
+      When this concept became active in the canon. Used for historical
+      queries and for detecting drift between claim date and usage date.
+
+  valid_to:
+    required: false
+    type: iso-date
+    description: |
+      When this concept was deprecated. Only set when status transitions
+      to "deprecated". A deprecated concept is retained in canon.yaml but
+      is not used in new content.
+
+# ---------- End field specifications ----------
+
+# ---------- Integrity rules (checked by lint-vocab.py) ----------
+
+integrity_rules:
+
+  - id: unique_concept_ids
+    description: No two entries may share a concept_id.
+
+  - id: unique_pref_labels_within_domain
+    description: Within a single domain, two entries must not share a pref_label.
+
+  - id: no_hidden_label_as_pref_label
+    description: A string listed as a hidden_label for any entry must not be a pref_label for any other entry.
+
+  - id: valid_status_transitions
+    description: |
+      Status transitions must follow: draft -> proposed -> approved -> deprecated.
+      Going backwards requires an entry in decisions/decision-log.md.
+
+  - id: domain_declared
+    description: Every concept's domain field must match a domain declared in rules/instance-hard-rules.md.
+
+  - id: approval_authority_declared
+    description: |
+      Every concept's approval_authority field must reference an authority
+      declared in the instance's authority set in rules/instance-hard-rules.md.
+      A single-operator instance declaring only "operator" as a valid authority
+      must not see any concept claiming a different authority. A multi-authority
+      instance may use any of its declared authorities. This rule replaces the
+      earlier approval_type enum check.
+
+# ---------- End integrity rules ----------
