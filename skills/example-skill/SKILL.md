@@ -6,30 +6,36 @@ loaded_by_agent: no
 ---
 
 ```yaml
-name: Example Collector
-description: Reads new items from a declared source and returns them as a structured list.
+name: example-collector
+description: >
+  Reads new items from a declared source and returns them as a structured
+  list. Fires when an orchestrator requests fresh items from a single
+  surface. Not for classification, routing, or persistence — those are
+  separate skills.
 role: pipeline-worker
 capabilities:
   - source.read
 ```
 
-# Example Skill — Reference Implementation
+| Domain | 6C Primary | Governance |
+|--------|-----------|------------|
+| (declare in instance-hard-rules.md) | Curation | Medium |
 
-This is a worked reference showing how a skill declares itself against the ACW contracts. It does not do anything real. Copy this shape when authoring a new skill.
+# Example Collector
 
-## What this skill would do
+Reads new items from a declared source (a folder of markdown files, an inbox, a feed) and returns them as a structured list. One shape in, one shape out. This is a worked reference — copy this shape when authoring a new skill. See `rules/skill-format.md` for the full contract.
 
-Given a declared source (a folder of markdown files, an inbox, a feed), read items that have appeared since the last run and return them as a structured list. One shape in, one shape out. No transformation, no routing, no writes.
+## Why these values
 
-## Why `role: pipeline-worker`
+**`role: pipeline-worker`** — this skill sits in the data flow and performs a single leaf operation on one surface. The finer sixteen-role taxonomy in the `rules/pipeline-roles.md` appendix would label this more specifically as a `collector` — a pipeline-worker that pulls raw data from exactly one source on demand, returns the raw shape, and does not interpret or route. The appendix is informative, not normative.
 
-Every SKILL.md must declare exactly one role from `rules/pipeline-roles.md`. The four normative groups are `orchestrator`, `pipeline-worker`, `guardian`, and `broker-sideband`. This skill declares `pipeline-worker` because it sits in the data flow and performs a single leaf operation on one surface.
+**`6C: Curation`** — this skill selects and organizes (reads items, returns a list). It does not generate new content (Creation) or reason about meaning (Cognition).
 
-The finer sixteen-role taxonomy in the `rules/pipeline-roles.md` appendix would label this more specifically as a `collector` — a pipeline-worker that pulls raw data from exactly one source on demand, returns the raw shape, and does not interpret or route. The appendix is informative, not normative. A skill that declares `pipeline-worker` is conformant; a skill that also annotates `collector` in its description is helpful but not required.
+**`Governance: Medium`** — derived from Curation per the ITIL 5 classification table in `rules/skill-format.md`.
 
-## Capabilities
+**`Domain: (blank)`** — domains are declared per-instance. In a fresh ACW clone, this field is a placeholder. Once the operator declares domains in `rules/instance-hard-rules.md`, every skill's Domain column should resolve to one of those values.
 
-The `capabilities` list in frontmatter declares the scopes this skill needs from the broker (when the broker ships). For now, `source.read` is a placeholder naming the smallest useful scope: read access to one source. A real implementation would narrow this further — e.g., `inbox.md.read` or `feed.rss.read`.
+**`capabilities: [source.read]`** — the scope this skill needs from the broker (when the broker ships). A real implementation would narrow this further: `inbox.md.read` or `feed.rss.read`.
 
 ## What this skill would NOT do
 
