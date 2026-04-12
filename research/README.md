@@ -11,7 +11,7 @@ This folder preserves the research lineage that produced ACW v0.1.0. Every primi
 
 ## What is in here
 
-Eight files covering the research arc from problem framing through ship decision, plus a post-ship completeness audit. Each file is a synthesized summary — not a transcript of the research process, not a verbatim copy of source documents, not a blog post. Think of them as the methodology archive a teacher would hand a student after a semester: "here is why we did what we did, in the order it happened."
+Research files covering the arc from problem framing through ship decision, plus a post-ship completeness audit and the living-state infrastructure for ongoing conception evolution. Each file is a synthesized summary — not a transcript of the research process, not a verbatim copy of source documents, not a blog post. Think of them as the methodology archive a teacher would hand a student after a semester: "here is why we did what we did, in the order it happened."
 
 ## What is NOT in here
 
@@ -36,4 +36,10 @@ The source material for these files lived in a private research project with ope
 
 7. `06-completeness-audit.md` — post-ship gap analysis: what the five problems miss, the two-foundation insight, 22 additional sources
 
-A reader who only has time for one file should read `03-synthesis.md`. A reader who wants to argue with a specific primitive should read `02-literature-survey.md` first. A reader who wants to know what ACW got wrong should read `06-completeness-audit.md`.
+**Living-state files (populated by the operator over time):**
+- `research-state.yaml` — machine-readable source of truth for the current conception. Ships with template knowledge (`origin: acw-template`); operator findings accumulate as `origin: instance`. Updated by `/capture-session`.
+- `evolution.md` — dated log of conceptual shifts. How the operator got from the shipped understanding to their current one. Updated by `/capture-session`.
+- `paper.md` — placeholder for a future formal write-up. Populate when the conception stabilizes.
+- `sessions/` — cleaned session transcripts saved by `/capture-session`. The raw provenance trail.
+
+A reader who only has time for one file should read `03-synthesis.md`. A reader who wants to argue with a specific primitive should read `02-literature-survey.md` first. A reader who wants to know what ACW got wrong should read `06-completeness-audit.md`. A reader who wants to see how the conception evolved over time should read `evolution.md`.

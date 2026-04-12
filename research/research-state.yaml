@@ -1,0 +1,162 @@
+# ---
+# class: operational
+# authority: canonical
+# stability: experimental
+# loaded_by_agent: yes
+# ---
+#
+# research-state.yaml — Single source of truth for the conception
+#
+# This file declares the current state of understanding derived from all
+# research. When a prose file in research/ disagrees with this file, this
+# file wins and the prose gets updated. Same discipline as acw-state.yaml
+# but for the ideas, not the implementation.
+#
+# Edited by /capture-session when conceptual shifts are identified, or
+# manually when research findings change the conception. Every edit should
+# reference the research file that justified the change.
+#
+# origin: field on every entry distinguishes template knowledge from
+# instance-specific findings:
+#   origin: acw-template  — shipped with ACW, derived from the research archive
+#   origin: instance      — discovered by this operator in their own use
+#
+# When a new ACW version ships with updated research, template entries can
+# be merged in. Instance entries stay untouched.
+
+conception:
+  scope: "Persistent agentic AI systems that stay coherent over time without human rescue"
+  application: "Personal, business, and enterprise workstations and networks"
+  note: "The problems and the solution scope broadly beyond workstations. Current application is the proving ground, not the boundary."
+
+foundations:
+  count: 2
+  layers:
+    - name: contract-layer
+      purpose: "Declares what agents are supposed to do"
+      status: shipping
+      origin: acw-template
+      acw_primitives:
+        - pipeline-roles
+        - canon-governance
+        - skill-format
+        - instance-hard-rules
+        - vocabulary-lint
+        - capability-broker (design only)
+        - decision-tracking
+        - promotion-ritual
+      source: "research/01-05 (original seven-phase synthesis)"
+
+    - name: observation-layer
+      purpose: "Verifies that agents actually did what contracts declared"
+      status: identified-not-shipping
+      origin: acw-template
+      acw_primitives:
+        - drift-detector (deferred)
+        - conformance-test (deferred)
+        - manifest (deferred)
+      gaps:
+        - rollback
+        - real-time tracing
+        - resource monitoring
+        - outcome measurement
+      source: "research/06-completeness-audit"
+
+problems:
+  description: "Structural problems in achieving persistent agentic AI systems that stay coherent over time without human rescue"
+  contract_side:
+    - id: mece-enforcement
+      name: "Mechanical MECE enforcement"
+      short: "Skills collide, no machine-readable mutual exclusion"
+      foundation: contract-layer
+      origin: acw-template
+      source: "research/01-problem-framing"
+
+    - id: vocabulary-governance
+      name: "Cross-vendor controlled vocabulary"
+      short: "Different agents, different words, no commit-time enforcement"
+      foundation: contract-layer
+      origin: acw-template
+      source: "research/01-problem-framing"
+
+    - id: drift-detection
+      name: "Self-correcting drift detection"
+      short: "Assets go stale, nobody notices"
+      foundation: contract-layer
+      origin: acw-template
+      note: "Straddles both layers — declaration of what's true (contract) and detection of when it stops being true (observation)"
+      source: "research/01-problem-framing"
+
+    - id: credential-management
+      name: "Credential and secret management"
+      short: "Skills accumulate authority beyond need"
+      foundation: contract-layer
+      origin: acw-template
+      source: "research/01-problem-framing"
+
+    - id: semantic-validation
+      name: "Pre-tool-call semantic validation"
+      short: "Syntactically valid calls that violate semantic invariants"
+      foundation: contract-layer
+      origin: acw-template
+      source: "research/01-problem-framing"
+
+  observation_side:
+    - id: state-rollback
+      name: "State corruption and rollback"
+      short: "A skill damages state, there's no undo, irreversible actions cross the boundary"
+      foundation: observation-layer
+      origin: acw-template
+      source: "research/06-completeness-audit"
+
+    - id: observability
+      name: "Observability and debugging"
+      short: "No mechanism to detect incidents other than human eyes"
+      foundation: observation-layer
+      origin: acw-template
+      source: "research/06-completeness-audit"
+
+    - id: resource-governance
+      name: "Cost and resource governance"
+      short: "Runaway loops, token overruns, no kill switch, no resource dimension in contracts"
+      foundation: observation-layer
+      origin: acw-template
+      note: "May be operational rather than structural at small scale"
+      source: "research/06-completeness-audit"
+
+    - id: human-handoff
+      name: "Human-AI handoff"
+      short: "Binary approve/skip instead of graduated autonomy, automation complacency"
+      foundation: observation-layer
+      origin: acw-template
+      note: "May not be structural at single-operator scale"
+      source: "research/06-completeness-audit"
+
+prior_art:
+  total_sources: 50
+  breakdown:
+    original_synthesis: 28
+    completeness_audit: 22
+  key_references:
+    - "AAMAS 2026 Agent Contracts (arxiv 2601.08815) — seven-tuple formalization, complementary to ACW"
+    - "Willison lethal trifecta — information-flow security axis"
+    - "SKOS (W3C) — vocabulary governance ancestor"
+    - "Kubernetes admission control — two-phase validation ancestor"
+    - "Truth Maintenance Systems (Doyle/de Kleer) — drift detection ancestor"
+    - "Object capabilities (Miller) — credential management ancestor"
+    - "NIST AI Agent Standards Initiative (Feb 2026) — interoperability profile by Q4 2026"
+
+# Operator-specific findings go below this line.
+# Use origin: instance on every entry.
+# /capture-session proposes additions here after processing session transcripts.
+
+open_questions: []
+# Example:
+#   - id: OQ-1
+#     question: "Your specific open question"
+#     status: open
+#     origin: instance
+#     source: "research/sessions/YYYY-MM-DD--topic.md"
+
+last_updated: "2026-04-12"
+updated_by: "acw-template-ship"

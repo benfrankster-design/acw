@@ -113,6 +113,22 @@ Every skill ships with a `gotchas.md` file containing at least one entry:
 
 If no gotchas are known at creation time, seed with the most likely misuse or confusion point. gotchas.md is the institutional memory for "things that bit us" — it grows by incident, not by anticipation.
 
+## Orchestrator sub-steps discipline
+
+An orchestrator skill may declare sub-steps in its instructions that correspond to pipeline-worker roles. The sub-steps are internal to the orchestration until operational friction earns their separation into standalone skills. When separated, each sub-step becomes its own skill declaring its own role. This is the same earn-by-incident discipline applied to skill granularity.
+
+Example: a `/capture-session` orchestrator declares four internal steps (clean transcript, tag shifts, draft evolution entry, update research state). Each step could be a standalone pipeline-worker skill. At single-operator scale, the orchestrator handles all four. When transcript cleaning needs to be invoked independently — say, for a session that had no conceptual shifts and only needs the clean transcript — that's the incident that earns the split.
+
+The rule: ship the orchestrator first. Split when a sub-step needs to be called independently. Log the split as an incident.
+
+## Skill density guidance
+
+Prefer one skill per role per domain. Two skills with the same role serving the same domain are candidates for merging. One skill serving two domains with different instructions for each is a candidate for splitting.
+
+At single-operator scale, fewer skills with broader scope are easier to maintain than many narrow skills. As the instance scales (more operators, more agents, more domains), narrow specialization earns its ship through incidents where the broad skill couldn't serve both use cases without internal routing logic.
+
+The 16-role appendix in `rules/pipeline-roles.md` is the reference for naming splits. When a pipeline-worker skill splits, each piece adopts a finer role label (collector, extractor, transformer, etc.) as its description, while still declaring `role: pipeline-worker` in frontmatter per the four-group normative enum.
+
 ## Relationship to other contracts
 
 - **`rules/pipeline-roles.md`** — declares the role enum. Every `role:` value in SKILL.md frontmatter must match one of the four normative groups.
