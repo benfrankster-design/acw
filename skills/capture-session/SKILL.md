@@ -64,7 +64,22 @@ form: cleaned
 
 # Session Transcript — YYYY-MM-DD
 
-[Context paragraph: what preceded this session]
+## Prior sessions summary
+
+[Compressed arc of ALL preceding session transcripts in research/sessions/.
+One paragraph per prior session — date, turn count, key decisions, key shifts,
+what shipped. An agent reading only this file gets the full history compressed
+here without needing to load earlier transcripts. Keep each paragraph to 3-5
+sentences max.]
+
+## This session summary
+
+[More robust summary of the current session — what was discovered, what shifted,
+what was built, what decisions were made, where things were left. Denser than
+the prior-session paragraphs because this is the session the reader most likely
+cares about. 5-10 sentences.]
+
+---
 
 ## Turn 1 — [description]
 
