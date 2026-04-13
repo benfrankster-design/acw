@@ -9,6 +9,10 @@ loaded_by_agent: yes
 
 How to determine what kind of ACW instance a workspace needs and what primitives apply at each level. This file exists so that an agent can reason about "does this workspace need X?" for any future question, not just at bootstrap time.
 
+## Provenance note
+
+This framework emerged from dogfooding ACW against a single operator's four-instance architecture. The type classifications — particularly the "cockpit" pattern — are not sourced from the literature. None of the 50 surveyed sources distinguish between state-accumulating workspaces and session-scoped operator consoles. The cockpit pattern may generalize to other operators or it may be an artifact of one person's organizational habits. Treat all four types as working hypotheses until multiple operators have validated them against their own instance architectures.
+
 ## The classification question
 
 Every folder, project, or system that an operator considers bringing under ACW discipline falls into one of four types. The type determines which ACW primitives apply.
