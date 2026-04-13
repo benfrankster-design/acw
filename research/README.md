@@ -35,6 +35,7 @@ The source material for these files lived in a private research project with ope
 6. `sources.md` — annotated bibliography
 
 7. `06-completeness-audit.md` — post-ship gap analysis: what the five problems miss, the two-foundation insight, 22 additional sources
+8. `07-instance-types.md` — four instance types (full, cockpit, project, read-only) and what ACW primitives apply at each level
 
 **Living-state files (populated by the operator over time):**
 - `research-state.yaml` — machine-readable source of truth for the current conception. Ships with template knowledge (`origin: acw-template`); operator findings accumulate as `origin: instance`. Updated by `/capture-session`.
