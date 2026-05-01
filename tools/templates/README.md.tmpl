@@ -1,0 +1,62 @@
+# {{PROJECT_NAME}}
+
+An ACW-derived agentic contract workspace.
+
+**Project code:** `{{PROJECT_CODE}}`
+**Domain:** `{{DOMAIN}}`
+**Scaffolded:** `{{DATE}}`
+
+## What is this?
+
+This workspace was bootstrapped from [ACW (Agentic Contract Workspace)](https://github.com/anthropics/acw), a template that ships:
+
+- A canon governance system (`rules/canon-governance.md`)
+- A four-group skill role taxonomy (`rules/pipeline-roles.md`)
+- A vocabulary lint (`tools/lint-vocab.py`)
+- An incident ledger and earn-by-incident promotion ritual (`tools/log-incident.py`, `rules/promotion-ritual.md`)
+- A bookend skill pair (`skills/capture-and-metabolize/`, `skills/resume-session/`)
+- A self-contract (`acw-state.yaml`) that names the canonical files and runtime state
+
+## Operator entry points
+
+Read these first:
+
+- `AGENTS.md` — directives for any agent opening this workspace
+- `acw-state.yaml` — machine-readable self-contract for this instance
+- `decisions/decision-log.md` — open questions, decisions, constraints
+- `rules/instance-hard-rules.md` — stop-work rules for this instance
+- `tasks-status.md` — what's pending, what's done, what's parked
+
+## First session checklist
+
+1. Fill in `research/01-problem-framing.md`
+2. Add domain-specific hard rules to `rules/instance-hard-rules.md`
+3. Run `python tools/lint-vocab.py glossary.md --content-dir .`
+4. Run `python -m unittest discover tests`
+
+## Operational commands
+
+```bash
+# Lint vocabulary
+python tools/lint-vocab.py glossary.md --content-dir .
+
+# Log an incident
+python tools/log-incident.py log <primitive> <severity> "<symptom>" --category <cat>
+
+# Count incidents on a primitive
+python tools/log-incident.py count --primitive <name>
+
+# Check deferred-library drift
+python tools/log-incident.py check-drift
+
+# Run tests
+python -m unittest discover tests
+
+# Scaffold a child instance (this workspace can scaffold others)
+python tools/scaffold-instance.py <target_dir> --code <CODE> --domain <DOMAIN>
+```
+
+## License
+
+See ACW's `LICENSE-CODE` and `LICENSE-CONTENT` for the upstream template.
+This instance's own content licensing is at the operator's discretion.

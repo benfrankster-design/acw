@@ -9,8 +9,10 @@
 log-incident.py — Incident ledger + deferred-library drift detector.
 
 Subcommands:
-    log <primitive> <severity> <symptom> [--operator NAME]
+    log <primitive> <severity> <symptom> [--operator NAME] [--category CAT]
         Append a JSON line to incidents.jsonl. Severity: low|med|high.
+        Category (optional): implementation-bug|governance-leak|environment-state|
+        process-gap|wrong-assumption|scale-vulnerability|earn-by-incident.
     count --primitive NAME
         Count med+high incidents for a primitive.
     check-drift
@@ -36,11 +38,23 @@ from pathlib import Path, PurePosixPath
 
 LEDGER = Path("incidents.jsonl")
 SEVERITIES = {"low", "med", "high"}
+CATEGORIES = {
+    "implementation-bug",
+    "governance-leak",
+    "environment-state",
+    "process-gap",
+    "wrong-assumption",
+    "scale-vulnerability",
+    "earn-by-incident",
+}
 
 
 def cmd_log(args: argparse.Namespace) -> int:
     if args.severity not in SEVERITIES:
         print(f"log-incident: severity must be one of {sorted(SEVERITIES)}", file=sys.stderr)
+        return 2
+    if args.category and args.category not in CATEGORIES:
+        print(f"log-incident: category must be one of {sorted(CATEGORIES)}", file=sys.stderr)
         return 2
     entry = {
         "id": str(uuid.uuid4()),
@@ -50,6 +64,8 @@ def cmd_log(args: argparse.Namespace) -> int:
         "symptom": args.symptom,
         "operator": args.operator or os.environ.get("ACW_OPERATOR", "operator"),
     }
+    if args.category:
+        entry["category"] = args.category
     line = (json.dumps(entry, ensure_ascii=False) + "\n").encode("utf-8")
     with LEDGER.open("ab") as fh:
         fh.write(line)
@@ -179,6 +195,8 @@ def main() -> int:
     p_log.add_argument("severity")
     p_log.add_argument("symptom")
     p_log.add_argument("--operator", default=None)
+    p_log.add_argument("--category", default=None,
+        help=f"Optional category. One of: {', '.join(sorted(CATEGORIES))}")
     p_log.set_defaults(func=cmd_log)
 
     p_count = sub.add_parser("count", help="Count med+high incidents for a primitive")

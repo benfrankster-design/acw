@@ -26,4 +26,16 @@ Dated record of how this instance's understanding has changed over time. Each en
 
 ## Entries
 
-*(No entries yet. /capture-session populates this file.)*
+### 2026-04-30 — ACW reframed as instance of itself; project block added
+
+**Changed:** ACW is an instance of itself that also serves as a template. Most workspaces will be one or the other; ACW (and Frank Context tomorrow) is both at once. The skill suite now runs on ACW like any other instance.
+**Replaced:** "ACW is the template, period." Earlier framing treated ACW's lack of a `project:` block as deliberate.
+**Justified by:** Operator framing question, turn 37 of the v0.2.0 absorption arc. The accumulated substrate (decisions, tasks-status, build-log, incidents, evolution, glossary, threat-model) gave the prior framing the lie — ACW had been operating as its own instance from session zero.
+**Stale in template:** `acw-state.yaml` was missing a `project:` block; added in rc3 with `code: ACW`. `LAYERS.md` mixed generic pattern with ACW-specific narrative; split in rc3.
+
+### 2026-04-30 — Manifest-discipline named as a recurring pattern
+
+**Changed:** Single source of truth, additive maintenance by skill, removal by ritual, lint as safety net — this shape now appears three times in ACW (auto_load_at_session_start, three-layer manifest, canon governance state machine). Three applications is when a pattern becomes a primitive worth naming. Codified as `rules/manifest-discipline.md`.
+**Replaced:** Treating each list as bespoke. Reinventing the load/validate/append logic per consumer.
+**Justified by:** Direct operator questioning during the LAYERS.md split — "is the three-layer model something that ships or specific only to the author's meta template instance?"
+**Stale in template:** None. The new rule ships in `rules/manifest-discipline.md` (template_layer); every derived workspace gets it.

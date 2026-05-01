@@ -12,6 +12,58 @@ All notable changes to ACW (Agentic Contract Workspace) will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0-rc2] — 2026-04-30
+
+### Added
+- Three-layer manifest in `acw-state.yaml`: `template_layer`, `instance_layer`, `meta_layer`, `empty_dirs`. Replaces the hardcoded lists in `tools/scaffold-instance.py`. See `LAYERS.md` and `decisions/decision-log.md::D-005`.
+- `LAYERS.md` (meta_layer) — the three-bucket explainer with operator quick-reference.
+- `tools/templates/README.md.tmpl` — instance-layer README starter.
+- Release gate: every file at root, `rules/`, `tools/`, `skills/` must be classified in the manifest.
+
+### Changed
+- `tools/scaffold-instance.py` refactored to read from the manifest. Stdlib-only mini-yaml parser. Skips `__pycache__/` and `.pyc` when walking `template_layer` directories.
+- `acw-state.yaml::version` bumped from `0.2.0-rc1` to `0.2.0-rc2`.
+
+---
+
+## [0.2.0-rc1] — 2026-04-30
+
+First absorption pass from the first ACW instance (`gsg-copilot`). Three weeks of single-operator lived experience surfaced nine candidate primitives (C-01 through C-09) and two staleness incidents (D-01 synapse-rule-sync, D-02 instance-bootstrap), documented in `research/09-gsg-copilot-instance-extensions.md`.
+
+### Added
+- `tools/scaffold-instance.py` — bootstrap a canonical ACW instance into a target directory. Stdlib-only, refuses to clobber, supports `--dry-run` and `--host`. Closes the bootstrap gap surfaced by Incident D-02.
+- `tools/templates/` — eleven templates with `{{TOKEN}}` placeholders for `acw-state.yaml`, `glossary.md`, `threat-model.md`, `decisions/decision-log.md`, `rules/instance-hard-rules.md`, `research/01-problem-framing.md`, `research/evolution.md`, `research/sources.md`, `research/research-state.yaml`, `tasks-status.md`, `build-log.md`.
+- `rules/task-tracking.md` — codifies the three-section `tasks-status.md` model (Pending / Done / Parked) with dated session blocks and pinned-marker convention.
+- `rules/incident-tracking.md` — documents incident schema, severity ladder, and the seven-value category vocabulary.
+- `tasks-status.md` and `build-log.md` at repo root, added to `canonical_runtime_files`.
+- `acw-state.yaml::auto_load_at_session_start` array. Files agent hosts auto-load at session start.
+- `acw-state.yaml::project` block (`name`, `code`, `domain`).
+- `acw-state.yaml::cross_repo_writes`, `synapse_log_path`, `voice` fields for instance-specific configuration consumed by bookend skills.
+- `AGENTS.md` directive 7 — declares the auto-load convention as the cross-vendor contract.
+- `skills/capture-and-metabolize/` — five-phase end-of-session bookend ported and generalized from gsg-copilot.
+- `skills/resume-session/` — session-start bookend, paired with capture-and-metabolize. Loads recent capture sections §5–§7, queued research prompts, and cross-project `_inbox/` notifications.
+- `tools/log-incident.py --category` flag with seven-value enum (`implementation-bug`, `governance-leak`, `environment-state`, `process-gap`, `wrong-assumption`, `scale-vulnerability`, `earn-by-incident`).
+- `research/09-gsg-copilot-instance-extensions.md` (the absorption-pass research artifact).
+
+### Changed
+- `acw-state.yaml::version` bumped from `0.1.0` to `0.2.0-rc1`.
+- `acw-state.yaml::canonical_runtime_files` extended with `rules/task-tracking.md`, `rules/incident-tracking.md`, `tasks-status.md`, `build-log.md`, `tools/scaffold-instance.py`.
+
+### Superseded
+- `skills/capture-session/` superseded by `skills/capture-and-metabolize/` + `skills/resume-session/`. The original directory is marked `status: superseded` in its SKILL.md frontmatter; operator must delete manually (the careful guardrail blocks automated removal).
+
+### Earned
+- **Incident D-01** (severity: med, primitive: `synapse-rule-sync`) — synapse copies of ACW rules at `~/synapse/Rules/Procedures/` are stale relative to canonical. Mitigation deferred.
+- **Incident D-02** (severity: med, primitive: `instance-bootstrap`) — `gsg-copilot` did not bootstrap from `/Projects/acw/bootstrap/` because no scaffolding tooling existed. Mitigation: shipped `tools/scaffold-instance.py` under D-003 single-incident emergency promotion.
+
+### Deferred (no ship this release)
+- C-04 synthesis-cycle (`rules/synthesis-cycle.md`). Single cycle of evidence; awaiting second instance or third cycle.
+- C-05 runbooks layer. Operator-preference-flavored.
+- C-07 vault-boundary as hard rule. Included as suggested starting rule in `instance-hard-rules.md.tmpl`, not normative globally.
+- C-08 backlog triple-tag. Recommended convention only.
+
+---
+
 ## [0.1.0] — 2026-04-11
 
 ### Added

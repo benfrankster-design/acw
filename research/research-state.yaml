@@ -101,6 +101,13 @@ problems:
       origin: acw-template
       source: "research/01-problem-framing"
 
+    - id: governance-drift
+      name: "Governance drift from actual usage"
+      short: "Rules drift from operator behavior — bypasses unmeasured, ghost primitives accumulate"
+      foundation: contract-layer
+      origin: instance
+      source: "research/sessions/2026-04-13--cross-model-governance-audit.md"
+
   observation_side:
     - id: state-rollback
       name: "State corruption and rollback"
@@ -145,18 +152,25 @@ prior_art:
     - "Truth Maintenance Systems (Doyle/de Kleer) — drift detection ancestor"
     - "Object capabilities (Miller) — credential management ancestor"
     - "NIST AI Agent Standards Initiative (Feb 2026) — interoperability profile by Q4 2026"
+    - "OPA (Open Policy Agent) — decoupled policy engine, relevant to capability broker design"
+    - "EconStor endogenous/exogenous governance — conceptual ancestor for intrinsic vs. extrinsic contracts"
 
 # Operator-specific findings go below this line.
 # Use origin: instance on every entry.
 # /capture-session proposes additions here after processing session transcripts.
 
-open_questions: []
-# Example:
-#   - id: OQ-1
-#     question: "Your specific open question"
-#     status: open
-#     origin: instance
-#     source: "research/sessions/YYYY-MM-DD--topic.md"
+open_questions:
+  - id: OQ-1
+    question: "Where is the crossover point where 'derive from structure' becomes more expensive than manual registry maintenance? (multi-source joins like DEFERRED.md)"
+    status: open
+    origin: instance
+    source: "research/sessions/2026-04-13--cross-model-governance-audit.md Turn 11"
 
-last_updated: "2026-04-12"
-updated_by: "acw-template-ship"
+  - id: OQ-2
+    question: "At what signal density (events per month) does the earn-by-incident mechanical threshold become statistically meaningful vs. noise?"
+    status: open
+    origin: instance
+    source: "research/sessions/2026-04-13--cross-model-governance-audit.md Turn 12"
+
+last_updated: "2026-04-13"
+updated_by: "capture-session"

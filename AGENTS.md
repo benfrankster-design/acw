@@ -9,7 +9,7 @@ loaded_by_agent: yes
 
 This file is the entry point for any agent opening this workspace. It is deliberately named `AGENTS.md` rather than a vendor-specific file (`CLAUDE.md`, `GEMINI.md`, `GPT.md`) so the workspace is portable across frontier models. Any agent that honors this file can operate inside ACW; any agent that does not honor it cannot.
 
-## Six directives
+## Seven directives
 
 1. **Read `rules/pipeline-roles.md` before declaring a role.** Every skill in this workspace declares exactly one role from the four-group normative enum. A skill that cannot cleanly declare a single role is not a skill and must be split. The sixteen-role appendix is informative, not normative.
 
@@ -22,6 +22,8 @@ This file is the entry point for any agent opening this workspace. It is deliber
 5. **Consult `SKEPTIC.md` before proposing a new primitive.** The skeptic exists specifically to push back on well-intentioned premature ships. Every primitive in `deferred/` has an activation trigger and every proposal to promote one requires evidence in `incidents.jsonl`.
 
 6. **If you disagree with a rule, read `research/` before editing it.** Every rule in this template traces to a documented research finding. Edit without reading the research and you are likely to re-introduce a problem the research already solved.
+
+7. **Auto-load every file listed in `acw-state.yaml::auto_load_at_session_start` at the start of any session in this workspace.** Each agent host implements this via its native mechanism (Claude Code: `@`-imports in `CLAUDE.md`; other hosts: their equivalent manifest or directive syntax; agents that read `acw-state.yaml` directly need no host-specific file). The list is maintained additively by `capture-and-metabolize`; removal requires an explicit decision-log entry.
 
 ## Operational commands
 

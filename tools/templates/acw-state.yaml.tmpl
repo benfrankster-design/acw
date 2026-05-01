@@ -1,0 +1,117 @@
+# ---
+# class: operational
+# authority: canonical
+# stability: stable
+# loaded_by_agent: yes
+# ---
+#
+# acw-state.yaml — instance self-contract for {{PROJECT_NAME}}
+#
+# Single authoritative statement of this instance's current truth. Edited only
+# via a decision-log entry. Every edit bumps `version` or `last_reconciled`.
+
+project:
+  name: "{{PROJECT_NAME}}"
+  code: "{{PROJECT_CODE}}"
+  domain: "{{DOMAIN}}"
+
+version: "0.1.0"
+last_reconciled: "{{DATE}}"
+
+# Canonical runtime files for this instance. Files not listed are reference,
+# archive, or derived.
+canonical_runtime_files:
+  - rules/pipeline-roles.md
+  - rules/canon-governance.md
+  - rules/canon-schema.yaml
+  - rules/canon.yaml
+  - rules/instance-hard-rules.md
+  - rules/vocabulary-lint.md
+  - rules/capability-broker.md
+  - rules/decision-tracking.md
+  - rules/promotion-ritual.md
+  - rules/skill-format.md
+  - rules/task-tracking.md
+  - rules/incident-tracking.md
+  - decisions/decision-log.md
+  - DEFERRED.md
+  - glossary.md
+  - threat-model.md
+  - incidents.jsonl
+  - tasks-status.md
+  - build-log.md
+  - tools/lint-vocab.py
+  - tools/log-incident.py
+  - AGENTS.md
+  - acw-state.yaml
+
+# Files auto-loaded into agent context at session start. Hosts implement via
+# their native mechanism (Claude Code: @-imports in CLAUDE.md). See AGENTS.md
+# directive 7. Capture-and-metabolize maintains this list (additive only;
+# removal requires a decision-log entry).
+auto_load_at_session_start:
+  - research/01-problem-framing.md
+  - decisions/decision-log.md
+  - rules/instance-hard-rules.md
+  - tasks-status.md
+  - glossary.md
+  - research/evolution.md
+  - research/sources.md
+  - research/research-state.yaml
+  - incidents.jsonl
+
+# Cross-repo write surfaces explicitly allowed. Empty list means project
+# artifacts stay in the project repo (vault-boundary discipline).
+cross_repo_writes: []
+
+# Optional synapse log path for operator-personal cross-project day-index.
+# Empty/null disables Phase 4 of capture-and-metabolize.
+synapse_log_path: null
+
+# Voice references applied during transcript cleanup (capture-and-metabolize
+# Phase 1). Empty list means no voice opinion.
+voice: []
+
+deferred_canonical_source: DEFERRED.md
+deferred_derived_view: deferred/
+deferred_drift_check: tools/log-incident.py check-drift
+
+role_schema:
+  mode: four-group-normative
+  normative_groups:
+    - orchestrator
+    - pipeline-worker
+    - guardian
+    - broker-sideband
+  informative_appendix: sixteen-role-taxonomy
+  appendix_status: informative-only
+
+canon_authority:
+  mode: n-authority
+  default_value: operator
+  declared_in: rules/instance-hard-rules.md
+  schema_field: approval_authority
+  schema_type: string
+
+decision_tracking:
+  mode: single-file
+  file: decisions/decision-log.md
+  sections:
+    - "Open Questions"
+    - "Decisions and Rationale"
+    - "Constraints and Gotchas"
+    - "Resolved Questions"
+  split_threshold: "earned by promotion ritual when file is too large to navigate"
+
+release_gates:
+  - "tools/lint-vocab.py exits 0 on this instance's content"
+  - "tools/log-incident.py check-drift exits 0"
+  - "python -m unittest discover tests exits 0"
+  - "every .md file has class/authority/stability/loaded_by_agent frontmatter"
+
+earn_by_incident:
+  enabled: true
+  threshold_severity: med
+  threshold_count: 3
+  ledger: incidents.jsonl
+  exception: "single-incident activation triggers declared per-primitive in DEFERRED.md"

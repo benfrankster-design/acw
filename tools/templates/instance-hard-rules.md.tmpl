@@ -1,0 +1,36 @@
+---
+class: operational
+authority: canonical
+stability: stable
+loaded_by_agent: yes
+---
+
+# Instance Hard Rules — {{PROJECT_NAME}}
+
+Per-instance non-negotiable rules. Everything in this file is stop-work if violated. New rules added here MUST be recorded as a decision in `decisions/decision-log.md` first, then propagated here with a pointer to the decision entry.
+
+Hard-rule id format: `HR-{{PROJECT_CODE}}-NNN`.
+
+```yaml
+authority_set:
+  - operator
+
+domains:
+  - {{DOMAIN}}
+
+hard_rules: []
+```
+
+## Suggested starting rules
+
+Operators may consider starting with the following template rules. Each must be promoted explicitly via decision-log entry before becoming binding.
+
+- **HR-VB-001 — Project artifacts stay in the project repo.** No write outside the project root unless explicitly declared in `acw-state.yaml::cross_repo_writes`. Reason: portability, handover, single-source-of-truth audit trail.
+- **HR-SEC-001 — No credentials in committed files.** Use environment variables or the capability broker. Reason: secret leakage is unrecoverable.
+
+## How to add a new hard rule
+
+1. Open `decisions/decision-log.md` and add an entry under "Decisions and Rationale" describing the rule, the triggering incident or concern, and the rationale.
+2. Add the rule to the `hard_rules` block above with an `id`, `rule` text, `violation` level, `rationale`, and `decision_ref` pointing back to the decision-log entry.
+3. Run `python tools/lint-vocab.py` and any other relevant checks to verify nothing breaks.
+4. Commit with a message naming the new rule id.

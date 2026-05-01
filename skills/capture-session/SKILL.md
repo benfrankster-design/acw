@@ -1,14 +1,26 @@
 ---
 name: capture-session
 description: >
-  Cleans a session transcript, tags conceptual shifts, drafts evolution
-  entries, and proposes research-state.yaml updates. Fires at the end of
-  any session where the operator's understanding shifted. Not for routine
-  session logging (use the instance's session logger). Not for research
-  execution (use deep-research).
+  SUPERSEDED in v0.2.0-rc1 by skills/capture-and-metabolize/. The new bookend
+  pair (capture-and-metabolize + resume-session) carries this skill's four
+  sub-steps as Phase 1 of the larger flow, plus distribution, metabolize,
+  conditional synapse log, and conditional research-prompt phases.
+
+  This file is retained only as a pointer until the operator manually deletes
+  the skills/capture-session/ directory. Do NOT invoke this skill in v0.2.0+;
+  use /capture-and-metabolize instead.
 role: orchestrator
 capabilities: []
+status: superseded
+superseded_by: skills/capture-and-metabolize/
 ---
+
+> **SUPERSEDED.** Use `skills/capture-and-metabolize/` instead. See `decisions/decision-log.md::D-002`.
+
+---
+
+(Original content below preserved for migration reference; do not rely on it.)
+
 
 | Domain | 6C Primary | Governance |
 |--------|-----------|------------|
