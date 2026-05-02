@@ -49,6 +49,28 @@ This file tracks all decisions, open questions, constraints, and resolved questi
 **Rationale:** The promotion ritual's emergency clause is reserved for severity-`high` incidents. D-02 is `med`, but is structurally severe in a different way: every future ACW instance that does not bootstrap from this tool generates more drift incidents downstream. The tool is the *prevention layer* for an incident class, not a primitive earned by lived friction. Form factor is small (~200 lines, stdlib-only), and the prevented incident class is structural. Discipline prefers cheap prevention over earn-by-incident accumulation when both apply.
 **Source:** `research/09-gsg-copilot-instance-extensions.md` (final section)
 
+### D-ACW-010 — `/upgrade-instance` skill closes the drift loop
+
+**Date:** 2026-05-02
+**Decision:** New skill `skills/upgrade-instance/` walks the operator through reconciling instance state with the current ACW recommended-blocks registry. Drift detection lives in `/resume-session` Step 5; reconciliation lives here. Together they form the upgrade loop: detect → reconcile → bump `last_reconciled_version` → quiet alert.
+**Rationale:** Drift visibility without a path-to-fix is half a feature. Operators shouldn't have to hand-edit `acw-state.yaml` and look up canonical defaults manually. The skill walks each gap with the registry's "How to add" content surfaced inline. Pure additive — no demotions, no removals, no shape repair.
+**Source:** Operator instruction, turn 73 of the v0.2.0 absorption arc; subagent stress test informed final shape.
+
+### D-ACW-009 — Drift detection via instance-current-manifest
+
+**Date:** 2026-05-02
+**Decision:** New file `rules/instance-current-manifest.md` (template_layer) declares the recommended-blocks registry. Each entry documents what / why / required / how-to-add / earned-in. `/resume-session` Step 5 reads the registry, compares earned-in versions against `acw-state.yaml::last_reconciled_version`, and surfaces a one-line drift alert when gaps exist.
+**Rationale:** ACW evolves; existing instances need a way to learn they're behind without manual audit. The registry is the source of truth for "what current ACW expects"; the alert is the prompt; `/upgrade-instance` (D-ACW-010) is the action. Backwards-compatible — instances with no `last_reconciled_version` field default to `"0.0.0"` and get a noisy first run that quiets after one reconciliation.
+**Source:** Operator instruction during the "framework-agnostic skills" scoping conversation, turns 67–73.
+**Implementation note:** Required adding `last_reconciled_version` (semantic version) alongside the existing `last_reconciled` (date) field in `acw-state.yaml`. Subagent caught the version-vs-date conflation during Phase 4 verification; fixed before commit.
+
+### D-ACW-008 — Paths block + manifest-tooling spec
+
+**Date:** 2026-05-02
+**Decision:** `acw-state.yaml::paths` declares every substrate file path. The bookend skills read paths from this block at runtime; canonical defaults documented in `rules/manifest-discipline.md`. The manifest-tooling spec (four operations: load, append, contains, validate) ships in `rules/manifest-discipline.md` with a stdlib-only Python reference implementation in `tools/manifest.py`.
+**Rationale:** Decouples bookend skills from hardcoded paths. Future template evolution (moving a substrate file) requires editing one yaml block per instance instead of grepping skills. Manifest-tooling spec is the fourth application of the manifest-discipline pattern (after auto_load_at_session_start, three-layer manifest, vocabulary canon) — the operator chose to ship the shared tooling now rather than wait for a fifth case. Section heading conventions also moved to per-file frontmatter (`section_conventions` key).
+**Source:** Operator scoping conversation, turns 67–73. Reference implementation is 33-test TDD; subagent verified spec/impl alignment before commit.
+
 ### D-ACW-007 — Generic manifest-discipline rule extracted; LAYERS.md trimmed to ACW-specific narrative
 
 **Date:** 2026-04-30

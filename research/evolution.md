@@ -28,6 +28,13 @@ Dated record of how this instance's understanding has changed over time. Each en
 
 ## Entries
 
+### 2026-05-02 — Bookend skills decoupled from ACW; drift detection earns its build
+
+**Changed:** The bookend skills are now portable. Substrate file paths read from `acw-state.yaml::paths` at runtime; section heading names from each instance_layer file's `section_conventions` frontmatter. Any ACW-derived workspace can restructure its substrate (renaming files, moving directories) by editing the manifest, with no skill edits required. ACW evolution that ships a new substrate file or block surfaces to existing instances as a drift alert via `rules/instance-current-manifest.md`; `/upgrade-instance` walks operators through reconciliation.
+**Replaced:** Bookend skills hardcoded ACW's directory layout. Future ACW evolution that moved a substrate file would force grep-and-replace across every skill in every derived instance. Existing instances had no signal that ACW had evolved past them.
+**Justified by:** Operator scoping conversation on framework-agnostic skills (turns 67–73). Manifest-discipline pattern reached its fourth application (auto_load list, three-layer manifest, vocabulary canon, paths block) — operator chose to ship shared manifest tooling at this fourth case rather than continue waiting.
+**Stale in template:** None. New skill `skills/upgrade-instance/` and rule `rules/instance-current-manifest.md` ship in template_layer; every derived workspace gets the upgrade machinery.
+
 ### 2026-04-30 — ACW reframed as instance of itself; project block added
 
 **Changed:** ACW is an instance of itself that also serves as a template. Most workspaces will be one or the other; ACW (and Frank Context tomorrow) is both at once. The skill suite now runs on ACW like any other instance.

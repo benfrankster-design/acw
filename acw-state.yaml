@@ -156,6 +156,7 @@ auto_load_at_session_start:
   - decisions/decision-log.md
   - rules/instance-hard-rules.md
   - rules/manifest-discipline.md
+  - rules/instance-current-manifest.md
   - tasks-status.md
   - glossary.md
   - incidents.jsonl

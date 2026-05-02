@@ -9,6 +9,28 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-02 — RC4: portable bookend skills, drift detection, upgrade skill
+
+The bookend skills (`capture-and-metabolize`, `resume-session`) were tightly coupled to ACW's specific directory layout — paths to `decisions/decision-log.md`, `tasks-status.md`, `research/sessions/`, etc. were hardcoded throughout. That worked for ACW but broke portability: instances that wanted to restructure substrate, or future template evolution that moved a file, would force grep-and-replace across every skill. RC4 decouples the skills from paths via a manifest-driven approach, then adds drift detection so existing instances can learn they're behind and reconcile through a guided skill.
+
+Shipped in seven atomic phases with verification at each boundary:
+
+**Phase 1 — Foundations.** Added `paths:` block to `acw-state.yaml` listing 14 substrate file paths. Documented canonical defaults and four-operation manifest-tooling spec (load / append / contains / validate) in `rules/manifest-discipline.md`. Version bumped `0.2.0-rc3 → 0.2.0-rc4`. Commit `62ba6be`.
+
+**Phase 2 — Python tooling (TDD).** Wrote `tests/test_manifest.py` first (33 tests covering existing-list reads, canonical-default fallback, append additivity, dict/list round-trip, comment preservation, error semantics). Implemented `tools/manifest.py` until tests passed first run. Subagent confirmed spec/impl alignment. Commit `dd8c8da`.
+
+**Phase 3 — Skill refactor + references audit.** Refactored both bookend skills to use `paths.X` shorthand throughout. Audited 11 reference files in `capture-and-metabolize/references/`, plus `resume-session/`'s SKILL.md and gotchas. Replaced hardcoded paths with prose-level references resolved at runtime. Generalized project-specific references (gsg-copilot, synapse, Cortex, HR-CP-NNN) to be portable. Added `section_conventions` frontmatter to `decisions/decision-log.md`, `tasks-status.md`, `research/evolution.md` and their templates. Subagent verified zero hardcoded substrate paths remain. Commit `3c1cac8`.
+
+**Phase 4 — Drift detection.** Created `rules/instance-current-manifest.md`, the declarative registry of recommended blocks (project, paths, auto-load list, three-layer manifest, empty_dirs, cross_repo_writes, synapse_log_path, voice). Each entry documents what / why / required / how-to-add / earned-in. Added Step 5 drift check to `resume-session` SKILL.md. Subagent caught a version-vs-date conflation: `last_reconciled` was a date but the comparison needed semantic versions. Fixed by adding `last_reconciled_version` field alongside the date field. Also clarified present-but-empty semantics: a block declared empty is deliberate opt-out, not drift. Commit `9374ccb`.
+
+**Phase 5 — `/upgrade-instance` skill.** Built the reconciliation skill that walks operators through gap closure. Subagent stress test caught two more edge cases: partial blocks (some-but-not-all canonical keys) and malformed blocks (wrong shape). Resolved: partial blocks are honored as deliberate operator choice (runtime defaults fill the rest); malformed blocks halt the pass and ask for hand-edit (skill is reconciliation, not validation cleanup). Commit `0070938`.
+
+**Phase 6 — Substrate updates** (this entry). Decision-log entries D-ACW-008, D-ACW-009, D-ACW-010 record the architectural choices. Tasks-status Session 4 block. CLAUDE.md updated with the new auto-load entry (`rules/instance-current-manifest.md`). Evolution entry recording the framework-agnostic shift.
+
+**Phase 7 — Final dogfood.** Scaffold a fresh instance from rc4. Run release gates inside it. Simulate outdated instance (remove a recommended block); confirm drift alert fires. Run upgrade skill; confirm reconciliation. Final cold-read subagent reviews the rc4 changeset for inconsistencies, hardcoded paths, circular dependencies, backwards-compatibility gaps.
+
+The shape that fell out: ACW now treats every "what files matter" list the same way — single source of truth in `acw-state.yaml`, additive maintenance by the bookend skill, removal by ritual, lint as the safety net. The bookend skills are portable; instances upgrade themselves with a one-line alert and a one-skill walkthrough.
+
 ## 2026-04-30 — RC3: ACW as instance of itself; manifest-discipline rule extracted
 
 Resolved two configuration gaps surfaced in the prior dogfood (OQ-001 missing `project:` block, OQ-002 manifest-classification step not wired into Phase 2). Operator pressed on the framing — "doesn't the fact that ACW exists in 3 layers prove it is in fact an instance with a template layer and a meta layer?" — and that reframe locked D-ACW-006.

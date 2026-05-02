@@ -26,6 +26,20 @@ Three-section task tracker. See `rules/task-tracking.md` for format and discipli
 
 ## Done
 
+### 2026-05-02 — RC4: framework-agnostic bookend skills, drift detection, upgrade skill (Session 4)
+
+- Added `paths:` block to `acw-state.yaml` (14 substrate file path declarations). D-ACW-008.
+- Documented canonical default paths and four-operation manifest-tooling spec in `rules/manifest-discipline.md`.
+- Built `tools/manifest.py` reference implementation (stdlib only, ~330 lines, 33 unit tests, all passing).
+- Refactored `skills/capture-and-metabolize/` and `skills/resume-session/` to read paths from `acw-state.yaml::paths` instead of hardcoding. Audited 11 reference files; subagent verified zero hardcoded substrate paths remain in skill content.
+- Added `section_conventions` frontmatter to `decisions/decision-log.md`, `tasks-status.md`, `research/evolution.md` (and to their templates so new instances ship with them).
+- Created `rules/instance-current-manifest.md` (template_layer) — declarative registry of recommended blocks with what / why / required / how-to-add / earned-in fields. D-ACW-009.
+- Added `last_reconciled_version` field to `acw-state.yaml` (and template) for semantic version tracking alongside `last_reconciled` date.
+- Added Step 5 drift check to `skills/resume-session/SKILL.md`. Compares each registry entry's earned-in against instance's `last_reconciled_version`; surfaces one-line alert on gaps.
+- Built `skills/upgrade-instance/` skill. Walks operator through gap reconciliation; bumps `last_reconciled_version` after pass; logs decision-log entry. D-ACW-010.
+- Bumped version to `0.2.0-rc4`.
+- Subagent verifications at end of Phase 2, 3, 4, 5 — all caught real ambiguities (spec/impl alignment, hardcoded path scan, version-vs-date conflation, partial-block + malformed-block edge cases). Each fix landed before its phase commit.
+
 ### 2026-04-30 — RC3: ACW as instance of itself; manifest-discipline rule extracted (Session 3)
 
 - Added `project:` block to `acw-state.yaml` (`code: ACW`, `domain: meta-template`). D-ACW-006.

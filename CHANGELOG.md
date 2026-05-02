@@ -12,6 +12,60 @@ All notable changes to ACW (Agentic Contract Workspace) will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0-rc4] — 2026-05-02
+
+Framework-agnostic bookend skills, drift detection, and the upgrade skill that closes the loop. Seven atomic phases with subagent verification at four checkpoints. The bookend skills are now portable across any ACW-derived workspace; existing instances learn they're behind via a one-line alert at session start and reconcile through `/upgrade-instance`.
+
+### Added
+- `acw-state.yaml::paths` — declares substrate file paths; bookend skills read from this block at runtime with fallback to canonical defaults documented in `rules/manifest-discipline.md`. 14 keys covering decisions log, tasks-status, build-log, glossary, threat-model, incidents, evolution, sources, research-state, problem-framing, session-captures dir, research-queries dir, research-queries-consumed dir, inbox dir.
+- `acw-state.yaml::last_reconciled_version` — semantic version this instance is synced to in the recommended-blocks registry.
+- `rules/manifest-discipline.md` — gained "Canonical default paths" section and "Manifest tooling spec" section (four-operation contract: load, append, contains, validate).
+- `tools/manifest.py` — stdlib-only reference implementation of the manifest-tooling spec. ~330 lines, 33 unit tests. Subagent-verified spec/impl alignment.
+- `tests/test_manifest.py` — TDD test suite.
+- `rules/instance-current-manifest.md` — declarative registry of recommended blocks. Each entry: what / why / required / how-to-add / earned-in.
+- `skills/resume-session/SKILL.md` Step 5 — drift check that compares each registry entry's earned-in version against the instance's `last_reconciled_version`; surfaces a one-line alert on gaps.
+- `skills/upgrade-instance/` — new skill that walks operators through reconciling instance state with the recommended-blocks registry. Pure additive: no demotions, no removals, no shape repair.
+- `section_conventions` frontmatter on `decisions/decision-log.md`, `tasks-status.md`, `research/evolution.md` (and on the corresponding templates).
+
+### Changed
+- `acw-state.yaml::version` bumped from `0.2.0-rc3` to `0.2.0-rc4`.
+- `acw-state.yaml::auto_load_at_session_start` now includes `rules/instance-current-manifest.md`.
+- `acw-state.yaml::template_layer` now includes `rules/instance-current-manifest.md` and `skills/upgrade-instance/`.
+- `skills/capture-and-metabolize/` and `skills/resume-session/` — every reference to a substrate path replaced with `paths.X` shorthand. Section heading conventions read from per-file frontmatter via `section_conventions.X`. Project-specific references (gsg-copilot, synapse, Cortex, HR-CP-NNN) generalized. 11 reference files audited; subagent verified zero hardcoded substrate paths remain.
+- `tools/templates/decision-log.md.tmpl`, `tasks-status.md.tmpl`, `evolution.md.tmpl`, `acw-state.yaml.tmpl` — updated to ship the new frontmatter and the `last_reconciled_version` field.
+- `CLAUDE.md` — auto-load list updated per the bookend skill's host-entry-file maintenance rule.
+
+### Earned
+- D-ACW-008 — paths block + manifest-tooling spec.
+- D-ACW-009 — drift detection via instance-current-manifest.
+- D-ACW-010 — `/upgrade-instance` skill closes the drift loop.
+
+### Backwards compatibility
+- All new blocks and fields are optional. Instances missing `paths`, `project`, manifest layers, etc. fall back to canonical defaults documented in the rules.
+- Instances missing `last_reconciled_version` default to `"0.0.0"` and get a noisy first run of the drift alert; one `/upgrade-instance` pass quiets it.
+- Existing legacy id formats (`D-NNN`, `HR-NNN` without project code prefix) continue to work; the bookend skill respects whatever the instance's decision log already uses.
+
+---
+
+## [0.2.0-rc3] — 2026-05-02
+
+ACW formally reframes itself as an instance of itself (not just a template). Splits `LAYERS.md` into a generic rule (`rules/manifest-discipline.md`, template_layer) plus ACW-specific narrative (`LAYERS.md`, meta_layer). Gives the bookend skills a `project:` block so the skill suite runs on ACW like any other instance.
+
+### Added
+- `acw-state.yaml::project` block (`name: "ACW"`, `code: "ACW"`, `domain: "meta-template"`). Existing legacy ids `D-001..D-005` stay unprefixed; new entries use `D-ACW-NNN`.
+- `rules/manifest-discipline.md` — generic three-layer pattern documentation extracted from LAYERS.md. Covers when the rule applies, the three-layer model, manifest mechanics, why-default-to-instance, operator quick-reference, recurring-pattern naming, recursive-instances note.
+- `skills/capture-and-metabolize/SKILL.md` — Configuration section documents all fields as optional with defaults; Phase 2 gained the conditional manifest-classification step.
+
+### Changed
+- `acw-state.yaml::version` bumped from `0.2.0-rc2` to `0.2.0-rc3`.
+- `LAYERS.md` trimmed to ACW-specific narrative (meta_layer); points at `rules/manifest-discipline.md` for the generic pattern.
+
+### Earned
+- D-ACW-006 — ACW becomes instance of itself; gains `project:` block.
+- D-ACW-007 — Generic manifest-discipline rule extracted; LAYERS.md trimmed to ACW-specific narrative.
+
+---
+
 ## [0.2.0-rc2] — 2026-04-30
 
 ### Added
