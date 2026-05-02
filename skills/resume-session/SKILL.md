@@ -65,9 +65,21 @@ For each queued prompt:
 
 ### Step 5 — Drift check
 
-Read `rules/instance-current-manifest.md` and compare the recommended-blocks registry against this instance's `acw-state.yaml`. For each recommended block whose "earned in" version is newer than `acw-state.yaml::last_reconciled` AND that is missing or empty in this instance's state file, accumulate a gap.
+Read `rules/instance-current-manifest.md` (the recommended-blocks registry) and compare against this instance's `acw-state.yaml`. For each recommended entry whose **earned in** version is newer than `acw-state.yaml::last_reconciled_version` (semantic-version comparison, NOT date comparison), check the instance state file:
 
-If gaps exist, surface a one-line alert at the start of the report: `[acw-drift] Your instance is at last_reconciled=<DATE>. Current ACW (<VERSION>) expects N additional blocks: <names>. Run /upgrade-instance to reconcile.` If no gaps, no alert.
+- Block absent → flag.
+- Block present-but-empty (`block: []` or `block: {}`) → do NOT flag (deliberate opt-out).
+- Block present and populated → do NOT flag.
+
+If `last_reconciled_version` is absent, treat as `"0.0.0"` (flag everything that has an earned-in version).
+
+If gaps exist, surface a one-line alert at the start of the report:
+
+```
+[acw-drift] Your instance is reconciled to ACW <last_reconciled_version> as of <last_reconciled>. Current ACW (<version>) expects N additional blocks: <names>. Run /upgrade-instance to reconcile.
+```
+
+If no gaps, no alert. Quiet success.
 
 ### Step 6 — Report
 

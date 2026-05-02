@@ -21,6 +21,12 @@
 version: "0.2.0-rc4"
 last_reconciled: "2026-05-02"
 
+# Version this instance is synced to in the recommended-blocks registry
+# (rules/instance-current-manifest.md). Used by /resume-session drift check
+# to compare against each entry's earned-in version. Bumped automatically by
+# /upgrade-instance after a successful reconciliation pass.
+last_reconciled_version: "0.2.0-rc4"
+
 # ACW is an instance of itself — it has its own substrate, follows its own
 # rules, and dogfoods its own machinery. It also serves as a template for
 # downstream consumers. This block makes ACW valid input to capture-and-metabolize
@@ -57,6 +63,7 @@ template_layer:
   - rules/capability-broker.md
   - rules/decision-tracking.md
   - rules/incident-tracking.md
+  - rules/instance-current-manifest.md
   - rules/manifest-discipline.md
   - rules/pipeline-roles.md
   - rules/promotion-ritual.md
