@@ -1,4 +1,7 @@
 ---
+status: superseded
+superseded_by: skills/acw-session/ (verb: end)
+superseded_in: 0.4.0
 name: capture-and-metabolize
 description: >
   End-of-session steward for an ACW instance. Runs a five-phase pass — capture

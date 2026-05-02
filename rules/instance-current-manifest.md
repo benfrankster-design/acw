@@ -7,7 +7,7 @@ loaded_by_agent: yes
 
 # Instance Current Manifest
 
-Declarative registry of recommended blocks an ACW instance should carry to be current with this version of ACW. The session-start bookend skill (`/resume-session`) reads this file, compares against the instance's `acw-state.yaml`, and surfaces a one-line drift alert when gaps are detected. The `/upgrade-instance` skill walks the operator through reconciliation.
+Declarative registry of recommended blocks an ACW instance should carry to be current with this version of ACW. The session-start bookend (`/acw-session start`) reads this file, compares against the instance's `acw-state.yaml`, and surfaces a one-line drift alert when gaps are detected. The `/acw-instance upgrade` verb walks the operator through reconciliation.
 
 Each entry below documents one recommended block: what it is, why it helps, whether it's required, how to add it, and the ACW version in which it earned its build. The drift check uses the **earned in** field to suppress alerts for blocks that landed before the instance's `last_reconciled` date.
 
@@ -125,7 +125,7 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 ## `is_canonical_source`
 
 - **What:** A scalar boolean flag in `acw-state.yaml` declaring whether this instance publishes canonical content downstream to other instances.
-- **Why it helps:** Gates the propagation behavior in `capture-and-metabolize` Phase 2. Instances with `is_canonical_source: true` (e.g., ACW itself) get a "canonical file edited — confirm version bump and push to GitHub" prompt when an auto-loaded template_layer file is touched. Instances with the flag absent or false (every child instance, the default) get a different warning when they hand-edit a template_layer file: "this is a canonical file from upstream; local edits won't propagate and may be overwritten on next /upgrade-instance." The flag separates "I am the source of truth for downstream" from "I consume canonical truth from upstream."
+- **Why it helps:** Gates the propagation behavior in `capture-and-metabolize` Phase 2. Instances with `is_canonical_source: true` (e.g., ACW itself) get a "canonical file edited — confirm version bump and push to GitHub" prompt when an auto-loaded template_layer file is touched. Instances with the flag absent or false (every child instance, the default) get a different warning when they hand-edit a template_layer file: "this is a canonical file from upstream; local edits won't propagate and may be overwritten on next /acw-instance upgrade." The flag separates "I am the source of truth for downstream" from "I consume canonical truth from upstream."
 - **Required:** No. Default is `false` (treat as a downstream consumer). Set explicitly only on instances that publish canonical content (ACW itself; future canonical-publishing meta-instances).
 - **How to add:** Edit `acw-state.yaml`. Add a top-level scalar:
   ```yaml
@@ -185,7 +185,7 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 
 ---
 
-## How `/resume-session` reads this file
+## How `/acw-session start` reads this file
 
 At session start, the skill walks each entry above. For each entry, the skill compares the entry's **earned in** version against `acw-state.yaml::last_reconciled_version` (NOT against `last_reconciled`, which is a date). Version comparison uses semantic-version ordering with rc-suffixes treated as pre-release (e.g., `0.2.0-rc1 < 0.2.0-rc2 < 0.2.0`).
 
@@ -200,16 +200,16 @@ For each entry whose earned-in version is at-or-before `last_reconciled_version`
 If the gap list is non-empty, the skill emits one alert line:
 
 ```
-[acw-drift] Your instance is reconciled to ACW <last_reconciled_version> as of <last_reconciled>. Current ACW (<version>) expects N additional blocks: <names>. Run /upgrade-instance to reconcile.
+[acw-drift] Your instance is reconciled to ACW <last_reconciled_version> as of <last_reconciled>. Current ACW (<version>) expects N additional blocks: <names>. Run /acw-instance upgrade to reconcile.
 ```
 
 Otherwise the skill stays silent on drift.
 
-If `last_reconciled_version` is absent from the state file, the skill treats it as `"0.0.0"` — every recommended block whose earned-in version is set will be flagged. This produces a noisy first run for very old instances; running `/upgrade-instance` once quiets the alert.
+If `last_reconciled_version` is absent from the state file, the skill treats it as `"0.0.0"` — every recommended block whose earned-in version is set will be flagged. This produces a noisy first run for very old instances; running `/acw-instance upgrade` once quiets the alert.
 
-`last_reconciled` is the human-friendly date the reconciliation happened. `last_reconciled_version` is the semantic ACW version the reconciliation synced to. Both are bumped automatically by `/upgrade-instance` after a successful reconciliation pass.
+`last_reconciled` is the human-friendly date the reconciliation happened. `last_reconciled_version` is the semantic ACW version the reconciliation synced to. Both are bumped automatically by `/acw-instance upgrade` after a successful reconciliation pass.
 
-## How `/upgrade-instance` reads this file
+## How `/acw-instance upgrade` reads this file
 
 **Single source of truth: GitHub.** The upgrade skill fetches the canonical `rules/instance-current-manifest.md` from the ACW GitHub repo on every run. The instance's local copy of this file is a write-once cache representing "the last canonical I reconciled to" — never used as the comparison yardstick except in extreme offline-degraded mode (not currently shipped).
 

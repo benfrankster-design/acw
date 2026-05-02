@@ -36,7 +36,7 @@ Active task queue. Newest pinned items at top with markers when they should fire
 - [ ] Investigate Y crash
 ```
 
-The pinned-marker convention cues the next session what to fire first. `/resume-session` (or equivalent) reads the top of Pending to surface fire-tasks.
+The pinned-marker convention cues the next session what to fire first. `/acw-session start` (or equivalent) reads the top of Pending to surface fire-tasks.
 
 ### Done
 

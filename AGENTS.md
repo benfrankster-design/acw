@@ -23,7 +23,7 @@ This file is the entry point for any agent opening this workspace. It is deliber
 
 6. **If you disagree with a rule, read `research/` before editing it.** Every rule in this template traces to a documented research finding. Edit without reading the research and you are likely to re-introduce a problem the research already solved.
 
-7. **Auto-load every file listed in `acw-state.yaml::auto_load_at_session_start` at the start of any session in this workspace.** Each agent host implements this via its native mechanism (Claude Code: `@`-imports in `CLAUDE.md`; other hosts: their equivalent manifest or directive syntax; agents that read `acw-state.yaml` directly need no host-specific file). The list is maintained additively by `capture-and-metabolize`; removal requires an explicit decision-log entry.
+7. **Auto-load every file listed in `acw-state.yaml::auto_load_at_session_start` at the start of any session in this workspace.** Each agent host implements this via its native mechanism (Claude Code: `@`-imports in `CLAUDE.md`; other hosts: their equivalent manifest or directive syntax; agents that read `acw-state.yaml` directly need no host-specific file). The list is maintained additively by `/acw-session end`; removal requires an explicit decision-log entry.
 
 ## Operational commands
 

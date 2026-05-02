@@ -1,4 +1,7 @@
 ---
+status: superseded
+superseded_by: skills/acw-session/ (verb: start)
+superseded_in: 0.4.0
 name: resume-session
 description: >
   Session-start bookend for an ACW instance. Loads variable context that doesn't

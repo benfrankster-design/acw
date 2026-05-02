@@ -1,4 +1,7 @@
 ---
+status: superseded
+superseded_by: skills/acw-instance/
+superseded_in: 0.4.0
 name: upgrade-instance
 description: >
   Reconciles an ACW instance with the current ACW recommended-blocks registry.

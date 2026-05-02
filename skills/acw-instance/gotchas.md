@@ -1,0 +1,8 @@
+# Gotchas
+
+- **Adopt-mode steamrolling organic substrate.** When a workspace has substantial existing substrate (e.g., `_Command` with briefings/, EOS rocks tracking, daily ops journals), adopt-mode could overwrite or conflict with organic conventions. → The hard-stop on `adopt_mode_organic_threshold` (default 5) catches this. Operator routes via `/acw-instance audit` first.
+- **GitHub unreachable.** Fail closed. Don't read the local cache as comparison yardstick — the local file is stale by definition. → Print clear error pointing at `gh` auth or `GITHUB_TOKEN` env var; operator retries when network is up.
+- **Cross-repo write to ACW `_inbox/` without declared scope.** The audit verb refuses to write absorption candidates if ACW's `_inbox/` path is not in the workspace's `acw-state.yaml::cross_repo_writes`. → Surface the path; operator declares; re-run audit.
+- **Divergence markers not respected.** Without honoring `divergent_pending_review` and `instance_specific_substrate`, every audit run would re-flag the same files. → The spine reads both blocks before the routing-table walk; both verbs respect them.
+- **Audit Mode B ambiguity.** Mode B detection is heuristic; the skill can flag a file as substrate-like that's actually project work, or miss a substrate file with no obvious markers. → Operator routing (`[n] Not substrate`) is the authoritative classification; the skill never auto-routes Mode B findings.
+- **Adoption with `last_reconciled_version: "0.0.0"`.** Drives a noisy first reconciliation that may surface 6+ blocks at once. → That's the correct behavior for newly-adopted workspaces; the alternative (silently assuming compliance) suppresses real drift.

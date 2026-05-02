@@ -79,9 +79,8 @@ template_layer:
   - rules/task-tracking.md
   - rules/vocabulary-lint.md
   - skills/example-skill/
-  - skills/capture-and-metabolize/
-  - skills/resume-session/
-  - skills/upgrade-instance/
+  - skills/acw-instance/
+  - skills/acw-session/
   - tests/
   - tools/lint-vocab.py
   - tools/log-incident.py
@@ -144,7 +143,11 @@ meta_layer:
   - LICENSE-CONTENT
   - research/08-cross-model-audit.md
   - research/09-gsg-copilot-instance-extensions.md
-  - skills/capture-session/    # superseded; awaiting manual delete
+  - research/10-multi-instance-topology.md
+  - skills/capture-session/             # superseded; awaiting manual delete
+  - skills/upgrade-instance/            # superseded by acw-instance in 0.4.0; awaiting manual delete
+  - skills/resume-session/              # superseded by acw-session (verb: start) in 0.4.0; awaiting manual delete
+  - skills/capture-and-metabolize/      # superseded by acw-session (verb: end) in 0.4.0; awaiting manual delete
 
 # Empty directories the scaffold tool creates with .gitkeep so the
 # canonical layout is present from session zero.
