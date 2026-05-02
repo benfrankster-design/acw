@@ -6,17 +6,17 @@ Used in Phase 1 (Capture) when writing the optional cleaned-transcript section. 
 
 - System reminders (e.g., todo-list reminders, session-start hooks)
 - Empty bash output
-- Tool result echoes that the LLM has already summarized in its next response
+- Tool result echoes that the agent has already summarized in its next response
 - Boilerplate reassurance ("happy to help!", "great question!", "absolutely!")
 - Pure status narration ("Let me read the file" → followed by Read tool call)
-- Identical repeated content (LLM mistakenly reprinting the same thing twice)
+- Identical repeated content (agent mistakenly reprinting the same thing twice)
 - Verbose listings that are reproduced from a file already in the project (link to the file path instead)
 
 ## Keep these (always)
 
 - Operator-supplied directives, verbatim
 - Decisions made, verbatim where wording is load-bearing
-- Disagreements (operator pushed back on a Claude proposal — keep both sides verbatim)
+- Disagreements (operator pushed back on an agent proposal — keep both sides verbatim)
 - Constraints surfaced (operator named a hard rule, a gotcha, a non-obvious consideration)
 - Resolved fact-verification (operator confirmed how something actually works)
 
@@ -24,16 +24,16 @@ Used in Phase 1 (Capture) when writing the optional cleaned-transcript section. 
 
 - Long bash command output → keep the relevant lines, replace bulk with `[output truncated; full in build-log]`
 - Long file dumps → reference the file path, omit the inline content
-- Tool-call argument lists with sensitive data → redact per HR-CP-002 (PII discipline)
+- Tool-call argument lists with sensitive data → redact per the instance's PII discipline (see `rules/instance-hard-rules.md`)
 
 ## Format
 
 When transcript excerpts are kept, mark each speaker:
 
 ```
-> **Ben:** "<verbatim quote>"
+> **Operator:** "<verbatim quote>"
 
-> **Claude:** "<verbatim quote>"
+> **Agent:** "<verbatim quote>"
 ```
 
 Use `> [paraphrase]` for non-verbatim content if needed for context.

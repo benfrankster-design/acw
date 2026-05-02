@@ -1,15 +1,17 @@
 # Session Capture Format
 
-Every session capture file lives at `research/sessions/YYYY-MM-DD--<topic-slug>.md`. Multiple captures on the same day get suffixed `-2`, `-3` etc.
+Every session capture file lives at `paths.session_captures_dir / YYYY-MM-DD--<topic-slug>.md`. Multiple captures on the same day get suffixed `-2`, `-3` etc.
+
+> **Path resolution.** `paths.X` resolves at runtime per the SKILL.md preamble.
 
 ## Frontmatter
 
 ```yaml
 ---
 date: YYYY-MM-DD
-participants: [ben, claude]
+participants: [operator, agent]
 topic: 3–7 word noun phrase
-decisions_made: [D-NNN, D-NNN]   # decision-log ids referenced or created
+decisions_made: [<id>, <id>]   # decision-log ids referenced or created
 conceptual_shifts: [yes|no]
 linked_files:
   - path/to/file/edited/in/this/session
@@ -25,11 +27,11 @@ One paragraph. What was the session about? What were we trying to accomplish?
 
 ### 2. What was decided
 
-Bulleted list. Each decision with its decision-log id (or "new D-NNN" if added by this skill in Phase 2). Quote operator-supplied directives verbatim where the wording matters. Decisions that did not resolve in this session go to "Open questions left," not here.
+Bulleted list. Each decision with its decision-log id (or "new <id>" if added by this skill in Phase 2). Quote operator-supplied directives verbatim where the wording matters. Decisions that did not resolve in this session go to "Open questions left," not here.
 
 ### 3. What changed in the conception
 
-Free-form. If `research/evolution.md` got an entry, summarize it here and link to that entry's date. If no shifts, write "No conceptual shifts; this was a build/work session."
+Free-form. If `paths.evolution` got an entry, summarize it here and link to that entry's date. If no shifts, write "No conceptual shifts; this was a build/work session."
 
 ### 4. What was built / changed
 
@@ -37,12 +39,12 @@ Bulleted list of files created, modified, or deleted with one-line each. Cross-r
 
 ### 5. Open questions left — structured
 
-Anything raised but not resolved. If they were promoted to `decisions/decision-log.md` Open Questions in Phase 2, note OQ-NNN ids. **Phase 5 (research-prompt builder) reads this section as Track A input** — write it with that consumer in mind.
+Anything raised but not resolved. If they were promoted to `paths.decisions_log` `section_conventions.open_questions` in Phase 2, note OQ ids. **Phase 5 (research-prompt builder) reads this section as Track A input** — write it with that consumer in mind.
 
 Each unresolved design question gets a structured block (not just a bullet). Format:
 
 ```markdown
-#### OQ-NNN — <one-line question>
+#### OQ-<id> — <one-line question>
 
 **Question:** <one-paragraph statement of the unresolved question, written so a researcher who hasn't seen the session can understand it cold>
 
@@ -60,17 +62,17 @@ Examples of what counts as a Phase-5-actionable design question:
 - A "we don't know what we don't know" gap — explicitly write what's unknown.
 
 What does NOT belong here:
-- Tasks (those go to `tasks-status.md::Pending`).
-- Decisions already made (those go to `decision-log.md::Decisions`).
-- Personal preferences pending operator call (those go to `decision-log.md::Open Questions` with `OQ-NNN` and a short prose paragraph, not the structured block).
+- Tasks (those go to `paths.tasks_status` `section_conventions.pending`).
+- Decisions already made (those go to `paths.decisions_log` `section_conventions.decisions`).
+- Personal preferences pending operator call (those go to `section_conventions.open_questions` with an OQ id and a short prose paragraph, not the structured block).
 
 A session may end with zero unresolved design questions. In that case write `*(None — session closed cleanly.)*` and Phase 5 will know not to build a Track A.
 
 ### 6. Operator directives (verbatim)
 
-Direct quotes from the operator that constitute hard guidance. These are the entries Claude should honor in future sessions even if the surrounding context is gone. Format:
+Direct quotes from the operator that constitute hard guidance. These are the entries the agent should honor in future sessions even if the surrounding context is gone. Format:
 
-> "Ben said: '...verbatim quote...' (turn N)"
+> "Operator said: '...verbatim quote...' (turn N)"
 
 ### 7. Cleaned transcript excerpt (optional)
 
@@ -80,7 +82,7 @@ Only include for sessions where exact wording matters and is hard to summarize. 
 
 Topic slug: lowercase, hyphens, max 50 chars. Strip articles ("the", "a"). Examples:
 
-- `2026-04-28--unified-copilot-tool-surface.md`
+- `2026-04-28--unified-tool-surface.md`
 - `2026-04-28--operator-as-api-substitute-pattern.md`
 - `2026-04-28--connector-scope-locked.md`
 

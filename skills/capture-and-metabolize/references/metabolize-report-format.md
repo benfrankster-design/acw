@@ -1,6 +1,8 @@
 # Metabolize Report Format
 
-Appended to the new session's `build-log.md` entry under a `### Metabolize report` subheading.
+Appended to the new session's `paths.build_log` entry under a `### Metabolize report` subheading.
+
+> **Path resolution.** `paths.X` and `section_conventions.X` resolve at runtime per the SKILL.md preamble.
 
 ## Three subsections, always present
 
@@ -25,28 +27,28 @@ If a subsection has no entries, write `(none)` underneath the heading. Do not om
 
 ```
 **Auto-updated** (executed):
-- tasks-status.md::Pending — moved "Build pipeline/copilot.py" to Done — file exists at pipeline/copilot.py and is referenced from README
-- decisions/decision-log.md::Open Questions — OQ-001 resolved by new D-003; moved to Decisions section
-- decisions/decision-log.md::Open Questions — OQ-002 resolved by new D-004; moved to Decisions section
+- paths.tasks_status::section_conventions.pending — moved "Build pipeline/copilot.py" to the new Done block — file exists at the named path and is referenced from the README
+- paths.decisions_log::section_conventions.open_questions — OQ-001 resolved by new D-003; moved to Decisions section
+- paths.decisions_log::section_conventions.open_questions — OQ-002 resolved by new D-004; moved to Decisions section
 ```
 
 ### Proposed for operator review
 
 ```
 **Proposed for operator review** (not executed):
-- glossary.md — propose deprecation of "Front Agent" (legacy v0.4 term, no longer load-bearing in v0.5) — recommend hold (term still relevant for understanding legacy code)
-- decisions/decision-log.md::Constraints — propose removing C-002 "Platform engineering is a real implementation dependency" — recommend hold (constraint still active)
-- runbooks/phase-1-eval-seed.md — references Front Agent / Data Agent / Response Agent which are now legacy — recommend approve (update terminology to "unified copilot")
+- paths.glossary — propose deprecation of "<legacy term>" (no longer load-bearing) — recommend hold (term still relevant for understanding legacy code)
+- paths.decisions_log::section_conventions.constraints — propose removing C-002 — recommend hold (constraint still active)
+- runbooks/<file>.md — references legacy terminology — recommend approve (update to current terms)
 ```
 
 ### Skipped
 
 ```
 **Skipped** (intentionally not touched):
-- build-log.md past entries — append-only history
-- research/sessions/* — frozen once written
-- pipeline/, tests/, wiki/, eval/rubrics/, eval/red-team/ — out of scope (own governance)
-- decisions/decision-log.md::Decisions D-001 through D-004 — past decisions never edited
+- paths.build_log past entries — append-only history
+- paths.session_captures_dir/* — frozen once written
+- project source directories — out of scope (own governance)
+- paths.decisions_log::section_conventions.decisions past entries — past decisions never edited
 ```
 
 ## When everything was clean

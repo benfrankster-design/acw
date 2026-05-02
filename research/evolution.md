@@ -3,6 +3,8 @@ class: operational
 authority: canonical
 stability: experimental
 loaded_by_agent: yes
+section_conventions:
+  entries: "Entries"
 ---
 
 # Conception Evolution Log

@@ -1,6 +1,6 @@
 # Sub-step Discipline — Internal Phases
 
-Per `~/.claude/rules/Procedures/skill-format.md`:
+Per `rules/skill-format.md`:
 
 > An orchestrator skill may declare sub-steps in its instructions that correspond to pipeline-worker roles. The sub-steps are internal to the orchestration until operational friction earns their separation into standalone skills.
 
@@ -26,8 +26,8 @@ Each sub-step earns its own skill when:
 
 When friction earns a split:
 
-1. Log the friction in `incidents.jsonl` (one line: when, what, what was incurred)
-2. Create a new skill folder under `gsg-copilot/skills/<sub-step-name>/`
+1. Log the friction in `paths.incidents` (one line: when, what, what was incurred)
+2. Create a new skill folder under `skills/<sub-step-name>/`
 3. Move the relevant sub-step's logic into the new skill
 4. Update this skill's SKILL.md to delegate to the new skill (becomes a true orchestrator)
 5. Add a decision log entry recording the split

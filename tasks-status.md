@@ -3,6 +3,10 @@ class: operational
 authority: canonical
 stability: experimental
 loaded_by_agent: yes
+section_conventions:
+  pending: "Pending"
+  done: "Done"
+  parked: "Parked"
 ---
 
 # Tasks Status — ACW
@@ -10,6 +14,10 @@ loaded_by_agent: yes
 Three-section task tracker. See `rules/task-tracking.md` for format and discipline.
 
 ## Pending
+
+- [ ] **Framework-agnostic bookend skills.** Audit `capture-and-metabolize` and `resume-session` for project-specific assumptions (file paths, host-specific names, local context dependencies). Refactor to be modular and decoupled — logic should apply regardless of host, runtime, or project structure. Reusable across any ACW-derived workspace without parameter overrides.
+- [ ] Decide: extract the host entry file generation logic from `tools/scaffold-instance.py` into `tools/templates/` (Option B from the CLAUDE.md follow-up discussion) for single source of truth, or leave as-is.
+- [ ] Manually delete `skills/capture-session/` (superseded; careful guardrail blocks automated `rm -rf`).
 
 - [ ] Decide: ship `tools/scaffold-instance.py` under emergency clause (D-02 single incident) or wait for two more bootstrap-related incidents.
 - [ ] Sync `~/synapse/Rules/Procedures/` copies with ACW canonical (mitigation for D-01).

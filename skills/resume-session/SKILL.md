@@ -4,14 +4,13 @@ description: >
   Session-start bookend for an ACW instance. Loads variable context that doesn't
   belong in the auto-loaded substrate: the most recent session captures
   (sections §5–§7 only — §1–§4 are already distributed into auto-loaded files)
-  and any queued research prompts in research/queries/. Each prompt file holds
-  its own lifecycle — capture-and-metabolize bakes the substrate synthesis into
-  the prompt; deep-research appends findings to the same file; consumed prompts
-  move to research/queries/_consumed/. There is no synthesis subdirectory.
+  and any queued research prompts. Each prompt file holds its own lifecycle —
+  capture-and-metabolize bakes the substrate synthesis into the prompt;
+  deep-research appends findings to the same file; consumed prompts move to a
+  consumed directory. There is no synthesis subdirectory.
 
-  Also reads `<repo>/_inbox/` for unread cross-project notifications dropped by
-  other ACW instances. Surfaces them to the operator and lets them decide
-  whether to act, archive (move to `_inbox/_read/`), or ignore.
+  Also reads the instance's inbox directory for unread cross-project
+  notifications dropped by other ACW instances. Surfaces them to the operator.
 
   Produces no files. Outputs a one-paragraph chat summary naming what was
   loaded, what's still pending, and the recommended next action.
@@ -31,46 +30,54 @@ capabilities: []
 
 Session-start bookend that loads variable context: recent session captures, queued research prompts, and cross-project notifications. Mirrors `/capture-and-metabolize` (end-of-session) so each session opens cleanly and closes cleanly.
 
-The host-native auto-load (per `acw-state.yaml::auto_load_at_session_start`) already provides slow-changing substrate. This skill loads the rotating parts.
+## Path resolution
+
+File locations referenced in this skill (`paths.session_captures_dir`, `paths.research_queries_dir`, `paths.research_queries_consumed_dir`, `paths.inbox_dir`, `paths.tasks_status`) resolve at runtime by reading `acw-state.yaml::paths::<key>` and falling back to the canonical default in `rules/manifest-discipline.md` if the key is absent. The skill never hardcodes a path.
 
 ## Instructions
 
-When invoked, execute five steps in order. Operator confirmation is not required for the loads; they are read-only.
+When invoked, execute the steps below in order. Operator confirmation is not required for the loads; they are read-only.
 
 ### Step 1 — Load the three most recent session captures (§5–§7 only)
 
-1. Glob `research/sessions/*.md`. Sort by filename date descending. Take the top 3.
+1. Glob the top level of `paths.session_captures_dir` for `*.md`. Sort by filename date descending. Take the top 3.
 2. For each: read sections §5 (Open questions left), §6 (Operator directives, verbatim), and §7 (Cleaned transcript excerpt). Skip §1–§4 — those are already distributed into the auto-loaded substrate.
 3. If a capture is shorter than the standard format and §5–§7 don't exist as named sections, fall back to reading the whole file. Don't fail.
 
 ### Step 2 — Load queued research prompts
 
-1. Glob `research/queries/*.md` (top level only; do NOT descend into `_consumed/`).
+1. Glob the top level of `paths.research_queries_dir` for `*.md` (top level only; do NOT descend into `paths.research_queries_consumed_dir`).
 2. Read each fully. These are synthesis-shaped prompts produced by `/capture-and-metabolize` Phase 5 in a prior session.
 
 ### Step 3 — Detect whether each queued prompt has been answered
 
 For each queued prompt:
 1. Inspect content for a `## Findings` or `## Key Findings` heading (per the `append_findings_to_self: true` convention).
-2. If findings exist: note as "synthesis loaded" — file already loaded carries both prompt and findings. Capture-and-metabolize will sweep it to `_consumed/` at next session close.
+2. If findings exist: note as "synthesis loaded" — file already loaded carries both prompt and findings. Capture-and-metabolize will sweep it to the consumed directory at next session close.
 3. If no findings: note as "ready to fire" — operator will run `/deep-research` (or equivalent) against it this session.
 
 ### Step 4 — Read cross-project inbox
 
-1. Check `<repo>/_inbox/` (top level only; do NOT descend into `_read/`).
+1. Check `paths.inbox_dir` (top level only; do NOT descend into a `_read/` subdirectory).
 2. For each unread file (`read: false` in frontmatter, or no `read` field), surface to the operator: source project, date, topic, one-line summary.
-3. Do not auto-act. Operator decides per file: act on it, archive (move to `_inbox/_read/`), or ignore (leave for later).
-4. If `_inbox/` does not exist, skip silently.
+3. Do not auto-act. Operator decides per file: act on it, archive (move to a `_read/` subdirectory of the inbox), or ignore (leave for later).
+4. If `paths.inbox_dir` does not exist, skip silently.
 
-### Step 5 — Report
+### Step 5 — Drift check
+
+Read `rules/instance-current-manifest.md` and compare the recommended-blocks registry against this instance's `acw-state.yaml`. For each recommended block whose "earned in" version is newer than `acw-state.yaml::last_reconciled` AND that is missing or empty in this instance's state file, accumulate a gap.
+
+If gaps exist, surface a one-line alert at the start of the report: `[acw-drift] Your instance is at last_reconciled=<DATE>. Current ACW (<VERSION>) expects N additional blocks: <names>. Run /upgrade-instance to reconcile.` If no gaps, no alert.
+
+### Step 6 — Report
 
 One-paragraph chat summary with:
 
-- Last session: date, topic, one-sentence outcome (from §5 of most recent capture or its frontmatter `topic`).
-- Queued prompts: count, plus for each: name + status (`ready to fire` or `findings already in file`).
+- Drift alert (if Step 5 detected gaps).
+- Last session: date, topic, one-sentence outcome.
+- Queued prompts: count, plus for each: name + status.
 - Inbox notifications: count of unread (if any).
-- Recommended next action: either "fire deep-research against `<path>`" or "build per findings in `<path>`" or "act on inbox notification from `<project>`" or "no queued work; continue per tasks-status::Pending".
-- Total tokens loaded (approximate, optional).
+- Recommended next action.
 
 ## When NOT to fire
 
