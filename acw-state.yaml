@@ -73,6 +73,7 @@ template_layer:
   - skills/example-skill/
   - skills/capture-and-metabolize/
   - skills/resume-session/
+  - skills/upgrade-instance/
   - tests/
   - tools/lint-vocab.py
   - tools/log-incident.py
