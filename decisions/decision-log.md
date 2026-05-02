@@ -27,6 +27,59 @@ This file tracks all decisions, open questions, constraints, and resolved questi
 
 ## Decisions and Rationale
 
+### D-ACW-022 — Hard-stop threshold for adopt-mode set at 5
+
+**Date:** 2026-05-02
+**Decision:** `/acw-instance upgrade` adopt-mode bails (with pointer to `/acw-instance audit`) when the count of non-canonical markdown files in `decisions/` or `rules/` is at-or-above 5. Threshold lives in `acw-state.yaml::adopt_mode_organic_threshold` with canonical default 5.
+**Rationale:** Below-5 catches cs-copilot-shape workspaces (canonical-shaped, just unregistered; ~1-2 files). At-or-above-5 catches `_Command`-shape workspaces with substantial organic substrate. Tunable per-instance only when the default produces wrong-direction failures in practice.
+**Source:** Operator-confirmed during the v0.4.0 ship plan synthesis turn.
+
+### D-ACW-021 — Audit Mode A uses ACW rules + templates as the schema; no new artifact
+
+**Date:** 2026-05-02
+**Decision:** The audit verb's Mode A (canonical-conventions comparison) fetches ACW canonical rule files (`rules/decision-tracking.md`, `rules/task-tracking.md`, etc.) and template files (`tools/templates/*.tmpl`) directly from GitHub canonical. Compares the workspace's substrate file against the rule and template inline. No structured "canonical-conventions schema" artifact is built; ACW rules + templates ARE the schema in prose form.
+**Rationale:** Operator pushed back on the "needs a schema" framing. Right call. The agent doing the audit can compare rule-vs-file the same way an operator would do it manually. Building a structured schema would duplicate what the rules already encode and risk drift between the rule and its serialized form.
+**Source:** Operator correction during the v0.4.0 ship plan turn.
+
+### D-ACW-020 — Audit Mode B is operator-routed organic substrate discovery; ships in v0.4.0
+
+**Date:** 2026-05-02
+**Decision:** Mode B walks the workspace looking for substrate-like patterns (markdown files with frontmatter, dated-prefix filenames, structured directories) not covered by canonical types. For each finding, the verb surfaces a four-option route to the operator: adopt-as-canonical, absorption candidate, instance-specific, or not-substrate. Operator routing is the authoritative classification — the skill never auto-routes Mode B findings.
+**Rationale:** Operator pushed back on deferring Mode B. Right call. Mode B doesn't need sophisticated heuristics; it needs the operator in the loop. The decision to absorb upstream vs. declare instance-specific is a judgment call about whether the pattern would generalize, and only the operator has the context to make it.
+**Source:** Operator correction during the v0.4.0 ship plan turn.
+
+### D-ACW-019 — `/acw-session` shipped as object-centered command-routed orchestrator (verbs: start, end)
+
+**Date:** 2026-05-02
+**Decision:** Renamed `/resume-session` → `/acw-session start` and `/capture-and-metabolize` → `/acw-session end` as a single object-centered command-routed orchestrator. Object: this ACW instance's session lifecycle. Verbs: boundary operations on it. Shared spine: load `acw-state.yaml`, resolve `paths`, check `_inbox/`, identify recent captures. Specialist work after the spine diverges per verb (Impeccable pattern).
+**Rationale:** Initial pushback (the four-test rule reading "same invariant workflow") was based on the strict voice in the old skill-format. Operator pointed at Impeccable as the precedent: 23+ commands across genuinely different specialist workflows, unified by shared setup and shared object. Re-reading the skill-format with that lens, `/acw-session start|end` fits cleanly. Skill-format also tightened in same release to remove the strict-voice/permissive-voice contradiction.
+**Source:** Operator's invocation of Impeccable as precedent; subsequent skill-format correction.
+
+### D-ACW-018 — `/acw-instance` shipped as object-centered command-routed orchestrator (verbs: audit, upgrade)
+
+**Date:** 2026-05-02
+**Decision:** Renamed `/upgrade-instance` → `/acw-instance` as a command-routed orchestrator with two verbs. Audit is read-only (Mode A canonical comparison + Mode B organic discovery + per-file routing report). Upgrade is interactive (gap-walk with adopt-mode hard-stop, divergence-marker respect, decision-log entry). Shared spine: registration check, GitHub canonical fetch, substrate scan, routing-table generation.
+**Rationale:** The cs-copilot session that triggered v0.3.0 work also exposed a deeper need: when a workspace has organic substrate (`_Command`-shape), adopt-mode shouldn't run blindly. Audit verb is the safety layer — operator surveys before reconciling. Upgrade verb hard-stops above the organic threshold and points at audit. Both verbs share the same canonical-fetch and substrate-scan logic, which is the spine.
+**Source:** Conversation arc 2026-05-02 turn 79 onward; operator confirmed v0.4.0 scope.
+
+### D-ACW-017 — Multi-instance topology rule expanded with absorption mechanics
+
+**Date:** 2026-05-02
+**Decision:** `rules/multi-instance-topology.md` expanded with four sections: three-flow resolution model (adopt / absorb / instance-specific), absorption candidate format (`_inbox/` payload schema), divergence markers (`divergent_pending_review` for temporary, `instance_specific_substrate` for permanent with decision-log ref), and re-adoption flow. Plus cross-repo write governance for workspaces writing absorption candidates to ACW's `_inbox/`.
+**Rationale:** The v0.3.0 ship named the lattice topology but didn't specify how absorption actually flows mechanically. The operator's question "how does ACW know about an absorption candidate?" exposed the gap. The mechanics now use the existing `_inbox/` cross-instance handoff seed. ACW's `/acw-session start` reads `_inbox/`; absorption candidates surface naturally in next session-start.
+**Source:** Operator's question on absorption mechanics during the multi-instance lattice conversation.
+
+### D-ACW-016 — `rules/skill-format.md` tightened to reconcile strict-voice with object-centered carve-out
+
+**Date:** 2026-05-02
+**Decision:** Three targeted edits to `rules/skill-format.md`:
+1. Reframe test 1 ("same invariant workflow") as "same shared spine" — names the spine as setup gates + shared-context loading; specialist work after the spine may diverge in object-centered orchestrators.
+2. Split the strongest-version rule by orientation: operation-centered (parameterization of same operation) vs. object-centered (sibling specialist operations on same object).
+3. Scope test 4 (deltas-are-configuration) to the spine only; specialist-work divergence is allowed in object-centered.
+Also ported the full command-routed orchestrator material from synapse global into ACW canonical (it had only existed in the operator's personal global rules).
+**Rationale:** The strict-voice contradicted the permissive-voice (command-count ladder explicitly carving out object-centered workbenches at 10+ commands). This contradiction false-flagged Impeccable-shape patterns including `/acw-session start|end`. Closing the contradiction lets the rule self-validate.
+**Source:** Operator's pushback on my false-flag of `/acw-session start|end`; Impeccable as precedent.
+
 ### D-ACW-015 — Canonical-edit detection in capture-and-metabolize Phase 2 gates on `is_canonical_source`
 
 **Date:** 2026-05-02

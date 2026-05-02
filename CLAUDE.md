@@ -19,10 +19,10 @@ The canonical list lives in `acw-state.yaml::auto_load_at_session_start`. Treat 
 
 Other substrate is read on demand:
 - Append-only narrative (`build-log.md`) and meta-layer documents grow unboundedly; read when you need historical context for a specific phase or design decision.
-- Session captures and queued research prompts under `research/sessions/` and `research/queries/` are loaded by the session-start bookend skill, not by auto-load.
+- Session captures and queued research prompts under `research/sessions/` and `research/queries/` are loaded by `/acw-session start`, not by auto-load.
 - Other research artifacts under `research/` are read on demand for design work; promotion into auto-load goes through a decision-log entry.
 
-To boot a new session into full context, run the session-start bookend skill first thing.
+To boot a new session into full context, run `/acw-session start` first thing.
 
 ## Hard rules
 
@@ -55,11 +55,11 @@ Conceptual map; for current contents see the files themselves and the manifest i
 
 - **Doctrine** lives in `rules/`. Almost all of it is template_layer; the per-instance carve-out is `rules/instance-hard-rules.md`.
 - **Tools** live in `tools/`. Stdlib Python. The `tools/templates/` subdirectory holds the rendered forms of instance_layer files.
-- **Skills** live in `skills/`. The bookend pair (session-start and session-end) is the load-bearing pattern; other skills follow the role taxonomy in `rules/pipeline-roles.md`.
+- **Skills** live in `skills/`. The bookend pair (`/acw-session start` and `/acw-session end`) is the load-bearing pattern; instance management lives in `/acw-instance audit` and `/acw-instance upgrade`. Other skills follow the role taxonomy in `rules/pipeline-roles.md`.
 - **Decisions, tasks, incidents, build narrative, glossary, threat model, state file** live at root as instance_layer.
 - **Research** lives in `research/`: problem-framing, evolution, sources, research-state, plus session captures and queued research prompts in subdirectories.
 - **Meta-layer narrative** (story files, license, changelog, this file) lives at root and is not propagated to children.
-- **Cross-project notifications** land in `_inbox/`; the session-start bookend reads it.
+- **Cross-project notifications and absorption candidates** land in `_inbox/`; `/acw-session start` reads it.
 - **Deferred primitives** are catalogued in `DEFERRED.md` (canonical) with per-primitive notes in `deferred/` (derived view).
 
 ## Forbidden until earned

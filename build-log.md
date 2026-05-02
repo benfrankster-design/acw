@@ -9,6 +9,39 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-02 — v0.4.0: command-routed skills, full audit verb, absorption mechanics
+
+Operator opened the session with a session capture from cs-copilot where they had tried to run `/upgrade-instance` and the agent there bailed because cs-copilot is substantively an ACW instance but lacks formal registration. This was already addressed in v0.3.0 via adopt mode, but the operator's question went deeper: what about workspaces with **organic substrate** that's evolved its own conventions (like `_Command`)? Steamrolling those into canonical shape would destroy institutional learning.
+
+The conversation refined the three-flow model: adopt (canonical-shaped, just unregistered), absorb (workspace's pattern is better than canonical; flow upstream via `_inbox/`), and instance-specific (uniquely the workspace's, won't generalize). Operator pressed on permanent divergence as a smell: the gradient should always be toward canonical-shaped. Right answer — `divergent_pending_review` is temporary, pending ACW resolution; `instance_specific_substrate` is permanent but requires a decision-log reference.
+
+Then a structural insight: rename `/upgrade-instance` → `/acw-instance` with verbs `audit` and `upgrade`, fitting the command-routed orchestrator pattern. Operator pushed further: `/resume-session` and `/capture-and-metabolize` should follow the same shape as `/acw-session start|end`. I initially pushed back — the four-test rule reading "same invariant workflow" seemed to prohibit sibling specialist operations. Operator pointed at Impeccable as the precedent: 23+ commands across genuinely different specialist workflows, unified by shared setup. Re-reading the skill-format with that lens, the strict-voice contradicted the permissive-voice (command-count ladder explicitly carves out object-centered workbenches at 10+ commands). The format itself was self-contradictory; that's why I false-flagged the pattern.
+
+Then the synthesis question: is every problem named in this session shippable? It surfaced loose items — absorption candidate format wasn't specified, divergence marker schemas weren't documented, hard-stop threshold had no value, re-adoption flow had no mechanics. Six commits revised: tighten skill-format, expand multi-instance-topology with absorption mechanics, register four new recommended blocks, restructure skills as command-routed, housekeeping.
+
+Two operator pushbacks during execution that produced better answers:
+- Mode A doesn't need a new schema artifact; ACW rules + templates ARE the schema in prose form. Audit verb fetches them from GitHub canonical and compares inline.
+- Mode B doesn't need sophisticated heuristics; it needs the operator in the loop. Walk for substrate-like patterns; surface to operator with four-option routing.
+
+Both ship in v0.4.0 instead of being deferred.
+
+The skill-format port was bigger than expected. ACW canonical's `rules/skill-format.md` had been shorter than the operator's synapse global rules — the command-routed orchestrator material had only existed in the personal layer. Ported the full content into ACW canonical with the three corrections applied.
+
+User-level junctions swapped at the end. Old skill directories marked superseded in frontmatter (`status: superseded`, `superseded_by`, `superseded_in: 0.4.0`); moved to `meta_layer` awaiting manual delete (careful guardrail blocks automated `rm -rf`).
+
+### Metabolize report
+
+**Auto-updated** (executed):
+- `tasks-status.md::Done` — added Session 7 dated block. `tasks-status.md::Pending` rebuilt with v0.4.0-shaped tasks (dogfood `/acw-instance audit` against cs-copilot, `_Command`, gsg-copilot; deletion task for four superseded skill directories).
+- `decisions/decision-log.md` — added D-ACW-016 through D-ACW-022 (seven entries) in chronological order.
+- `acw-state.yaml` — bumped `version` and `last_reconciled_version` to `0.4.0`; added `_inbox` to `empty_dirs`; added `divergent_pending_review`, `instance_specific_substrate`, `adopt_mode_organic_threshold` blocks; updated `template_layer` to list new skills; added superseded skills to `meta_layer`; added `research/10-multi-instance-topology.md` to `meta_layer`.
+- `tools/templates/acw-state.yaml.tmpl` — same shape as parent for the four new blocks.
+
+**Proposed for operator review** (deferred to next session):
+- Manual deletion of four superseded skill directories after dogfood validates v0.4.0 against cs-copilot.
+- Cross-instance write trigger entry in `DEFERRED.md` for the capability broker.
+- Lint gate for command-routed skills.
+
 ## 2026-05-02 — RC4 → v0.3.0: multi-instance topology, GitHub-first canonical, adopt mode
 
 Operator opened the session by feeding back a cs-copilot session where `/upgrade-instance` correctly identified missing registration files and bailed. They pushed back on the "not an ACW instance" verdict, asking what an ACW instance fundamentally **is**. The conversation surfaced the substance-vs-registration distinction: cs-copilot has every load-bearing piece of an ACW instance (decisions, rules, glossary, evolution, research, incidents, bookend skills) but lacks the registration metadata. Verdict: cs-copilot is substantively an ACW instance; the agent ran a registration check rather than a substance check.

@@ -15,21 +15,36 @@ Three-section task tracker. See `rules/task-tracking.md` for format and discipli
 
 ## Pending
 
-- [ ] Decide: extract the host entry file generation logic from `tools/scaffold-instance.py` into `tools/templates/` (Option B from the CLAUDE.md follow-up discussion) for single source of truth, or leave as-is.
-- [ ] Manually delete `skills/capture-session/` (superseded; careful guardrail blocks automated `rm -rf`).
-- [ ] Sync `~/synapse/Rules/Procedures/` copies with ACW canonical (mitigation for D-01).
-- [ ] Decide: defer C-04 synthesis-cycle to `DEFERRED.md` (only one cycle of evidence) or ship now.
-- [ ] Dogfood `/upgrade-instance` adopt mode against cs-copilot (its substrate-shaped workspace pre-dates registration; should now adopt cleanly).
-- [ ] Dogfood `/upgrade-instance` reconcile path against gsg-copilot (older registered instance; should fetch canonical from GitHub and walk gaps).
-- [ ] Decide: should `tools/scaffold-instance.py` optionally create user-level skill junctions at scaffold time? (Surfaced by D-ACW-011 session.)
-- [ ] Decide: defer C-04 synthesis-cycle to `DEFERRED.md` (only one cycle of evidence) or ship now.
-- [ ] Decide: extract the host entry file generation logic from `tools/scaffold-instance.py` into `tools/templates/` for single source of truth, or leave as-is.
-- [ ] Manually delete `skills/capture-session/` (superseded; careful guardrail blocks automated `rm -rf`).
-- [ ] Sync `~/synapse/Rules/Procedures/` copies with ACW canonical (mitigation for D-01).
-- [ ] Add cross-instance write trigger to `DEFERRED.md` for capability broker — three documented incidents earn the broker its ship at lattice scale (per research/10).
-- [ ] Promote `v0.3.0` to `v1.0.0` after a soak window once lattice-level dogfooding has accumulated evidence.
+- [ ] Dogfood `/acw-instance audit` against cs-copilot (substrate-shaped, below organic threshold; should adopt cleanly).
+- [ ] Dogfood `/acw-instance audit` against `_Command` (substantial organic substrate; should hard-stop adopt-mode and surface routing table). Operator manually reviews each Mode B finding for absorption candidate vs. instance-specific.
+- [ ] Dogfood `/acw-instance upgrade` against gsg-copilot (older registered instance; should fetch canonical and walk v0.3.0/v0.4.0 gaps).
+- [ ] Manually delete superseded skills after dogfood validates v0.4.0: `skills/capture-session/`, `skills/upgrade-instance/`, `skills/resume-session/`, `skills/capture-and-metabolize/` (careful guardrail blocks automated `rm -rf`).
+- [ ] Sync `~/synapse/Rules/Procedures/` copies with ACW canonical (mitigation for D-01). Particularly `skill-format.md` since ACW canonical now has the corrected version.
+- [ ] Decide: should `tools/scaffold-instance.py` optionally create user-level skill junctions at scaffold time? (OQ-ACW-006 from Session 5.)
+- [ ] Decide: extract the host entry file generation logic from `tools/scaffold-instance.py` into `tools/templates/` for single source of truth.
+- [ ] Decide: defer C-04 synthesis-cycle to `DEFERRED.md` or ship now.
+- [ ] Add cross-instance write trigger to `DEFERRED.md` for capability broker — three documented cross-instance write incidents earn the broker its ship at lattice scale.
+- [ ] Add lint gate (in `release_gates`) for command-routed skills: every command in the table has a matching `references/<command>.md`; reference files don't redeclare the spine. Earned when first violation surfaces.
+- [ ] Promote `v0.4.0` to `v1.0.0` after a soak window once lattice-level dogfooding has accumulated evidence.
 
 ## Done
+
+### 2026-05-02 — v0.4.0: command-routed skills, full audit verb, absorption mechanics (Session 7)
+
+- Tightened `rules/skill-format.md`: ported command-routed orchestrator material from synapse global into ACW canonical with three corrections — reframed "same invariant workflow" as "same shared spine"; split strongest-version rule by orientation; scoped deltas-are-configuration to the spine. D-ACW-016.
+- Expanded `rules/multi-instance-topology.md`: three-flow resolution model (adopt / absorb / instance-specific), absorption candidate format (`_inbox/` payload schema), divergence markers (`divergent_pending_review`, `instance_specific_substrate`), re-adoption flow, cross-repo write governance. D-ACW-017.
+- Added four registry entries to `rules/instance-current-manifest.md` (all earned in v0.4.0): `_inbox` directory in `empty_dirs`, `divergent_pending_review`, `instance_specific_substrate`, `adopt_mode_organic_threshold` (default 5). Declared all four on ACW itself; template baseline matches.
+- Built `skills/acw-instance/` (object-centered command-routed orchestrator): `references/audit.md` (Mode A canonical comparison + Mode B operator-routed organic discovery + absorption candidate writes), `references/upgrade.md` (gap-walk with adopt-mode hard-stop, divergence-marker respect, cache refresh, version bump, decision-log entry). D-ACW-018.
+- Built `skills/acw-session/` (object-centered command-routed orchestrator): `references/start.md` (load context, drift check, surface inbox), `references/end.md` (five-phase capture-distribute-metabolize-synapse-research). D-ACW-019.
+- Sub-references carried over from old `capture-and-metabolize/references/` to `acw-session/references/`.
+- Marked old skills `skills/upgrade-instance/`, `skills/resume-session/`, `skills/capture-and-metabolize/` as `status: superseded` with `superseded_by` pointer; moved to `meta_layer` awaiting manual delete.
+- Verified `/resume-session` (now `/acw-session start`) reads `_inbox/` per the lattice handoff design — Step 4 of the original skill, ported into `references/start.md` as Step 4.
+- D-ACW-020: Mode B ships in v0.4.0 as operator-routed organic substrate discovery.
+- D-ACW-021: audit Mode A uses ACW rules + templates as schema; no new artifact.
+- D-ACW-022: hard-stop threshold set at 5 non-canonical markdown files in `decisions/` or `rules/`.
+- User-level junctions swapped: deleted `~/.claude/skills/upgrade-instance,resume-session,capture-and-metabolize`; created `~/.claude/skills/acw-instance,acw-session`.
+- Internal cross-references updated: `AGENTS.md`, `rules/instance-current-manifest.md`, `rules/task-tracking.md`, `tools/templates/README.md.tmpl`.
+- Bumped ACW version `0.3.0` → `0.4.0`. Bumped `last_reconciled_version` to `0.4.0`.
 
 ### 2026-05-02 — RC4 → v0.3.0: multi-instance topology, GitHub-first canonical, adopt mode (Session 6)
 
