@@ -8,6 +8,8 @@ source_instance: gsg-copilot
 proposes: v0.2 promotion candidates from first ACW instance lived experience
 ---
 
+> **Note (2026-05-01):** The source instance referenced throughout this document as `gsg-copilot` was subsequently renamed to `cs-copilot` to better reflect its CS-specific scope. References below are preserved as historical record from the 2026-04-30 session.
+
 # 09 — gsg-copilot instance extensions: candidates for ACW v0.2
 
 This artifact reports lived-experience extensions invented by the first ACW instance (`gsg-copilot`, scaffolded 2026-04-28, ~3 weeks of single-operator use as of writing) that are not present in ACW v0.1.0 canonical. Each candidate names the evidence, the proposed integration shape, and the caveats. This is a proposal, not a promotion. Promotions still run through `rules/promotion-ritual.md` and require incident evidence per primitive.
