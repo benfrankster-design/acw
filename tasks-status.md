@@ -15,16 +15,41 @@ Three-section task tracker. See `rules/task-tracking.md` for format and discipli
 
 ## Pending
 
-- [ ] **Framework-agnostic bookend skills.** Audit `capture-and-metabolize` and `resume-session` for project-specific assumptions (file paths, host-specific names, local context dependencies). Refactor to be modular and decoupled — logic should apply regardless of host, runtime, or project structure. Reusable across any ACW-derived workspace without parameter overrides.
 - [ ] Decide: extract the host entry file generation logic from `tools/scaffold-instance.py` into `tools/templates/` (Option B from the CLAUDE.md follow-up discussion) for single source of truth, or leave as-is.
 - [ ] Manually delete `skills/capture-session/` (superseded; careful guardrail blocks automated `rm -rf`).
-
-- [ ] Decide: ship `tools/scaffold-instance.py` under emergency clause (D-02 single incident) or wait for two more bootstrap-related incidents.
 - [ ] Sync `~/synapse/Rules/Procedures/` copies with ACW canonical (mitigation for D-01).
 - [ ] Decide: defer C-04 synthesis-cycle to `DEFERRED.md` (only one cycle of evidence) or ship now.
-- [ ] Promote v0.2.0-rc1 to v0.2.0 after release-gate verification (lint, tests).
+- [ ] Dogfood `/upgrade-instance` adopt mode against cs-copilot (its substrate-shaped workspace pre-dates registration; should now adopt cleanly).
+- [ ] Dogfood `/upgrade-instance` reconcile path against gsg-copilot (older registered instance; should fetch canonical from GitHub and walk gaps).
+- [ ] Decide: should `tools/scaffold-instance.py` optionally create user-level skill junctions at scaffold time? (Surfaced by D-ACW-011 session.)
+- [ ] Decide: defer C-04 synthesis-cycle to `DEFERRED.md` (only one cycle of evidence) or ship now.
+- [ ] Decide: extract the host entry file generation logic from `tools/scaffold-instance.py` into `tools/templates/` for single source of truth, or leave as-is.
+- [ ] Manually delete `skills/capture-session/` (superseded; careful guardrail blocks automated `rm -rf`).
+- [ ] Sync `~/synapse/Rules/Procedures/` copies with ACW canonical (mitigation for D-01).
+- [ ] Add cross-instance write trigger to `DEFERRED.md` for capability broker — three documented incidents earn the broker its ship at lattice scale (per research/10).
+- [ ] Promote `v0.3.0` to `v1.0.0` after a soak window once lattice-level dogfooding has accumulated evidence.
 
 ## Done
+
+### 2026-05-02 — RC4 → v0.3.0: multi-instance topology, GitHub-first canonical, adopt mode (Session 6)
+
+- Wrote `research/10-multi-instance-topology.md` (meta_layer) — lattice model, knowledge-placement rules, coordination primitive status, Phase 1 spinoff spec.
+- Promoted canonical statement to `rules/multi-instance-topology.md` (template_layer). D-ACW-012.
+- Added `is_canonical_source` flag to `acw-state.yaml` (set true on ACW; default false in template). D-ACW-013.
+- Updated `rules/instance-current-manifest.md`: new entries for `is_canonical_source` and `rules/multi-instance-topology.md` (both earned in v0.3.0). Updated "How `/upgrade-instance` reads this file" to document GitHub-first canonical fetch and adopt mode.
+- Rewrote `skills/upgrade-instance/SKILL.md`: GitHub fetch via `gh` CLI (private repo), Step 0/0a registration check + substance scan + adoption flow, fail-closed on GitHub unreachable, write fetched canonical to local cache after each successful pass. D-ACW-014.
+- Added canonical-edit detection step to `capture-and-metabolize` Phase 2: computes intersection of `auto_load_at_session_start` and `template_layer`, branches on `is_canonical_source` (publisher gets version-bump-and-push prompt; consumer gets local-edit warning). D-ACW-015.
+- Bumped ACW version `0.2.0-rc4` → `0.3.0`. Bumped `last_reconciled_version` to `0.3.0`. Updated template baseline `last_reconciled_version` to `0.3.0`.
+- Wired `rules/multi-instance-topology.md` into `template_layer` and `auto_load_at_session_start` in `acw-state.yaml`.
+- Push to `origin/master` retired the 8-commits-ahead parked task by landing rc1-rc4 + v0.3.0 in one batch.
+
+### 2026-05-02 — Skill registration via user-level junctions (Session 5)
+
+- D-ACW-011 — registered three bookend-arc skills via user-level directory junctions in `~/.claude/skills/<name>/` pointing at `acw/skills/<name>/`. ACW is the canonical runtime source; child-instance copies are passive.
+- Created junctions for `capture-and-metabolize`, `resume-session`, `upgrade-instance`. Verified via `dir /AL ~/.claude/skills/`.
+- Surfaced OQ-ACW-006 (should scaffold tool optionally create skill junctions at scaffold time) — deferred for second-instance evidence.
+- Logged process-gap incident: ACW skills shipped at `acw/skills/` were not auto-discovered by Claude Code on a fresh operator machine; manual junction setup required. Future scaffold tooling could close the gap.
+- Capture file at `research/sessions/2026-05-02--skill-registration-via-junctions.md`.
 
 ### 2026-05-02 — RC4: framework-agnostic bookend skills, drift detection, upgrade skill (Session 4)
 

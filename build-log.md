@@ -9,6 +9,59 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-02 — RC4 → v0.3.0: multi-instance topology, GitHub-first canonical, adopt mode
+
+Operator opened the session by feeding back a cs-copilot session where `/upgrade-instance` correctly identified missing registration files and bailed. They pushed back on the "not an ACW instance" verdict, asking what an ACW instance fundamentally **is**. The conversation surfaced the substance-vs-registration distinction: cs-copilot has every load-bearing piece of an ACW instance (decisions, rules, glossary, evolution, research, incidents, bookend skills) but lacks the registration metadata. Verdict: cs-copilot is substantively an ACW instance; the agent ran a registration check rather than a substance check.
+
+That conversation escalated into the larger architectural question: can a full business run from ACW, and if so, what's the structure? Sketched the lattice model (org-brain instance + departmental instances), the knowledge-placement discriminator (who queries it; does the answer need to be the same), the reference-not-duplicate principle, the three coordination primitives needed (handoff protocol, capability broker, admission controller — the broker now has the lattice as its architectural target), the authority model across the lattice, the bootstrapping order (departmental first, org-brain refactored from extraction).
+
+Wrote `research/10-multi-instance-topology.md` formalizing the lattice and naming Phase 1 ship: fix `/upgrade-instance` to support adopt mode for substrate-shaped pre-ACW workspaces.
+
+Operator then asked four sharp follow-up questions that exposed real seams:
+
+1. How do we conceptualize the lattice into the template so a business is informed when ready? **Answer:** promote canonical statement to `rules/multi-instance-topology.md` (template_layer). Research note stays meta_layer as provenance. Add as recommended block earned in v0.3.0.
+2. When ACW's canonical registration updates, how do other instances stay current? **Answer:** GitHub as single source of truth. `/upgrade-instance` fetches canonical from `benfrankster-design/acw` on every run via `gh` CLI (private repo). Local copy is write-once cache. Operator rejected local-ACW fallback; one pointer means one place to update if repo ever moves.
+3. How do edits inside ACW get captured and metabolized properly? **Answer:** add canonical-edit detection to `capture-and-metabolize` Phase 2. Detect edits to files in the intersection of `auto_load_at_session_start` and `template_layer`; branch on `is_canonical_source`.
+4. What happens when child instances inherit the propagation behavior? **Operator caught the bug:** if Phase 2 ships a "version bump + push to GitHub" prompt to every instance, child instances will start trying to push to ACW's GitHub. Solution: add `is_canonical_source` flag to `acw-state.yaml`. ACW sets true; children default false. Phase 2 branches on the flag — publishers get the push prompt; consumers get a "local edits won't propagate" warning.
+
+Shipped six pieces: new rule file, manifest registry entries, flag in state file + template, upgrade-instance rewrite, capture-and-metabolize Phase 2 update, version bump to 0.3.0. Logged D-ACW-012 through D-ACW-015. Updated tasks-status with two adopt-mode dogfood targets (cs-copilot and gsg-copilot) and a note to add the cross-instance write trigger to DEFERRED.md.
+
+Push to `origin/master` retires the 8-commits-ahead parked task by landing rc1-rc4 plus v0.3.0 in a single batch — GitHub goes from 3 weeks stale to current in one move, and the new `/upgrade-instance` works against the live canonical from first run on any instance.
+
+### Metabolize report
+
+**Auto-updated** (executed):
+- `tasks-status.md::Done` — added Session 6 dated block. Pruned the resolved 8-commits-ahead push task from Pending; added two adopt-mode dogfood tasks (cs-copilot, gsg-copilot) and the cross-instance broker trigger task.
+- `decisions/decision-log.md` — added D-ACW-012, D-ACW-013, D-ACW-014, D-ACW-015 in chronological order.
+- `acw-state.yaml` — bumped `version` and `last_reconciled_version` to `0.3.0`; added `is_canonical_source: true`; added `rules/multi-instance-topology.md` to `template_layer` and `auto_load_at_session_start`.
+- `tools/templates/acw-state.yaml.tmpl` — set baseline `last_reconciled_version: "0.3.0"`; added `is_canonical_source: false` default.
+
+**Proposed for operator review** (not executed):
+- Whether `CLAUDE.md` needs an edit to reflect v0.3.0 substrate (new `rules/multi-instance-topology.md` in auto-load list); the auto-load list in CLAUDE.md is import-driven via `@`, so adding the file may want a manual import line.
+- Whether `research/10-multi-instance-topology.md` should also live in cross-vendor-readable form somewhere downstream (e.g., as a starter template snippet) or whether the rule file is sufficient.
+
+## 2026-05-02 — Skill registration via user-level junctions
+
+Operator surfaced that `/resume-session` wasn't firing — the skills shipped at `acw/skills/<name>/` weren't being discovered by Claude Code, which reads from `.claude/skills/` and `~/.claude/skills/`. Discussed two registration patterns (project-level per workspace vs. user-level single canonical source) and the multi-instance pollution concern when child workspaces also ship the same skills via template_layer. Operator chose the user-level / single-canonical-source pattern: ACW is the registered source for every workspace; child copies stay passive on disk for self-contained distribution. Created three directory junctions in `~/.claude/skills/` pointing at ACW's `skills/<name>/` directories.
+
+D-ACW-011 records the architectural choice. OQ-ACW-006 captures the open question of whether `tools/scaffold-instance.py` should optionally create skill junctions at scaffold time — deferred for second-instance evidence.
+
+### Metabolize report
+
+**Auto-updated** (executed):
+- `tasks-status.md::Done` — added Session 5 dated block.
+- `decisions/decision-log.md` — added D-ACW-011.
+- `incidents.jsonl` — appended one process-gap incident: skills ship in template_layer but registration is manual, future operators will hit the same friction.
+
+**Proposed for operator review** (not executed):
+- *(none)* — session was small and unambiguous.
+
+**Skipped** (intentionally not touched):
+- All append-only history (build-log past entries, evolution past entries, incidents prior lines, capture-session past files, decision-log past decisions).
+- `paths.research_queries_dir` is empty; nothing to consume.
+
+**Prompts consumed this session:** *(none — `paths.research_queries_dir` is empty.)*
+
 ## 2026-05-02 — RC4: portable bookend skills, drift detection, upgrade skill
 
 The bookend skills (`capture-and-metabolize`, `resume-session`) were tightly coupled to ACW's specific directory layout — paths to `decisions/decision-log.md`, `tasks-status.md`, `research/sessions/`, etc. were hardcoded throughout. That worked for ACW but broke portability: instances that wanted to restructure substrate, or future template evolution that moved a file, would force grep-and-replace across every skill. RC4 decouples the skills from paths via a manifest-driven approach, then adds drift detection so existing instances can learn they're behind and reconcile through a guided skill.
@@ -30,6 +83,30 @@ Shipped in seven atomic phases with verification at each boundary:
 **Phase 7 — Final dogfood.** Scaffold a fresh instance from rc4. Run release gates inside it. Simulate outdated instance (remove a recommended block); confirm drift alert fires. Run upgrade skill; confirm reconciliation. Final cold-read subagent reviews the rc4 changeset for inconsistencies, hardcoded paths, circular dependencies, backwards-compatibility gaps.
 
 The shape that fell out: ACW now treats every "what files matter" list the same way — single source of truth in `acw-state.yaml`, additive maintenance by the bookend skill, removal by ritual, lint as the safety net. The bookend skills are portable; instances upgrade themselves with a one-line alert and a one-skill walkthrough.
+
+### Metabolize report
+
+**Auto-updated** (executed):
+- `tasks-status.md::Pending` — removed "Framework-agnostic bookend skills..." item; satisfied by Session 4 Done block.
+- `tasks-status.md::Pending` — removed "Decide: ship tools/scaffold-instance.py under emergency clause..." item; decided in rc1 as D-003.
+- `tasks-status.md::Pending` — reworded the "Promote v0.2.0-rc1 to v0.2.0" item to reflect the actual current state (multiple rcN have shipped; promotion is now to v0.2.0 final after a clean-soak window).
+- `tasks-status.md::Pending` — added "Dogfood /upgrade-instance against an actually-outdated downstream instance" so the upgrade loop earns its build through real friction, not just simulated friction.
+- `tasks-status.md::Pending` — added "Push branch to origin/master" since the rc4 work is committed locally only.
+
+**Proposed for operator review** (not executed):
+- *(none)* — no items needed operator confirmation this pass. The cleanups above were all unambiguous.
+
+**Skipped** (intentionally not touched):
+- `build-log.md` past entries — append-only history.
+- `incidents.jsonl` — append-only ledger; rc4 had no new incidents (subagent verification protocol caught issues before commit, which is the protocol working as designed).
+- `research/sessions/` past captures — frozen once written.
+- `decisions/decision-log.md::section_conventions.decisions` past entries — append-only spirit.
+- `tasks-status.md::Done` past dated entries — history.
+- `paths.research_queries_dir` — empty; nothing to consume.
+
+**Prompts consumed this session:** *(none — `paths.research_queries_dir` is empty.)*
+
+The session was clean. No drift surfaced beyond the satisfied/stale Pending items above. No new incidents. Subagent verifications at four phase boundaries plus a final cold-read all surfaced fixable issues that landed before commit, exactly as the protocol intends.
 
 ## 2026-04-30 — RC3: ACW as instance of itself; manifest-discipline rule extracted
 

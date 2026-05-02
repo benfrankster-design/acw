@@ -18,14 +18,21 @@
 # Edited only via a decision-log entry. Every edit bumps `version` or
 # `last_reconciled`.
 
-version: "0.2.0-rc4"
+version: "0.3.0"
 last_reconciled: "2026-05-02"
 
 # Version this instance is synced to in the recommended-blocks registry
 # (rules/instance-current-manifest.md). Used by /resume-session drift check
 # to compare against each entry's earned-in version. Bumped automatically by
 # /upgrade-instance after a successful reconciliation pass.
-last_reconciled_version: "0.2.0-rc4"
+last_reconciled_version: "0.3.0"
+
+# Declares whether this instance publishes canonical content downstream to
+# other instances. ACW itself sets this to true (it IS the upstream source for
+# every scaffolded instance); every child instance defaults to false. Gates
+# the propagation behavior in capture-and-metabolize Phase 2 — see the
+# is_canonical_source entry in rules/instance-current-manifest.md.
+is_canonical_source: true
 
 # ACW is an instance of itself — it has its own substrate, follows its own
 # rules, and dogfoods its own machinery. It also serves as a template for
@@ -65,6 +72,7 @@ template_layer:
   - rules/incident-tracking.md
   - rules/instance-current-manifest.md
   - rules/manifest-discipline.md
+  - rules/multi-instance-topology.md
   - rules/pipeline-roles.md
   - rules/promotion-ritual.md
   - rules/skill-format.md
@@ -158,6 +166,7 @@ auto_load_at_session_start:
   - rules/instance-hard-rules.md
   - rules/manifest-discipline.md
   - rules/instance-current-manifest.md
+  - rules/multi-instance-topology.md
   - tasks-status.md
   - glossary.md
   - incidents.jsonl

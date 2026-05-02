@@ -53,6 +53,7 @@ Before Phase 1, read `acw-state.yaml` once and resolve:
 - `voice` → list of voice-reference files applied during transcript cleanup. Empty list or absent = no voice opinion.
 - `auto_load_at_session_start` → files already in context; never re-read in this skill.
 - `template_layer` / `instance_layer` / `meta_layer` → if present and non-empty, this instance uses the three-layer manifest discipline. Phase 2's manifest classification step fires for new tracked-path files. If absent or empty, the step silently skips.
+- `is_canonical_source` → boolean flag declaring whether this instance publishes canonical content downstream. **Default `false`** (treat as a downstream consumer). Gates Phase 2's canonical-edit propagation behavior — see "Canonical-edit detection" below.
 
 ## Instructions
 
@@ -98,6 +99,20 @@ For each project-specific candidate identified in Phase 1, edit the appropriate 
 **Manifest classification (conditional).** If this instance uses the three-layer manifest, then for every new file Phase 2 creates at a tracked path (root, `rules/`, `tools/`, `skills/`), surface a classification prompt to the operator: **"template_layer / instance_layer / meta_layer?"** Default to `instance_layer` (the conservative choice — see `rules/manifest-discipline.md` for the asymmetry rationale). Operator answer appends to the appropriate list via `manifest.append`. Additive only; demotion goes through the decision log. If the manifest blocks are absent or empty, this step silently skips.
 
 **Host entry file maintenance.** If this instance has any host-specific entry files implementing `AGENTS.md` directive 7 (files declared with a `host:` key in `acw-state.yaml::instance_layer`, or files conventionally named per a host's mechanism), Phase 2 surfaces a proposed edit when substrate shifts in a way the entry file should reflect. Triggers include: a file entered or left `auto_load_at_session_start`, a hard-rule principle was added or retired, a manifest layer for a class of files changed, the bookend skill names changed, or the project's "where things live" map shifted. The proposal cites which sentence or list to update and why; the operator approves before the edit lands. If no host entry files are present, this step silently skips.
+
+**Canonical-edit detection.** Compute the intersection of `auto_load_at_session_start` and `template_layer`. Files in this intersection are **canonical** — they exist in this instance and propagate to downstream instances (or, in a non-publishing instance, came from upstream and are read-only locally).
+
+For each canonical file edited this session (detect via `git diff --name-only HEAD` against the file's path, scoped to the session's commit window; or by inspecting the session transcript for known edits), branch on `is_canonical_source`:
+
+- **`is_canonical_source: true`** (publishing instance, e.g., ACW itself):
+  - Surface the prompt: *"Canonical file `<path>` was edited this session. Confirm: should `acw-state.yaml::version` bump? If yes, propose `<current-version> → <next-version>` (semver bump per the size of the change). After version bump, push to GitHub before session end so downstream instances pick up the change on their next /upgrade-instance run."*
+  - On operator confirmation, append the version bump to the Phase 2 change set; otherwise leave version unchanged.
+  - Note in the metabolize report (Phase 3) that a canonical edit landed and whether a version bump and push are pending.
+- **`is_canonical_source: false` or absent** (downstream consumer, every child instance):
+  - Surface the warning: *"You edited canonical file `<path>` locally. This file is template_layer content from upstream ACW; local edits won't propagate and may be overwritten on next /upgrade-instance. If you intended a substrate-level change, raise it upstream in ACW. If you intended an instance-specific override, place it in a sibling file (e.g., `rules/instance-extra-<name>.md`) instead."*
+  - The skill does not block the edit — the operator made it. The warning surfaces the consequence.
+
+If no canonical files were edited, this step silently passes.
 
 **Cross-repo writes.** If a finding implies a write to a path outside the project repo, the path MUST be in `acw-state.yaml::cross_repo_writes`. If not, refuse the write and surface the path to the operator.
 

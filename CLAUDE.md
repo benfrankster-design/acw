@@ -12,6 +12,7 @@ The canonical list lives in `acw-state.yaml::auto_load_at_session_start`. Treat 
 @rules/instance-hard-rules.md
 @rules/manifest-discipline.md
 @rules/instance-current-manifest.md
+@rules/multi-instance-topology.md
 @tasks-status.md
 @glossary.md
 @incidents.jsonl

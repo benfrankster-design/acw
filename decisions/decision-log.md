@@ -27,6 +27,34 @@ This file tracks all decisions, open questions, constraints, and resolved questi
 
 ## Decisions and Rationale
 
+### D-ACW-015 — Canonical-edit detection in capture-and-metabolize Phase 2 gates on `is_canonical_source`
+
+**Date:** 2026-05-02
+**Decision:** Phase 2 of `capture-and-metabolize` adds a canonical-edit detection step. It computes the intersection of `auto_load_at_session_start` and `template_layer` (= the canonical files), checks whether any were edited this session, and branches on `acw-state.yaml::is_canonical_source`. Publishing instances (`true`) get a version-bump-and-push prompt; downstream consumers (`false` or absent, the default) get a warning that local edits to canonical files won't propagate and may be overwritten by `/upgrade-instance`.
+**Rationale:** Without the gating flag, the propagation behavior would ship to every child instance. Child instances editing local snapshots of canonical files would start trying to push to ACW's GitHub on every edit. The flag separates "I publish canonical content downstream" from "I consume canonical content from upstream" cleanly. Operator-flagged the bug in real time during the design conversation; the fix earned its build before the skill shipped.
+**Source:** Operator reasoning during the multi-instance topology discussion, turn 81 of the v0.3.0 absorption arc.
+
+### D-ACW-014 — `/upgrade-instance` fetches canonical from GitHub as single source of truth; supports adopt mode
+
+**Date:** 2026-05-02
+**Decision:** `/upgrade-instance` fetches `rules/instance-current-manifest.md` from the ACW GitHub repo (`benfrankster-design/acw`, private) on every run via `gh` CLI or `urllib.request` with `GITHUB_TOKEN`. The instance's local copy is a write-once cache of "the last canonical I reconciled to," never used as comparison yardstick. Skill fails closed if GitHub is unreachable. Also adds an adopt mode: when `acw-state.yaml` and/or `rules/instance-current-manifest.md` are missing but ≥3 substrate signals are present, the skill offers to write the missing registration files using the GitHub canonical and proceed to reconciliation.
+**Rationale:** Operator rejected a local-ACW fallback as introducing race conditions between local and remote canonical. Single source of truth via GitHub means one pointer; if the repo ever moves, only one place needs updating. The cs-copilot session that prompted this work surfaced a pre-existing substrate-shaped workspace that the original `/upgrade-instance` refused to act on; adopt mode closes that gap. Substance signals threshold (3 of 6) prevents false positives in random workspaces.
+**Source:** Operator rejection of local-ACW fallback in the multi-instance topology conversation; cs-copilot adopt-mode requirement surfaced earlier in same arc.
+
+### D-ACW-013 — `is_canonical_source` flag added to `acw-state.yaml` schema
+
+**Date:** 2026-05-02
+**Decision:** Added `is_canonical_source: <bool>` to `acw-state.yaml`. ACW itself sets it to `true`. The template (`tools/templates/acw-state.yaml.tmpl`) defaults it to `false` for every scaffolded instance. Added as a recommended block in `rules/instance-current-manifest.md` earned in v0.3.0.
+**Rationale:** Needed a clean signal for "this instance publishes canonical content downstream" vs "this instance consumes canonical content from upstream." Used by `capture-and-metabolize` Phase 2 (canonical-edit detection branch) and potentially by future skills that need to distinguish publisher vs consumer behavior. Generalizes beyond ACW — any future canonical-publishing meta-instance (e.g., a consultancy serving as canonical for client engagements) sets the flag true.
+**Source:** Required by D-ACW-015 (Phase 2 canonical-edit branching).
+
+### D-ACW-012 — `rules/multi-instance-topology.md` promoted to template_layer canonical
+
+**Date:** 2026-05-02
+**Decision:** Promoted the lattice model + knowledge-placement discriminator + reference-not-duplicate principle from `research/10-multi-instance-topology.md` (meta_layer) to `rules/multi-instance-topology.md` (template_layer). Added to `auto_load_at_session_start` and `template_layer` blocks in `acw-state.yaml`. Added as recommended block in `rules/instance-current-manifest.md` earned in v0.3.0. Research note retained in meta_layer as provenance.
+**Rationale:** The lattice framing is load-bearing for any operator scaling beyond a single instance. Baking it into template_layer means every scaffolded instance (and every existing instance via /upgrade-instance) inherits the framing without operator effort. Stable but flagged experimental until lattice-level incidents earn promotion to normative.
+**Source:** Operator decision in the multi-instance topology conversation, turn 79.
+
 ### D-001 — Absorb gsg-copilot extensions into v0.2.0-rc1
 
 **Date:** 2026-04-30
@@ -48,6 +76,13 @@ This file tracks all decisions, open questions, constraints, and resolved questi
 **Decision:** Ship `tools/scaffold-instance.py` based on Incident D-02 (uuid `616d435b-ec6d-470a-9cdf-2935b739e4a1`) alone, rather than waiting for two more bootstrap-related incidents.
 **Rationale:** The promotion ritual's emergency clause is reserved for severity-`high` incidents. D-02 is `med`, but is structurally severe in a different way: every future ACW instance that does not bootstrap from this tool generates more drift incidents downstream. The tool is the *prevention layer* for an incident class, not a primitive earned by lived friction. Form factor is small (~200 lines, stdlib-only), and the prevented incident class is structural. Discipline prefers cheap prevention over earn-by-incident accumulation when both apply.
 **Source:** `research/09-gsg-copilot-instance-extensions.md` (final section)
+
+### D-ACW-011 — ACW skills register globally via user-level directory junctions
+
+**Date:** 2026-05-02
+**Decision:** ACW's three bookend-arc skills (`capture-and-metabolize`, `resume-session`, `upgrade-instance`) register on the operator's machine via directory junctions at `~/.claude/skills/<name>/` pointing at `c:\Users\benja\projects\acw\skills\<name>/`. ACW's `skills/` directory is the canonical runtime source. Child instances scaffolded via `tools/scaffold-instance.py` ship with their own copies of the skills as part of template_layer propagation; those copies are passive (self-contained distribution surface) and not the registered runtime copy.
+**Rationale:** Operator works across multiple ACW-derived workspaces (ACW itself, cs-copilot, gsg-copilot, future Frank Context). The framework-agnostic skill design from rc4 already supports one canonical source serving every workspace, since paths resolve from each workspace's own `acw-state.yaml` at runtime. User-level registration with a single canonical source means edits to a skill propagate to every workspace immediately — no per-instance update step. Project-level overrides remain available on demand (Claude Code resolves project-level skills before user-level), so a workspace that needs a customized skill can still add its own `.claude/skills/<name>/` junction.
+**Source:** Operator turn requesting the wisest approach; reasoning surfaced the multi-instance pollution concern and the canonical-source preference.
 
 ### D-ACW-010 — `/upgrade-instance` skill closes the drift loop
 

@@ -122,6 +122,27 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 - **How to add:** Edit `acw-state.yaml`. List paths to voice-reference files.
 - **Earned in:** `0.2.0-rc1`.
 
+## `is_canonical_source`
+
+- **What:** A scalar boolean flag in `acw-state.yaml` declaring whether this instance publishes canonical content downstream to other instances.
+- **Why it helps:** Gates the propagation behavior in `capture-and-metabolize` Phase 2. Instances with `is_canonical_source: true` (e.g., ACW itself) get a "canonical file edited — confirm version bump and push to GitHub" prompt when an auto-loaded template_layer file is touched. Instances with the flag absent or false (every child instance, the default) get a different warning when they hand-edit a template_layer file: "this is a canonical file from upstream; local edits won't propagate and may be overwritten on next /upgrade-instance." The flag separates "I am the source of truth for downstream" from "I consume canonical truth from upstream."
+- **Required:** No. Default is `false` (treat as a downstream consumer). Set explicitly only on instances that publish canonical content (ACW itself; future canonical-publishing meta-instances).
+- **How to add:** Edit `acw-state.yaml`. Add a top-level scalar:
+  ```yaml
+  # Set to true ONLY on instances that publish canonical content downstream.
+  # ACW itself sets this to true. Every child instance defaults to false.
+  is_canonical_source: false
+  ```
+- **Earned in:** `0.3.0`.
+
+## `rules/multi-instance-topology.md`
+
+- **What:** A template_layer rule file declaring the lattice model, knowledge-placement discriminator (org-brain vs departmental), and reference-not-duplicate principle for organizations running multiple coordinated ACW instances.
+- **Why it helps:** Bakes the lattice framing into every scaffolded instance from day one. When an operator's work scales beyond a single domain (multiple departments, multiple operators, cross-domain knowledge references), the rule already has the framing for "where does this knowledge go." Closes the articulation gap at organizational scale by giving agents a normative reference for the lattice shape.
+- **Required:** No. Single-instance operators may ignore the rule. Earned-experimental, not normative until lattice-level incidents earn promotion.
+- **How to add:** Run `/upgrade-instance`, which fetches the canonical content from GitHub and walks the operator through adoption. Or manually: copy `rules/multi-instance-topology.md` from ACW canonical into the instance's `rules/` directory. Add the path to `template_layer` in `acw-state.yaml` (recommended) and to `auto_load_at_session_start` (recommended).
+- **Earned in:** `0.3.0`.
+
 ---
 
 ## How `/resume-session` reads this file
@@ -150,7 +171,22 @@ If `last_reconciled_version` is absent from the state file, the skill treats it 
 
 ## How `/upgrade-instance` reads this file
 
-The upgrade skill walks each entry, detects gaps, and surfaces the canonical default content alongside the operator's three options (add as proposed / modify / skip). On confirmation, the skill writes the chosen blocks via `tools/manifest.py::append`, bumps `last_reconciled`, and logs a decision-log entry recording the reconciliation.
+**Single source of truth: GitHub.** The upgrade skill fetches the canonical `rules/instance-current-manifest.md` from the ACW GitHub repo on every run. The instance's local copy of this file is a write-once cache representing "the last canonical I reconciled to" — never used as the comparison yardstick except in extreme offline-degraded mode (not currently shipped).
+
+Fetch path (private repo): use the `gh` CLI, which is already authenticated on the operator's machine:
+
+```
+gh api -H "Accept: application/vnd.github.raw" \
+   repos/benfrankster-design/acw/contents/rules/instance-current-manifest.md
+```
+
+Or equivalent via `urllib.request` with `Authorization: Bearer <PAT>` header pulled from a `GITHUB_TOKEN` env var. If neither path is available (no `gh` CLI, no token), the skill fails closed with a clear error: "cannot fetch canonical manifest from GitHub. Install `gh` and authenticate, or set `GITHUB_TOKEN`, then re-run."
+
+**Adopt mode for unregistered substrate-shaped workspaces.** When the skill is invoked in a workspace where `acw-state.yaml` and/or `rules/instance-current-manifest.md` are missing, the skill scans for substrate signals (presence of `decisions/`, `rules/`, `incidents.jsonl`, `glossary.md`, `research/`, bookend skills under `skills/`). If three or more signals are present, the skill offers adoption: "this looks like an ACW instance that pre-dates registration. Adopt as a formal instance? [yes/no]." On confirmation, the skill writes `acw-state.yaml` (with `last_reconciled_version: "0.0.0"` to drive a noisy first reconciliation) and copies the GitHub-fetched canonical manifest into the instance's `rules/` directory. After adoption, normal gap-walking proceeds.
+
+If substance signals are below threshold, the skill bails with: "this workspace doesn't appear to be an ACW instance. To start one, run `tools/scaffold-instance.py`."
+
+**Walk and reconcile.** With the canonical manifest in hand (whether via GitHub fetch on a registered instance or via adoption write-then-read), the skill walks each entry, detects gaps per the comparison rules above, and surfaces the canonical default content alongside the operator's three options (add as proposed / modify / skip). On confirmation, the skill writes the chosen blocks via `tools/manifest.py::append`, writes the fetched canonical manifest to the instance's local `rules/instance-current-manifest.md` (overwrites the cache), bumps `last_reconciled` and `last_reconciled_version`, and logs a decision-log entry recording the reconciliation.
 
 ## Maintenance
 
