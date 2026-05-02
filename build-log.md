@@ -36,11 +36,14 @@ User-level junctions swapped at the end. Old skill directories marked superseded
 - `decisions/decision-log.md` — added D-ACW-016 through D-ACW-022 (seven entries) in chronological order.
 - `acw-state.yaml` — bumped `version` and `last_reconciled_version` to `0.4.0`; added `_inbox` to `empty_dirs`; added `divergent_pending_review`, `instance_specific_substrate`, `adopt_mode_organic_threshold` blocks; updated `template_layer` to list new skills; added superseded skills to `meta_layer`; added `research/10-multi-instance-topology.md` to `meta_layer`.
 - `tools/templates/acw-state.yaml.tmpl` — same shape as parent for the four new blocks.
+- `incidents.jsonl` — appended `0e4dcc21` (skill-format false-flag, severity low, category process-gap). Resolution shipped in same release via D-ACW-016.
+- `research/sessions/2026-05-02--v040-command-routed-skills-and-audit-verb.md` — session capture written by `/acw-session end` at session close.
 
 **Proposed for operator review** (deferred to next session):
 - Manual deletion of four superseded skill directories after dogfood validates v0.4.0 against cs-copilot.
 - Cross-instance write trigger entry in `DEFERRED.md` for the capability broker.
 - Lint gate for command-routed skills.
+- OQ-ACW-007: how does ACW notify a workspace when an absorption candidate is rejected? (Three candidates in the session capture; needs lattice-scale evidence.)
 
 ## 2026-05-02 — RC4 → v0.3.0: multi-instance topology, GitHub-first canonical, adopt mode
 
