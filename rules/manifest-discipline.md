@@ -156,6 +156,7 @@ Returns `None` on success. Implementations may extend validation with consumer-s
 | `empty_dirs` | list | string (path) | none (empty) |
 | `auto_load_at_session_start` | list | string (path) | none (empty) |
 | `paths` | dict | string keys, string values | see "Canonical default paths" above |
+| `project` | dict | `name`, `code`, `domain` (all string) | none (instance-specific; operator-supplied) |
 | `cross_repo_writes` | list | string (absolute path) | none (empty) |
 | `voice` | list | string (path) | none (empty) |
 

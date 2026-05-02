@@ -77,7 +77,7 @@ Options:
 
 Wait for operator input. Process per choice:
 
-- **`a`** — Use `tools/manifest.py::append` (or the equivalent in the runtime) to write the default block. For dict-shaped blocks (`paths`, `project`), append each key. For list-shaped blocks (`auto_load_at_session_start`, `template_layer`, etc.), append each entry.
+- **`a`** — Use `tools/manifest.py::append` (or the equivalent in the runtime) to write the default block. For dict-shaped blocks with canonical defaults (`paths`), append each key. For list-shaped blocks with canonical defaults (`auto_load_at_session_start`), append each entry. **For blocks with no canonical default (`project`, where each instance picks its own `name` / `code` / `domain`), `[a]` is not valid — the skill must force the `[m]` path for that block, prompting for operator-supplied values.** If the registry entry's "How to add" section contains placeholders like `<human-readable name>`, treat the block as "no canonical default" and prompt for modify input.
 - **`m`** — Prompt the operator for the value. Validate (well-formed yaml, correct shape per the registry's "How to add" section). If valid, write via `manifest.append`. If not valid, re-prompt.
 - **`s`** — No write. Note this block as "skipped this pass" for the summary.
 

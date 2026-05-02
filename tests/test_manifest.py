@@ -268,6 +268,31 @@ template_layer:
     def test_paths_in_known_dicts(self):
         self.assertIn("paths", KNOWN_DICTS)
 
+    def test_project_in_known_dicts(self):
+        self.assertIn("project", KNOWN_DICTS)
+
+    def test_load_project_returns_existing_block(self):
+        # Append a project block to the sample
+        text = self.state_file.read_text(encoding="utf-8")
+        text = "project:\n  name: \"Sample\"\n  code: \"SMP\"\n  domain: \"testing\"\n\n" + text
+        self.state_file.write_text(text, encoding="utf-8")
+        result = load(self.state_file, "project")
+        self.assertEqual(result, {"name": "Sample", "code": "SMP", "domain": "testing"})
+
+    def test_load_project_returns_empty_dict_when_absent(self):
+        # No project block in default sample — and project has no canonical defaults
+        result = load(self.state_file, "project")
+        self.assertEqual(result, {})
+
+    def test_append_project_inserts_key(self):
+        # Append a project block first, then update one of its keys
+        text = self.state_file.read_text(encoding="utf-8")
+        text = "project:\n  name: \"Sample\"\n  code: \"SMP\"\n  domain: \"testing\"\n\n" + text
+        self.state_file.write_text(text, encoding="utf-8")
+        self.assertTrue(append(self.state_file, "project", ("name", "Renamed")))
+        result = load(self.state_file, "project")
+        self.assertEqual(result["name"], "Renamed")
+
     def test_template_layer_in_known_lists(self):
         self.assertIn("template_layer", KNOWN_LISTS)
 

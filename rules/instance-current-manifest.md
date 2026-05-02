@@ -33,7 +33,7 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 
 - **What:** A `paths:` block in `acw-state.yaml` listing every substrate file path.
 - **Why it helps:** Decouples the bookend skills from hardcoded paths. The skills read paths from this block at runtime. Future template evolution that moves a substrate file requires only one edit per instance instead of grepping skills.
-- **Required:** No. When absent, consumers fall back to canonical defaults documented in `rules/manifest-discipline.md`.
+- **Required:** No (canonical defaults apply when absent — see `rules/manifest-discipline.md`). Effectively load-bearing in practice; absent instances run on defaults silently, but operators are encouraged to add the block for clarity even if no overrides are needed.
 - **How to add:** Edit `acw-state.yaml`. Add a top-level block matching the canonical defaults:
   ```yaml
   paths:
@@ -60,17 +60,19 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 - **What:** A list block in `acw-state.yaml` naming files agent hosts auto-load at session start.
 - **Why it helps:** The cross-vendor contract per `AGENTS.md` directive 7. Each host implements via its native mechanism (Claude Code: `@`-imports in `CLAUDE.md`).
 - **Required:** No. When absent, the host has no canonical auto-load list and either reads nothing automatically or relies on host-specific files only.
-- **How to add:** Edit `acw-state.yaml`. Add the block:
+- **How to add:** Edit `acw-state.yaml`. Recommended canonical set (matches the rc4 default for new instances):
   ```yaml
   auto_load_at_session_start:
     - decisions/decision-log.md
     - rules/instance-hard-rules.md
+    - rules/manifest-discipline.md
+    - rules/instance-current-manifest.md
     - tasks-status.md
     - glossary.md
     - incidents.jsonl
   ```
   Add or remove entries as substrate enters/leaves the auto-load discipline.
-- **Earned in:** `0.2.0-rc1`.
+- **Earned in:** `0.2.0-rc1`. Set expanded to seven entries in `0.2.0-rc4` to include the manifest-discipline and instance-current-manifest rules.
 
 ## `template_layer`, `instance_layer`, `meta_layer`
 

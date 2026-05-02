@@ -59,7 +59,7 @@ KNOWN_LISTS: set[str] = {
     "voice",
 }
 
-KNOWN_DICTS: set[str] = {"paths"}
+KNOWN_DICTS: set[str] = {"paths", "project"}
 
 UNSUPPORTED: set[str] = {"instance_layer"}
 
