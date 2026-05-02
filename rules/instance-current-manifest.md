@@ -137,11 +137,51 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 
 ## `rules/multi-instance-topology.md`
 
-- **What:** A template_layer rule file declaring the lattice model, knowledge-placement discriminator (org-brain vs departmental), and reference-not-duplicate principle for organizations running multiple coordinated ACW instances.
-- **Why it helps:** Bakes the lattice framing into every scaffolded instance from day one. When an operator's work scales beyond a single domain (multiple departments, multiple operators, cross-domain knowledge references), the rule already has the framing for "where does this knowledge go." Closes the articulation gap at organizational scale by giving agents a normative reference for the lattice shape.
+- **What:** A template_layer rule file declaring the lattice model, knowledge-placement discriminator (org-brain vs departmental), and reference-not-duplicate principle for organizations running multiple coordinated ACW instances. Also documents the three-flow resolution model (adopt / absorb / instance-specific), absorption candidate format, divergence markers, re-adoption flow, and cross-repo write governance.
+- **Why it helps:** Bakes the lattice framing into every scaffolded instance from day one. When an operator's work scales beyond a single domain (multiple departments, multiple operators, cross-domain knowledge references), the rule already has the framing for "where does this knowledge go." Closes the articulation gap at organizational scale by giving agents a normative reference for the lattice shape and the absorption mechanics.
 - **Required:** No. Single-instance operators may ignore the rule. Earned-experimental, not normative until lattice-level incidents earn promotion.
-- **How to add:** Run `/upgrade-instance`, which fetches the canonical content from GitHub and walks the operator through adoption. Or manually: copy `rules/multi-instance-topology.md` from ACW canonical into the instance's `rules/` directory. Add the path to `template_layer` in `acw-state.yaml` (recommended) and to `auto_load_at_session_start` (recommended).
+- **How to add:** Run `/acw-instance upgrade`, which fetches the canonical content from GitHub and walks the operator through adoption. Or manually: copy `rules/multi-instance-topology.md` from ACW canonical into the instance's `rules/` directory. Add the path to `template_layer` in `acw-state.yaml` (recommended) and to `auto_load_at_session_start` (recommended).
 - **Earned in:** `0.3.0`.
+
+## `_inbox` directory
+
+- **What:** A `_inbox/` directory at the workspace root. Every instance has one. Read by `/acw-session start` at session-start to surface unread cross-project notifications. Receives absorption candidates and other cross-instance handoffs.
+- **Why it helps:** The seed cross-instance handoff mechanism. Without an `_inbox/`, the lattice handoff design has no destination — workspaces can't notify each other, and absorption candidates have nowhere to land. Listed in `empty_dirs` so the scaffold tool creates it with `.gitkeep` for fresh instances.
+- **Required:** Recommended (the lattice handoff design assumes its presence). Empty list / absent in `empty_dirs` means scaffold won't create one.
+- **How to add:** Edit `acw-state.yaml::empty_dirs` to include `_inbox`. For existing instances missing the directory, also create `_inbox/.gitkeep` manually or via `mkdir`.
+- **Earned in:** `0.4.0`.
+
+## `divergent_pending_review`
+
+- **What:** A list block in `acw-state.yaml` recording substrate files that diverge from ACW canonical and have an absorption candidate sent to ACW awaiting upstream review. Each entry: `path`, `absorption_candidate` (path to the `_inbox/` note in ACW), `sent_date`, `status` (`pending` | `absorbed` | `rejected`).
+- **Why it helps:** Lets `/acw-instance upgrade` respect pending entries — does not propose canonical changes to those files until ACW resolves the absorption review. Schema and resolution mechanics in `rules/multi-instance-topology.md` § "Re-adoption flow."
+- **Required:** No. Empty list or absent means the workspace has no pending absorption candidates. Most workspaces will have an empty block until the audit verb fires for the first time.
+- **How to add:** Edit `acw-state.yaml`. Add the block as an empty list to opt in:
+  ```yaml
+  divergent_pending_review: []
+  ```
+  Subsequent `/acw-instance audit` runs append entries when the operator routes a divergence to absorption.
+- **Earned in:** `0.4.0`.
+
+## `instance_specific_substrate`
+
+- **What:** A list block in `acw-state.yaml` recording substrate files or directories that intentionally diverge from ACW canonical and will not be promoted upstream. Each entry: `path`, `rationale` (one-line reason), `decision_ref` (decision-log entry id).
+- **Why it helps:** Lets `/acw-instance upgrade` recognize substrate that is uniquely the workspace's. Without this marker, every audit run would re-flag the same divergences. Schema in `rules/multi-instance-topology.md` § "Divergence markers."
+- **Required:** No. Empty list or absent means no instance-specific substrate. Workspaces that genuinely have unique substrate (e.g., department-specific operational journals not generalizable upstream) declare entries here, each with a decision-log reference explaining the rationale.
+- **How to add:** Edit `acw-state.yaml`. Add the block as an empty list to opt in. Adding entries requires a decision-log entry first; the entry id goes in `decision_ref`.
+- **Earned in:** `0.4.0`.
+
+## `adopt_mode_organic_threshold`
+
+- **What:** A scalar integer in `acw-state.yaml` setting the threshold above which `/acw-instance upgrade` adopt-mode bails (with pointer to `/acw-instance audit`) instead of offering automatic adoption. Counts markdown files in `decisions/` and `rules/` excluding canonical files copied from ACW.
+- **Why it helps:** Prevents adopt mode from steamrolling workspaces with substantial organic substrate (the `_Command` problem). Below threshold = canonical-shaped-but-unregistered, safe to adopt. At-or-above threshold = organic substrate, audit required first to route divergences before any writes fire.
+- **Required:** No. Default value is `5` (canonical defaults applied when key absent). Tunable per-instance only when the default produces wrong-direction failures in practice.
+- **How to add:** Edit `acw-state.yaml`. Add a top-level scalar:
+  ```yaml
+  adopt_mode_organic_threshold: 5
+  ```
+  Override only with a decision-log entry naming the reason for divergence.
+- **Earned in:** `0.4.0`.
 
 ---
 

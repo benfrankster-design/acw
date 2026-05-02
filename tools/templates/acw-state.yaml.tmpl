@@ -72,6 +72,21 @@ auto_load_at_session_start:
 # artifacts stay in the project repo (vault-boundary discipline).
 cross_repo_writes: []
 
+# Substrate files that diverge from ACW canonical with an absorption
+# candidate sent upstream awaiting review. Schema in
+# rules/multi-instance-topology.md.
+divergent_pending_review: []
+
+# Substrate files or directories that intentionally diverge from ACW
+# canonical and will not be promoted upstream. Each entry requires a
+# decision-log entry naming the rationale.
+instance_specific_substrate: []
+
+# Threshold for /acw-instance upgrade adopt-mode. Above this count of
+# non-canonical markdown files in decisions/ or rules/, adopt-mode bails
+# and points at /acw-instance audit.
+adopt_mode_organic_threshold: 5
+
 # Optional synapse log path for operator-personal cross-project day-index.
 # Empty/null disables Phase 4 of capture-and-metabolize.
 synapse_log_path: null

@@ -154,6 +154,7 @@ empty_dirs:
   - research/queries/_consumed
   - skills
   - deferred
+  - _inbox
 
 # =============================================================================
 # Operational substrate references
@@ -173,6 +174,21 @@ auto_load_at_session_start:
 
 # Cross-repo write surfaces explicitly allowed for this instance.
 cross_repo_writes: []
+
+# Substrate files that diverge from ACW canonical with an absorption
+# candidate sent upstream awaiting review. Schema in
+# rules/multi-instance-topology.md § "Divergence markers."
+divergent_pending_review: []
+
+# Substrate files or directories that intentionally diverge from ACW
+# canonical and will not be promoted upstream. Each entry requires a
+# decision-log entry naming the rationale.
+instance_specific_substrate: []
+
+# Threshold for /acw-instance upgrade adopt-mode. Above this count of
+# non-canonical markdown files in decisions/ or rules/, adopt-mode bails
+# and points at /acw-instance audit. See rules/instance-current-manifest.md.
+adopt_mode_organic_threshold: 5
 
 # Optional synapse log path for operator-personal cross-project day-index.
 synapse_log_path: null
