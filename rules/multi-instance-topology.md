@@ -125,6 +125,109 @@ Build org-brain bottom-up from real departmental usage rather than top-down from
 
 ---
 
+## Adopt, absorb, and divergence resolution
+
+When a workspace's substrate doesn't match ACW canonical, three flows route per-file. There are only two terminal states (canonical-shaped, either via the workspace adopting ACW or ACW absorbing the workspace's pattern); divergence is always temporary, pending review.
+
+### The three flows
+
+| Flow | When it fires | What happens |
+|---|---|---|
+| **Adopt** | Workspace's file is canonical-shaped or close to it; ACW canonical is the right shape | Skill writes the canonical shape (enrichment of existing file, or migration with `<file>.pre-acw-backup` created) |
+| **Absorb** | Workspace's file is *better* than ACW canonical, or addresses something ACW canonical doesn't | Skill writes an absorption candidate to ACW's `_inbox/`; workspace's `acw-state.yaml::divergent_pending_review` records the pending file; ACW operator reviews in a future ACW session |
+| **Instance-specific** | The pattern is uniquely the workspace's and won't generalize upstream | Skill writes the file path to `acw-state.yaml::instance_specific_substrate`; future `/acw-instance` runs respect the marker and never propose canonical for it |
+
+### Absorption candidate format (`_inbox/` payload)
+
+When a workspace flags a file for absorption, the audit verb writes a structured note to ACW's `_inbox/`:
+
+**Filename:** `_inbox/YYYY-MM-DD-<workspace>-<topic-slug>-absorption-candidate.md`
+
+**Frontmatter:**
+```yaml
+---
+type: absorption-candidate
+from_workspace: <workspace name>
+from_workspace_path: <absolute path of the workspace>
+date: YYYY-MM-DD
+topic: <short topic phrase>
+divergent_files:
+  - path: <path within workspace>
+    canonical_counterpart: <path within ACW canonical, or "none" if net-new>
+status: pending-review
+read: false
+---
+```
+
+**Body structure:**
+
+1. **Summary (2–3 sentences).** What the workspace does, why it works, what ACW canonical would gain.
+2. **Pattern.** The shape of the divergent substrate. Frontmatter, sections, conventions.
+3. **Compared to canonical.** What ACW currently has (or doesn't have) for this concern.
+4. **Why this is a candidate.** The specific advantage the workspace's shape offers — better governance, missing capability, more accurate model of the work.
+5. **Files to study.** Pointers to the actual divergent files in the workspace (paths only; no content embedded).
+6. **Recommendation.** Operator's read on whether ACW canonical should absorb, in what form. Not binding; ACW operator decides.
+
+The note is **read-only after creation**. ACW operator reads, decides, and either:
+- Promotes the pattern via the absorption arc (writes a `research/NN-*` note like `research/09`, then ships in next ACW version)
+- Rejects it (writes a decision-log entry explaining why; the workspace's file is then re-routed to adopt flow)
+
+### Divergence markers
+
+Two structured blocks in `acw-state.yaml` track non-canonical substrate:
+
+**`divergent_pending_review`** — temporary; awaiting ACW resolution.
+
+```yaml
+divergent_pending_review:
+  - path: <substrate file path>
+    absorption_candidate: <path to the _inbox/ note in ACW>
+    sent_date: YYYY-MM-DD
+    status: pending   # pending | absorbed | rejected
+```
+
+`/acw-instance upgrade` respects `pending` entries — does not propose canonical changes to those files. When ACW ships a new version that absorbs the pattern, the workspace's next `/acw-instance upgrade` detects the canonical now matches the workspace's shape, marks the entry `absorbed`, and clears it. If ACW rejects the pattern, the entry's `status` updates to `rejected` (manually or via an inbox notification back to the workspace), and the next upgrade run proposes canonical adoption.
+
+**`instance_specific_substrate`** — permanent; intentionally divergent.
+
+```yaml
+instance_specific_substrate:
+  - path: <substrate file or directory path>
+    rationale: <one-line reason>
+    decision_ref: <decision-log entry id>
+```
+
+`/acw-instance` never proposes canonical changes to files in this list. Adding an entry requires a decision-log entry recording why this substrate is uniquely the instance's (not for upstream absorption).
+
+### Re-adoption flow
+
+Concrete walkthrough of how a divergent pattern resolves:
+
+1. Workspace runs `/acw-instance audit`. Finds a divergent file judged better than canonical.
+2. Operator routes to absorb. Audit writes the absorption candidate to ACW `_inbox/`. Workspace's `divergent_pending_review` records the file with `status: pending`.
+3. ACW operator opens an ACW session days/weeks later. `/acw-session start` surfaces "1 new notification in `_inbox/`."
+4. ACW operator reads the candidate. Decides:
+   - **Absorb:** writes a `research/NN-*` note proposing the pattern, runs the absorption arc (study, propose, ship), bumps ACW version with the new pattern in `template_layer` or whatever scope fits.
+   - **Reject:** writes a decision-log entry explaining the rejection. Either drops a notification into the workspace's `_inbox/` (cross-repo-writes-permitting), or expects the workspace to discover the rejection on its next upgrade run.
+5. Workspace's next `/acw-instance upgrade` fetches the latest canonical from GitHub. For each `divergent_pending_review` entry:
+   - Compares the entry's file shape against the new canonical.
+   - If canonical now matches the workspace's shape → mark `absorbed`, clear the entry; no further action.
+   - If canonical hasn't changed and rejection-notification is present → mark `rejected`, route to adopt flow (replace the divergent file with canonical, with `.pre-acw-backup`).
+   - If neither → keep `pending`, surface a one-line status reminder.
+
+The workspace gradient: every divergent file resolves toward canonical-shaped within one or two upgrade cycles. Permanent divergence is only possible via `instance_specific_substrate`, which requires a decision-log entry.
+
+## Cross-repo write governance
+
+Workspaces writing absorption candidates to ACW's `_inbox/` perform a cross-repo write. The discipline:
+
+1. The workspace's `acw-state.yaml::cross_repo_writes` MUST list the absolute path of ACW's `_inbox/` directory before any write fires.
+2. The audit verb refuses the absorption write if the path is not declared. Surfaces to the operator: "absorption requires write to `<path>`; declare in `cross_repo_writes` to proceed."
+3. The write itself is single-file, append-only (each absorption candidate is one new file; never edit existing notifications).
+4. When the capability broker ships (deferred per `rules/capability-broker.md`), the broker becomes the enforcement layer and `cross_repo_writes` becomes the workspace-side declaration of scope. Until then, the declared list is the discipline.
+
+The same governance applies to any future cross-instance write surface (e.g., a workspace dropping a notification into another workspace's `_inbox/`, not just ACW's).
+
 ## What this rule does not yet specify
 
 The following are declared open questions. See `research/10-multi-instance-topology.md` for the full list.
