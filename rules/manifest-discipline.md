@@ -94,6 +94,73 @@ When you delete or demote a file across layers:
 
 When the lint warns about an unclassified file: pick its layer, add it to the manifest, don't `--no-verify`.
 
+## Canonical default paths
+
+The bookend skills and any other consumer that needs to locate substrate read paths from `acw-state.yaml::paths`. If a key is absent from that block, consumers fall back to the canonical defaults below. Defaults match the layout produced by `tools/scaffold-instance.py` for a fresh instance.
+
+| Key | Default path |
+|---|---|
+| `decisions_log` | `decisions/decision-log.md` |
+| `tasks_status` | `tasks-status.md` |
+| `build_log` | `build-log.md` |
+| `glossary` | `glossary.md` |
+| `threat_model` | `threat-model.md` |
+| `incidents` | `incidents.jsonl` |
+| `evolution` | `research/evolution.md` |
+| `sources` | `research/sources.md` |
+| `research_state` | `research/research-state.yaml` |
+| `problem_framing` | `research/01-problem-framing.md` |
+| `session_captures_dir` | `research/sessions` |
+| `research_queries_dir` | `research/queries` |
+| `research_queries_consumed_dir` | `research/queries/_consumed` |
+| `inbox_dir` | `_inbox` |
+
+An instance that wants to override one or more of these declares the override in its `acw-state.yaml::paths` block. Defaults remain in effect for any key the instance does not override.
+
+## Manifest tooling spec
+
+Any consumer that reads or writes a manifest list in `acw-state.yaml` (the three layer blocks, `auto_load_at_session_start`, `paths`, future blocks) implements the same four operations. The reference implementation lives in `tools/manifest.py`; consumers in other languages or runtimes implement the same contract.
+
+### `load(state_file, list_name)`
+
+Returns the list from the named block, with canonical defaults applied for any missing keys (where the spec defines defaults — see `paths` above). Returns an empty list when the block is absent and no defaults are defined. Never raises on a missing block; raises only on malformed yaml.
+
+For dict-shaped blocks like `paths`, `load` returns a dict where the layered result is `{canonical_defaults, **state_file_overrides}`. For list-shaped blocks like `auto_load_at_session_start` and `template_layer`, `load` returns the list as-is from the state file (or empty if absent); list-shaped blocks have no canonical defaults beyond "empty list."
+
+### `append(state_file, list_name, value)`
+
+Adds `value` to the named list. Refuses duplicates (no-op or raises `ManifestError`, consumer's choice — the spec says no-op is acceptable). Refuses unknown list names. Preserves yaml comments and key ordering on write. Implementations that cannot preserve comments must declare that limitation in their docstring.
+
+For dict-shaped blocks, `append` is interpreted as set/upsert: `append(state_file, "paths", {"key": "new/path"})` adds or updates the `key` entry under `paths`.
+
+### `contains(state_file, list_name, value)`
+
+Returns `True` when `value` appears in the named list (or matches a key in a dict-shaped block). Reads the canonically-defaulted view (so `contains(state_file, "paths", "decisions_log")` returns `True` even if the block is absent, because defaults provide the key).
+
+### `validate(state_file, list_name)`
+
+Raises `ManifestError` when:
+- The list contains duplicate entries (for list-shaped blocks).
+- An entry's shape does not match the block's expected schema (for example, an `instance_layer` entry missing `path`).
+- For `paths`, a value is not a string.
+
+Returns `None` on success. Implementations may extend validation with consumer-specific checks (e.g., the lint may verify that paths in `paths` resolve to existing files); those checks live in the calling consumer, not in the reference `validate`.
+
+### Schema reference
+
+| Block | Shape | Item schema | Defaults |
+|---|---|---|---|
+| `template_layer` | list | string (path or dir) | none (empty) |
+| `instance_layer` | list | dict with `path` (required), `template` (required, may be null), optional `host`, `instance_only` | none (empty) |
+| `meta_layer` | list | string (path) | none (empty) |
+| `empty_dirs` | list | string (path) | none (empty) |
+| `auto_load_at_session_start` | list | string (path) | none (empty) |
+| `paths` | dict | string keys, string values | see "Canonical default paths" above |
+| `cross_repo_writes` | list | string (absolute path) | none (empty) |
+| `voice` | list | string (path) | none (empty) |
+
+A consumer that needs additional schema (e.g., extra fields on `instance_layer` entries) extends this table in its own scope and validates accordingly.
+
 ## The recurring pattern
 
 The manifest shape now appears at least three times in ACW:

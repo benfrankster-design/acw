@@ -18,8 +18,8 @@
 # Edited only via a decision-log entry. Every edit bumps `version` or
 # `last_reconciled`.
 
-version: "0.2.0-rc3"
-last_reconciled: "2026-04-30"
+version: "0.2.0-rc4"
+last_reconciled: "2026-05-02"
 
 # ACW is an instance of itself — it has its own substrate, follows its own
 # rules, and dogfoods its own machinery. It also serves as a template for
@@ -105,6 +105,14 @@ instance_layer:
   - path: README.md
     template: tools/templates/README.md.tmpl
     instance_only: true   # do not expect a populated counterpart at ACW root
+  # Host-specific entry files implementing AGENTS.md directive 7. Each host's
+  # entry file is instance_layer with template: null because content is
+  # host-specific and regenerable; the scaffolder writes it directly when
+  # --host matches. Host entry files are maintained by the session-end
+  # bookend skill (Phase 2 surfaces proposed edits when substrate shifts).
+  - path: CLAUDE.md
+    template: null
+    host: claude-code
 
 meta_layer:
   # About ACW itself — not propagated to instances
@@ -152,6 +160,26 @@ synapse_log_path: null
 
 # Voice references applied during transcript cleanup.
 voice: []
+
+# Substrate file paths. The bookend skills read from this block; instances may
+# override any path. Canonical defaults match this list and are documented in
+# rules/manifest-discipline.md. If a key is absent from this block, consumers
+# fall back to the canonical default for that key.
+paths:
+  decisions_log: decisions/decision-log.md
+  tasks_status: tasks-status.md
+  build_log: build-log.md
+  glossary: glossary.md
+  threat_model: threat-model.md
+  incidents: incidents.jsonl
+  evolution: research/evolution.md
+  sources: research/sources.md
+  research_state: research/research-state.yaml
+  problem_framing: research/01-problem-framing.md
+  session_captures_dir: research/sessions
+  research_queries_dir: research/queries
+  research_queries_consumed_dir: research/queries/_consumed
+  inbox_dir: _inbox
 
 deferred_canonical_source: DEFERRED.md
 deferred_derived_view: deferred/
