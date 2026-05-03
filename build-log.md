@@ -9,6 +9,41 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-03 — v0.6.1: meta-layer backfill from harness's first run
+
+Single-word ship request after the v0.6.0 meta-layer harness's first invocation surfaced four staleness proposals. Operator accepted all four; v0.6.1 lands the meta-file updates that close the v0.2.0+ backfill gap.
+
+The four proposals and what shipped:
+
+1. **README.md directory map** extended with `context/` (and its four canonical files: `goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`) and `inbox/`. Previously listed only the v0.5.0 surfaces (`runbooks/`, `integrations/`, `briefings/`, `_buffer/`).
+
+2. **LINEAGE.md** gained a major new section ("v0.2.0+ primitives") with primitive-trace entries covering the full v0.2.0–v0.6.0 cluster. The entries categorize as substrate categories (7), architectural primitives (5), skills (2), tooling (2), discipline primitives (3). Each names its triggering evidence (incident, decision-log entry, operator pushback) and any prior-art ancestor. The previous LINEAGE only traced v0.1.0 primitives to the formal seven-phase research project; v0.2.0+ traces predominantly to dogfood incidents.
+
+3. **ORCHESTRATION.md** gained a "v0.2.0+ evolution methodology" section that documents the recurring dogfood-driven loop in operator-translation form. Names the loop's shape (operator runs ACW → friction surfaces → operator pushes back → session designs the fix → ship in next minor or patch with maintenance harness if pattern repeats), the three disciplines that keep it from becoming ad-hoc patching (earn-by-incident applies recursively; maintenance harnesses ship alongside structural fixes; append-only history is sacred), and the boundary (v0.2.0+ loop runs after v0.1.0-style structured research produces a coherent foundation; both methodologies are needed).
+
+4. **SKEPTIC.md** gained Warning 4 ("Substrate is not static") earned 2026-05-03 via incident `e167b922`. Names the asymmetric-build anti-pattern: every "this won't drift, it's just reference" claim has been wrong on a long enough timeline. Existing Warning 4 (Reflexive injection) renumbered to Warning 5; file title updated from "Four Warnings" to "Five Warnings."
+
+This validates the meta-layer harness's first-test correctness (OQ-ACW-010 earn-by-incident path appears clean for now). The harness produced clean proposals on first run; no spec bugs surfaced. Distinct from v0.4.0's audit verb which produced five bugs on first dogfood — the meta-layer harness's spec was tighter going in, partly because it inherited the lessons of the audit-verb experience.
+
+### Metabolize report
+
+**Auto-updated** (executed):
+- `README.md` — directory map extended.
+- `LINEAGE.md` — v0.2.0+ section added (~70 lines of primitive-trace entries).
+- `ORCHESTRATION.md` — v0.2.0+ evolution methodology section added (~50 lines).
+- `SKEPTIC.md` — Warning 4 added; renumbering applied; file title updated.
+- `acw-state.yaml` — `version` and `last_reconciled_version` 0.6.0 → 0.6.1.
+- `tools/templates/acw-state.yaml.tmpl` — baseline `last_reconciled_version` → 0.6.1.
+- `decisions/decision-log.md` — D-ACW-035 (operator-approved acceptance of all four harness proposals).
+- `CHANGELOG.md` — v0.6.1 entry per Keep a Changelog format.
+- `tasks-status.md::Done` — Session 11 dated block.
+
+**Proposed for operator review** (carry-over; no new proposals this session):
+- Re-dogfood `/acw-instance audit` against `_Command`, `cs-copilot`, `gsg-copilot`.
+- Cross-instance write trigger entry in `DEFERRED.md` for capability broker.
+- Lint gate for command-routed skills.
+- OQ-ACW-010 (resolved-positively-on-first-test); OQ-ACW-011 (still open; defer until evidence).
+
 ## 2026-05-02 — v0.6.0: operator-centric substrate + meta-layer harness
 
 Continuation session immediately after v0.5.1's front-door cleanup. Operator approved the v0.6.0 scope queued at end of v0.5.1 and said simply: "ship." Four commits, one push.

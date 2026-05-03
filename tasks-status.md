@@ -28,6 +28,16 @@ Three-section task tracker. See `rules/task-tracking.md` for format and discipli
 
 ## Done
 
+### 2026-05-03 — v0.6.1: meta-layer backfill from harness's first run (Session 11)
+
+- Accepted all four proposals surfaced by the v0.6.0 meta-layer maintenance harness on its first invocation post-shipping.
+- `README.md` directory map extended with `context/` and `inbox/`.
+- `LINEAGE.md` backfilled with primitive-trace entries for the entire v0.2.0+ cluster (substrate categories, architectural primitives, skills, tooling, discipline primitives). Closes the v0.1.0-only-traces gap.
+- `ORCHESTRATION.md` gained "v0.2.0+ evolution methodology" section documenting the dogfood-driven loop, the recursive earn-by-incident discipline, the maintenance-harness-alongside-structural-fix rule, and the boundary between the v0.1.0 seven-phase arc and the v0.2.0+ loop.
+- `SKEPTIC.md` gained Warning 4 ("Substrate is not static") earned by incident `e167b922`. Existing Warning 4 (Reflexive injection) renumbered to Warning 5; file title updated.
+- Bumped ACW version `0.6.0` → `0.6.1`. D-ACW-035 records the rationale.
+- Validates the meta-layer harness's first-test correctness (OQ-ACW-010 earn-by-incident path appears clean).
+
 ### 2026-05-02 — v0.6.0: operator-centric substrate + meta-layer harness (Session 10)
 
 - Shipped `context/` canonical with four templated files (`goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`). Lightweight pointers to operating reality. ACW's own context populated. D-ACW-031.

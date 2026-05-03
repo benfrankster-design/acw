@@ -12,6 +12,19 @@ All notable changes to ACW (Agentic Contract Workspace) will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] — 2026-05-03
+
+Meta-layer backfill — the v0.6.0 maintenance harness's first run surfaced four staleness proposals on its first walk. Operator accepted all four. v0.6.1 ships the meta-file updates that close the v0.2.0+ backfill gap.
+
+### Changed
+- `README.md` — directory map extended with `context/` (and its four canonical files) and `inbox/`. Previously listed only the v0.5.0 surfaces.
+- `LINEAGE.md` — added "v0.2.0+ primitives" section with primitive-trace entries for: substrate categories (`tasks-status.md`, `build-log.md`, `runbooks/`, `integrations/`, `briefings/`, `context/`, `inbox/`), architectural primitives (three-layer manifest, multi-instance topology, command-routed orchestrator, GitHub-first canonical, `is_canonical_source` + absorption mechanics), skills (`/acw-session start|end`, `/acw-instance audit|upgrade`), tooling (`tools/scaffold-instance.py`, `tools/manifest.py`), and discipline primitives (`rules/instance-current-manifest.md`, meta-layer maintenance harness, earn-by-incident applied recursively).
+- `ORCHESTRATION.md` — added "v0.2.0+ evolution methodology" section documenting the recurring dogfood-driven loop that produced v0.2.0–v0.6.0. Names the discipline (earn-by-incident applies recursively; maintenance harnesses ship alongside structural fixes; append-only history is sacred) and the boundary (v0.2.0+ loop runs *after* v0.1.0-style structured research produces a coherent foundation).
+- `SKEPTIC.md` — Warning 4 added: "Substrate is not static." Earned 2026-05-03 via incident `e167b922`. Names the asymmetric-build anti-pattern. Existing Warning 4 (Reflexive injection) renumbered to Warning 5; file title updated.
+
+### Decisions
+D-ACW-035. See `decisions/decision-log.md`.
+
 ## [0.6.0] — 2026-05-02
 
 Operator-centric substrate cluster + meta-layer maintenance harness. The substrate cluster fills the operator-context gap (context/, inbox/, tasks-status framing). The harness closes the staleness gap that produced v0.5.1 — substrate had Phase 2 distribution; meta-layer now has the same.

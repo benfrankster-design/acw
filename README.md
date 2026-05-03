@@ -111,7 +111,13 @@ acw/
 │
 ├── runbooks/                    # operator-facing how-to docs (free-form)
 ├── integrations/                # external-system docs (APIs, MCPs, adapters); README explains convention
-├── briefings/                   # agent-generated dated snapshots
+├── briefings/                   # agent-generated dated snapshots (daily/weekly/on-demand aggregations)
+├── context/                     # lightweight pointers to operating reality
+│   ├── goals.md                 # long-arc goals
+│   ├── objectives.md            # current near-term focus
+│   ├── how-i-work.md            # operator preferences, schedule, communication
+│   └── key-people.md            # who matters in this workspace's domain
+├── inbox/                       # operator's untriaged items (folder of dated files)
 ├── _buffer/                     # system surface for cross-instance handoffs (absorption candidates etc.)
 │
 ├── research/                    # research archive (origin chain) + sessions/ + queries/
