@@ -47,6 +47,9 @@ CANONICAL_DEFAULTS: dict[str, dict[str, str]] = {
         "research_queries_dir": "research/queries",
         "research_queries_consumed_dir": "research/queries/_consumed",
         "buffer_dir": "_buffer",
+        "runbooks_dir": "runbooks",
+        "integrations_dir": "integrations",
+        "briefings_dir": "briefings",
     },
 }
 

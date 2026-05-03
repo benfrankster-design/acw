@@ -121,6 +121,8 @@ instance_layer:
   - path: README.md
     template: tools/templates/README.md.tmpl
     instance_only: true   # do not expect a populated counterpart at ACW root
+  - path: integrations/README.md
+    template: tools/templates/integrations-README.md.tmpl
   # Host-specific entry files implementing AGENTS.md directive 7. Each host's
   # entry file is instance_layer with template: null because content is
   # host-specific and regenerable; the scaffolder writes it directly when
@@ -158,6 +160,8 @@ empty_dirs:
   - skills
   - deferred
   - _buffer
+  - runbooks
+  - briefings
 
 # =============================================================================
 # Operational substrate references
