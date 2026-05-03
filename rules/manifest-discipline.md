@@ -113,7 +113,7 @@ The bookend skills and any other consumer that needs to locate substrate read pa
 | `session_captures_dir` | `research/sessions` |
 | `research_queries_dir` | `research/queries` |
 | `research_queries_consumed_dir` | `research/queries/_consumed` |
-| `inbox_dir` | `_inbox` |
+| `buffer_dir` | `_buffer` |
 
 An instance that wants to override one or more of these declares the override in its `acw-state.yaml::paths` block. Defaults remain in effect for any key the instance does not override.
 

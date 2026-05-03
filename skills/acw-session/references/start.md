@@ -4,7 +4,7 @@ Session-start verb. Loads variable context that doesn't belong in auto-loaded su
 
 ## After the spine
 
-The orchestrator's spine has already loaded `paths`, the `_inbox/` state (Step 3), and the 3 most recent session captures (Step 4 paths only). The start verb consumes those plus reads queued research prompts and runs the drift check.
+The orchestrator's spine has already loaded `paths`, the `_buffer/` state (Step 3), and the 3 most recent session captures (Step 4 paths only). The start verb consumes those plus reads queued research prompts and runs the drift check.
 
 ## Step 1 — Read recent session captures (§5–§7 only)
 
@@ -24,9 +24,9 @@ For each queued prompt:
 - Findings present → note as "synthesis loaded"; the `end` verb will sweep it to consumed at session close.
 - Findings absent → note as "ready to fire"; operator will run `/deep-research` (or equivalent) against it this session.
 
-## Step 4 — Surface inbox notifications from spine Step 3
+## Step 4 — Surface buffer notifications from spine Step 3
 
-For each unread file the spine collected (`read: false` in frontmatter, or no `read` field), surface to operator: source project, date, topic, one-line summary. Do not auto-act. Operator decides per file: act on it, archive (move to a `_read/` subdirectory of the inbox), or ignore.
+For each unread file the spine collected (`read: false` in frontmatter, or no `read` field), surface to operator: source project, date, topic, one-line summary. Do not auto-act. Operator decides per file: act on it, archive (move to a `_read/` subdirectory of the buffer), or ignore.
 
 ## Step 5 — Drift check
 

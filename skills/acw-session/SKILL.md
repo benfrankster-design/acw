@@ -3,10 +3,10 @@ name: acw-session
 description: >
   Object-centered orchestrator for the ACW session lifecycle. Two verbs over
   one shared spine: `start` (load context for a new session, surface state,
-  read inbox, run drift check) and `end` (capture transcript, distribute
+  read buffer, run drift check) and `end` (capture transcript, distribute
   findings into substrate, metabolize stale entries, optionally append a
   synapse session log, optionally build a next-session research prompt).
-  Both verbs read the same setup spine — auto-load files, paths, inbox,
+  Both verbs read the same setup spine — auto-load files, paths, buffer,
   recent captures — before specialist work fires.
 
   Replaces /resume-session and /capture-and-metabolize from prior versions.
@@ -31,7 +31,7 @@ Object-centered orchestrator. Object: this ACW instance's session lifecycle. Ver
 
 | Command | What it does | Reference |
 |---|---|---|
-| `start` | Loads context for a new session. Reads recent session captures, runs drift check against `rules/instance-current-manifest.md`, surfaces unread `_inbox/` notifications, reports state to the operator. Read-only on substrate. | `references/start.md` |
+| `start` | Loads context for a new session. Reads recent session captures, runs drift check against `rules/instance-current-manifest.md`, surfaces unread `_buffer/` notifications, reports state to the operator. Read-only on substrate. | `references/start.md` |
 | `end` | Five-phase pass: capture transcript, distribute findings into substrate, metabolize stale entries, optional synapse session log, optional next-session research prompt. Edits substrate per its discipline rules. | `references/end.md` |
 
 Routing rules: argument required. `/acw-session` with no command prints the table. Unknown command errors with the table.
@@ -56,15 +56,15 @@ Read once and resolve:
 
 For each substrate key needed by the active verb, resolve the path via the merged `paths` view from Step 1. Never hardcode paths. Section headings inside substrate files resolve via `section_conventions.<name>` per each file's frontmatter (with documented defaults).
 
-### Step 3 — Check `_inbox/` for cross-project notifications
+### Step 3 — Check `_buffer/` for cross-project notifications
 
-Walk `paths.inbox_dir` (top level only; do not descend into a `_read/` subdirectory). For each file present:
+Walk `paths.buffer_dir` (top level only; do not descend into a `_read/` subdirectory). For each file present:
 
 - Read its frontmatter and a one-line summary.
 - Note whether `read: false` or absent (treat as unread).
-- Pass the inbox state to the active verb.
+- Pass the buffer state to the active verb.
 
-If `paths.inbox_dir` does not exist, skip silently — the lattice handoff design assumes its presence but a workspace can run without one.
+If `paths.buffer_dir` does not exist, skip silently — the lattice handoff design assumes its presence but a workspace can run without one.
 
 ### Step 4 — Read recent session captures (cap at 3)
 
@@ -72,7 +72,7 @@ The active verb may need recent-session context. Walk `paths.session_captures_di
 
 ### Step 5 — Verb dispatch
 
-The orchestrator hands off to the verb's reference file. Verbs consume the spine output (config, paths, inbox state, recent captures) and execute their specialist work.
+The orchestrator hands off to the verb's reference file. Verbs consume the spine output (config, paths, buffer state, recent captures) and execute their specialist work.
 
 ## When NOT to fire
 

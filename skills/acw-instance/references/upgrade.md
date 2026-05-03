@@ -10,10 +10,18 @@ The orchestrator's Step 5 produces the routing table. Upgrade's job is to walk i
 
 If Step 2 of the spine flagged this workspace as unregistered (substrate signals at-or-above 3), check the `adopt_mode_organic_threshold` in canonical defaults (default 5):
 
-- Count markdown files in `decisions/` and `rules/` excluding any files that are byte-identical or near-identical to ACW canonical copies (i.e., excluding files that came from an earlier scaffold).
-- If the count in either directory is at-or-above the threshold → bail:
-  > This workspace has substantial existing substrate (`<N>` files in `<directory>`). Adopt-mode could overwrite or conflict with organic conventions. Run `/acw-instance audit` first to route divergences before any writes fire.
-- If the count is below the threshold → proceed to adoption.
+Compute the organic-substrate count as follows:
+
+1. Markdown files in `decisions/` and `rules/` excluding any files byte-identical or near-identical to ACW canonical copies (files that came from an earlier scaffold).
+2. **Plus** root-level directories that look substrate-like and are not in ACW canonical's `template_layer` or `instance_layer` lists. Each such directory counts as 1, regardless of how many files it contains. Examples: `briefings/`, `runbooks/`, `integrations/`, `notes/`, `context/`, `journal/`, `inbox/`, custom-named substrate directories the operator created.
+3. **Plus** root-level markdown files that aren't canonical (anything other than `tasks-status.md`, `build-log.md`, `glossary.md`, `threat-model.md`, `incidents.jsonl`, README, CHANGELOG, etc.). Each such file counts as 1.
+
+If the total at-or-above the threshold → bail:
+> This workspace has substantial existing substrate (`<N>` items detected). Adopt-mode could overwrite or conflict with organic conventions. Run `/acw-instance audit` first to route divergences before any writes fire.
+
+If below the threshold → proceed to adoption.
+
+Rationale: the v0.4.0 hard-stop counted only `decisions/` and `rules/` files, which missed the case it was designed to catch — workspaces like `_Command` accumulate organic substrate at the root (briefings/, context/, runbooks/, integrations/, notes/) far more than inside `decisions/` or `rules/`. The expanded scope catches those cases. (Earned by `_Command` audit dogfood incident.)
 
 ### Adoption sequence
 
@@ -71,12 +79,22 @@ Honor the routing table's existing markers:
 - Files in `divergent_pending_review` → no canonical proposal; surface "pending review of absorption candidate sent <date>; not modifying."
 - Files in `instance_specific_substrate` → no canonical proposal; surface "instance-specific per <decision_ref>; not modifying."
 
+## v0.5.0 migration: `_inbox/` → `_buffer/`
+
+Before walking gaps, detect the legacy directory name:
+
+- If `<workspace>/_inbox/` exists AND `<workspace>/_buffer/` does not exist → propose migration:
+  > Detected legacy `_inbox/` directory. v0.5.0 renamed this surface to `_buffer/` (DIP vocabulary canon; clears semantic space for the operator-facing `inbox/` arriving in v0.6.0). Rename `_inbox/` → `_buffer/` now? [y/N]
+- On `y`: `git mv _inbox _buffer` (or filesystem move if not a git repo). Update `acw-state.yaml::paths::buffer_dir` to `_buffer` and remove any `inbox_dir` key. Update `acw-state.yaml::empty_dirs` to replace `_inbox` with `_buffer`.
+- On `n`: skip the rename; surface a warning that v0.5.0+ skills expect `_buffer/` and will not find this workspace's notifications until the rename happens.
+- If both `_inbox/` and `_buffer/` exist → bail with: ambiguous state, manual cleanup required.
+
 ## Resolve divergent_pending_review entries
 
 After the gap walk, for each existing `divergent_pending_review` entry with `status: pending`:
 
 - Compare the entry's file shape against the freshly-fetched canonical. If canonical now matches the workspace's shape → mark `absorbed`, surface to operator, clear the entry.
-- If a rejection notification exists in this workspace's `_inbox/` from ACW (filename pattern `acw-rejection-<topic>.md`) → mark `rejected`, surface to operator, route to adopt flow on next run.
+- If a rejection notification exists in this workspace's `_buffer/` from ACW (filename pattern `acw-rejection-<topic>.md`) → mark `rejected`, surface to operator, route to adopt flow on next run.
 - Else → keep `pending`, surface a one-line status reminder.
 
 ## Refresh canonical cache

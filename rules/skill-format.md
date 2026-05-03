@@ -162,7 +162,7 @@ The pattern can orient around either axis. Pick the axis where the variation liv
 
 - `pbakaus/impeccable craft / audit / polish / distill / typeset / colorize / ...` — one frontend project, many specialist design operations on it. Spine: every command reads `PRODUCT.md` and `DESIGN.md`. Specialist work diverges after the spine.
 - `/acw-instance audit / upgrade` — one ACW instance, two operations on it. Spine: registration check, GitHub canonical fetch, substrate scan, routing-table generation. Specialist work: audit reports the table; upgrade walks it action-by-action.
-- `/acw-session start / end` — one session lifecycle, two boundary operations. Spine: read `acw-state.yaml::auto_load_at_session_start`, resolve `paths`, check `_inbox/`. Specialist work: start surfaces context; end captures, distributes, metabolizes.
+- `/acw-session start / end` — one session lifecycle, two boundary operations. Spine: read `acw-state.yaml::auto_load_at_session_start`, resolve `paths`, check `_buffer/`. Specialist work: start surfaces context; end captures, distributes, metabolizes.
 
 The orientations are mirror images. Same structural pattern, perpendicular axes.
 

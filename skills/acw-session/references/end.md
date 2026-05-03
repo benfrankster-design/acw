@@ -4,7 +4,7 @@ Session-end verb. Five-phase pass: capture, distribute, metabolize, optional syn
 
 ## After the spine
 
-The orchestrator's spine has resolved configuration, paths, inbox state, and recent capture paths. The end verb runs Phases 1–3 always; Phase 4 conditional on `synapse_log_path`; Phase 5 conditional on operator confirmation.
+The orchestrator's spine has resolved configuration, paths, buffer state, and recent capture paths. The end verb runs Phases 1–3 always; Phase 4 conditional on `synapse_log_path`; Phase 5 conditional on operator confirmation.
 
 ## Phase 1 — Capture
 
@@ -60,7 +60,7 @@ If no canonical files were edited, skip silently.
 
 **Cross-repo writes.** If a finding implies a write to a path outside the project repo, the path MUST be in `acw-state.yaml::cross_repo_writes`. If not, refuse and surface the path.
 
-**Cross-project notifications.** If the session touched another project, drop a notification at the other project's `paths.inbox_dir / YYYY-MM-DD-<source-project>-<topic-slug>.md`. Frontmatter: `from_project`, `from_session_capture`, `date`, `topic`, `read: false`. Body: 5–15 lines summarizing what the receiving project should know. Append-only; never edit once written.
+**Cross-project notifications.** If the session touched another project, drop a notification at the other project's `paths.buffer_dir / YYYY-MM-DD-<source-project>-<topic-slug>.md`. Frontmatter: `from_project`, `from_session_capture`, `date`, `topic`, `read: false`. Body: 5–15 lines summarizing what the receiving project should know. Append-only; never edit once written.
 
 ## Phase 3 — Metabolize
 

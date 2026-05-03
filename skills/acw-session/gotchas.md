@@ -1,6 +1,6 @@
 # Gotchas
 
-- **Spine missing `_inbox/`.** If `paths.inbox_dir` doesn't exist (the directory wasn't created at scaffold time), Step 3 of the spine skips silently. → Run `/acw-instance upgrade` to backfill `_inbox` per the recommended block earned in v0.4.0; or create `_inbox/.gitkeep` manually.
+- **Spine missing `_buffer/`.** If `paths.buffer_dir` doesn't exist (the directory wasn't created at scaffold time), Step 3 of the spine skips silently. → Run `/acw-instance upgrade` to backfill `_buffer` per the recommended block; or create `_buffer/.gitkeep` manually.
 - **`end` verb edits canonical file in a child instance.** If `is_canonical_source` is false (the default), the warning fires but the skill doesn't block the edit. → Operator's responsibility to either back the edit out, or raise it upstream in ACW for absorption review.
 - **`end` Phase 2 attempts cross-repo write without `cross_repo_writes` declaration.** Phase 2 refuses the write and surfaces the path. → Operator declares the path in `acw-state.yaml::cross_repo_writes`, then re-runs `/acw-session end`.
 - **`start` verb's drift check runs against stale local cache.** The drift comparison uses `rules/instance-current-manifest.md` from the local copy, which `/acw-instance upgrade` keeps refreshed. If the local cache is stale (operator hasn't run upgrade in a while), drift may under-report. → Run `/acw-instance upgrade` periodically; the cache refreshes from GitHub canonical.

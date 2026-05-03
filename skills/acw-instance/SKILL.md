@@ -12,7 +12,7 @@ description: >
 
   Produces routing reports (audit) or edits to acw-state.yaml plus a refresh
   of rules/instance-current-manifest.md plus optional absorption candidates
-  written to ACW's _inbox/ (upgrade), with a decision-log entry recording
+  written to ACW's _buffer/ (upgrade), with a decision-log entry recording
   the run.
 role: orchestrator
 capabilities: []
@@ -30,7 +30,7 @@ Object-centered orchestrator. Object: this ACW instance. Verbs: operations on it
 
 | Command | What it does | Reference |
 |---|---|---|
-| `audit` | Read-only. Walks substrate, compares against ACW canonical (Mode A) and surfaces non-canonical substrate-like patterns (Mode B), produces a per-file routing report, optionally writes absorption candidates to ACW's `_inbox/` per operator routing. Never modifies the instance's substrate. | `references/audit.md` |
+| `audit` | Read-only. Walks substrate, compares against ACW canonical (Mode A) and surfaces non-canonical substrate-like patterns (Mode B), produces a per-file routing report, optionally writes absorption candidates to ACW's `_buffer/` per operator routing. Never modifies the instance's substrate. | `references/audit.md` |
 | `upgrade` | Reconciles instance state with ACW canonical. Walks gaps in `acw-state.yaml`, applies adopt-mode for unregistered workspaces (with hard-stop above the organic threshold), respects `divergent_pending_review` and `instance_specific_substrate` markers. Writes `acw-state.yaml` and refreshes `rules/instance-current-manifest.md` from canonical. | `references/upgrade.md` |
 
 Routing rules: argument required. `/acw-instance` with no command prints the table. Unknown command errors with the table.
@@ -97,7 +97,7 @@ The routing table is the spine output. Verbs consume it differently — audit re
 
 ## Safety
 
-- Audit verb writes only absorption candidates to ACW's `_inbox/` (and only on operator routing). No other writes.
+- Audit verb writes only absorption candidates to ACW's `_buffer/` (and only on operator routing). No other writes.
 - Upgrade verb writes `acw-state.yaml`, `rules/instance-current-manifest.md` (cache refresh), and `paths.decisions_log`. Hard-stop above `adopt_mode_organic_threshold` prevents steamrolling.
 - Single source of truth: GitHub. The skill never reads the local cache as comparison yardstick; fail-closed on GitHub unreachable.
 

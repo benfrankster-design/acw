@@ -91,7 +91,7 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(result["decisions_log"], "decisions/decision-log.md")
         self.assertEqual(result["tasks_status"], "tasks-status.md")
         # Canonical defaults fill the rest
-        self.assertEqual(result["inbox_dir"], "_inbox")
+        self.assertEqual(result["buffer_dir"], "_buffer")
         self.assertEqual(result["build_log"], "build-log.md")
         # Should have all canonical keys
         for key in CANONICAL_DEFAULTS["paths"]:
@@ -197,7 +197,7 @@ class ManifestTests(unittest.TestCase):
 
     def test_contains_paths_default_key_present(self):
         # Key that's only in canonical defaults, not in the file
-        self.assertTrue(contains(self.state_file, "paths", "inbox_dir"))
+        self.assertTrue(contains(self.state_file, "paths", "buffer_dir"))
 
     def test_contains_paths_explicit_key_present(self):
         self.assertTrue(contains(self.state_file, "paths", "decisions_log"))

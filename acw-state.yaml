@@ -157,7 +157,7 @@ empty_dirs:
   - research/queries/_consumed
   - skills
   - deferred
-  - _inbox
+  - _buffer
 
 # =============================================================================
 # Operational substrate references
@@ -217,7 +217,7 @@ paths:
   session_captures_dir: research/sessions
   research_queries_dir: research/queries
   research_queries_consumed_dir: research/queries/_consumed
-  inbox_dir: _inbox
+  buffer_dir: _buffer
 
 deferred_canonical_source: DEFERRED.md
 deferred_derived_view: deferred/

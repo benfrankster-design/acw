@@ -104,7 +104,7 @@ Three primitives are needed for the lattice to function as more than parallel in
 
 | Primitive | Status | Activation trigger |
 |---|---|---|
-| **Cross-instance handoff protocol** | Seed (`_inbox/` directory; one-way notification drops) | Three documented cases of lost, mis-routed, or hand-reconciled handoffs |
+| **Cross-instance handoff protocol** | Seed (`_buffer/` directory; one-way notification drops) | Three documented cases of lost, mis-routed, or hand-reconciled handoffs |
 | **Capability broker** | Designed (`rules/capability-broker.md`); deferred | Triggers in `DEFERRED.md` plus three documented cross-instance write incidents |
 | **Admission controller** | Unbuilt | Three documented cases of cross-instance writes that should have been blocked but weren't |
 
@@ -134,14 +134,14 @@ When a workspace's substrate doesn't match ACW canonical, three flows route per-
 | Flow | When it fires | What happens |
 |---|---|---|
 | **Adopt** | Workspace's file is canonical-shaped or close to it; ACW canonical is the right shape | Skill writes the canonical shape (enrichment of existing file, or migration with `<file>.pre-acw-backup` created) |
-| **Absorb** | Workspace's file is *better* than ACW canonical, or addresses something ACW canonical doesn't | Skill writes an absorption candidate to ACW's `_inbox/`; workspace's `acw-state.yaml::divergent_pending_review` records the pending file; ACW operator reviews in a future ACW session |
+| **Absorb** | Workspace's file is *better* than ACW canonical, or addresses something ACW canonical doesn't | Skill writes an absorption candidate to ACW's `_buffer/`; workspace's `acw-state.yaml::divergent_pending_review` records the pending file; ACW operator reviews in a future ACW session |
 | **Instance-specific** | The pattern is uniquely the workspace's and won't generalize upstream | Skill writes the file path to `acw-state.yaml::instance_specific_substrate`; future `/acw-instance` runs respect the marker and never propose canonical for it |
 
-### Absorption candidate format (`_inbox/` payload)
+### Absorption candidate format (`_buffer/` payload)
 
-When a workspace flags a file for absorption, the audit verb writes a structured note to ACW's `_inbox/`:
+When a workspace flags a file for absorption, the audit verb writes a structured note to ACW's `_buffer/`:
 
-**Filename:** `_inbox/YYYY-MM-DD-<workspace>-<topic-slug>-absorption-candidate.md`
+**Filename:** `_buffer/YYYY-MM-DD-<workspace>-<topic-slug>-absorption-candidate.md`
 
 **Frontmatter:**
 ```yaml
@@ -181,7 +181,7 @@ Two structured blocks in `acw-state.yaml` track non-canonical substrate:
 ```yaml
 divergent_pending_review:
   - path: <substrate file path>
-    absorption_candidate: <path to the _inbox/ note in ACW>
+    absorption_candidate: <path to the _buffer/ note in ACW>
     sent_date: YYYY-MM-DD
     status: pending   # pending | absorbed | rejected
 ```
@@ -204,11 +204,11 @@ instance_specific_substrate:
 Concrete walkthrough of how a divergent pattern resolves:
 
 1. Workspace runs `/acw-instance audit`. Finds a divergent file judged better than canonical.
-2. Operator routes to absorb. Audit writes the absorption candidate to ACW `_inbox/`. Workspace's `divergent_pending_review` records the file with `status: pending`.
-3. ACW operator opens an ACW session days/weeks later. `/acw-session start` surfaces "1 new notification in `_inbox/`."
+2. Operator routes to absorb. Audit writes the absorption candidate to ACW `_buffer/`. Workspace's `divergent_pending_review` records the file with `status: pending`.
+3. ACW operator opens an ACW session days/weeks later. `/acw-session start` surfaces "1 new notification in `_buffer/`."
 4. ACW operator reads the candidate. Decides:
    - **Absorb:** writes a `research/NN-*` note proposing the pattern, runs the absorption arc (study, propose, ship), bumps ACW version with the new pattern in `template_layer` or whatever scope fits.
-   - **Reject:** writes a decision-log entry explaining the rejection. Either drops a notification into the workspace's `_inbox/` (cross-repo-writes-permitting), or expects the workspace to discover the rejection on its next upgrade run.
+   - **Reject:** writes a decision-log entry explaining the rejection. Either drops a notification into the workspace's `_buffer/` (cross-repo-writes-permitting), or expects the workspace to discover the rejection on its next upgrade run.
 5. Workspace's next `/acw-instance upgrade` fetches the latest canonical from GitHub. For each `divergent_pending_review` entry:
    - Compares the entry's file shape against the new canonical.
    - If canonical now matches the workspace's shape → mark `absorbed`, clear the entry; no further action.
@@ -219,14 +219,14 @@ The workspace gradient: every divergent file resolves toward canonical-shaped wi
 
 ## Cross-repo write governance
 
-Workspaces writing absorption candidates to ACW's `_inbox/` perform a cross-repo write. The discipline:
+Workspaces writing absorption candidates to ACW's `_buffer/` perform a cross-repo write. The discipline:
 
-1. The workspace's `acw-state.yaml::cross_repo_writes` MUST list the absolute path of ACW's `_inbox/` directory before any write fires.
+1. The workspace's `acw-state.yaml::cross_repo_writes` MUST list the absolute path of ACW's `_buffer/` directory before any write fires.
 2. The audit verb refuses the absorption write if the path is not declared. Surfaces to the operator: "absorption requires write to `<path>`; declare in `cross_repo_writes` to proceed."
 3. The write itself is single-file, append-only (each absorption candidate is one new file; never edit existing notifications).
 4. When the capability broker ships (deferred per `rules/capability-broker.md`), the broker becomes the enforcement layer and `cross_repo_writes` becomes the workspace-side declaration of scope. Until then, the declared list is the discipline.
 
-The same governance applies to any future cross-instance write surface (e.g., a workspace dropping a notification into another workspace's `_inbox/`, not just ACW's).
+The same governance applies to any future cross-instance write surface (e.g., a workspace dropping a notification into another workspace's `_buffer/`, not just ACW's).
 
 ## What this rule does not yet specify
 

@@ -59,7 +59,7 @@ Conceptual map; for current contents see the files themselves and the manifest i
 - **Decisions, tasks, incidents, build narrative, glossary, threat model, state file** live at root as instance_layer.
 - **Research** lives in `research/`: problem-framing, evolution, sources, research-state, plus session captures and queued research prompts in subdirectories.
 - **Meta-layer narrative** (story files, license, changelog, this file) lives at root and is not propagated to children.
-- **Cross-project notifications and absorption candidates** land in `_inbox/`; `/acw-session start` reads it.
+- **Cross-project notifications and absorption candidates** land in `_buffer/`; `/acw-session start` reads it.
 - **Deferred primitives** are catalogued in `DEFERRED.md` (canonical) with per-primitive notes in `deferred/` (derived view).
 
 ## Forbidden until earned

@@ -50,7 +50,7 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
     session_captures_dir: research/sessions
     research_queries_dir: research/queries
     research_queries_consumed_dir: research/queries/_consumed
-    inbox_dir: _inbox
+    buffer_dir: _buffer
   ```
   Override any key the instance places elsewhere; omit keys that match the default.
 - **Earned in:** `0.2.0-rc4`.
@@ -143,17 +143,17 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 - **How to add:** Run `/acw-instance upgrade`, which fetches the canonical content from GitHub and walks the operator through adoption. Or manually: copy `rules/multi-instance-topology.md` from ACW canonical into the instance's `rules/` directory. Add the path to `template_layer` in `acw-state.yaml` (recommended) and to `auto_load_at_session_start` (recommended).
 - **Earned in:** `0.3.0`.
 
-## `_inbox` directory
+## `_buffer` directory
 
-- **What:** A `_inbox/` directory at the workspace root. Every instance has one. Read by `/acw-session start` at session-start to surface unread cross-project notifications. Receives absorption candidates and other cross-instance handoffs.
-- **Why it helps:** The seed cross-instance handoff mechanism. Without an `_inbox/`, the lattice handoff design has no destination — workspaces can't notify each other, and absorption candidates have nowhere to land. Listed in `empty_dirs` so the scaffold tool creates it with `.gitkeep` for fresh instances.
+- **What:** A `_buffer/` directory at the workspace root. Every instance has one. Read by `/acw-session start` at session-start to surface unread cross-project notifications. Receives absorption candidates and other cross-instance handoffs. (Renamed from `_inbox/` in v0.5.0 per DIP vocabulary canon — "buffer" is the canonical term for a holding area awaiting processing; the rename also clears semantic space for the operator-facing `inbox/` surface arriving in v0.6.0.)
+- **Why it helps:** The seed cross-instance handoff mechanism. Without a `_buffer/`, the lattice handoff design has no destination — workspaces can't notify each other, and absorption candidates have nowhere to land. Listed in `empty_dirs` so the scaffold tool creates it with `.gitkeep` for fresh instances.
 - **Required:** Recommended (the lattice handoff design assumes its presence). Empty list / absent in `empty_dirs` means scaffold won't create one.
-- **How to add:** Edit `acw-state.yaml::empty_dirs` to include `_inbox`. For existing instances missing the directory, also create `_inbox/.gitkeep` manually or via `mkdir`.
-- **Earned in:** `0.4.0`.
+- **How to add:** Edit `acw-state.yaml::empty_dirs` to include `_buffer`. For existing instances missing the directory, also create `_buffer/.gitkeep` manually or via `mkdir`. Existing instances on v0.4.0 with `_inbox/` directories should rename their directory to `_buffer/` and update `paths.buffer_dir` accordingly; `/acw-instance upgrade` v0.5.0+ proposes this migration when it detects the old name.
+- **Earned in:** `0.4.0` (originally as `_inbox`); renamed `_buffer` in `0.5.0`.
 
 ## `divergent_pending_review`
 
-- **What:** A list block in `acw-state.yaml` recording substrate files that diverge from ACW canonical and have an absorption candidate sent to ACW awaiting upstream review. Each entry: `path`, `absorption_candidate` (path to the `_inbox/` note in ACW), `sent_date`, `status` (`pending` | `absorbed` | `rejected`).
+- **What:** A list block in `acw-state.yaml` recording substrate files that diverge from ACW canonical and have an absorption candidate sent to ACW awaiting upstream review. Each entry: `path`, `absorption_candidate` (path to the `_buffer/` note in ACW), `sent_date`, `status` (`pending` | `absorbed` | `rejected`).
 - **Why it helps:** Lets `/acw-instance upgrade` respect pending entries — does not propose canonical changes to those files until ACW resolves the absorption review. Schema and resolution mechanics in `rules/multi-instance-topology.md` § "Re-adoption flow."
 - **Required:** No. Empty list or absent means the workspace has no pending absorption candidates. Most workspaces will have an empty block until the audit verb fires for the first time.
 - **How to add:** Edit `acw-state.yaml`. Add the block as an empty list to opt in:
