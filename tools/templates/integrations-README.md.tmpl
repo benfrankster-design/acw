@@ -1,23 +1,32 @@
 # integrations/
 
-This directory holds documentation about external systems this workspace talks to: APIs, MCP servers, adapters, webhooks, anything that lives outside the workspace and exchanges data with it.
+This directory holds documentation about external systems this workspace talks to (APIs, MCP servers, adapters, webhooks, anything that lives outside the workspace and exchanges data with it) AND integration-specific operational scripts that are tightly coupled to one external system.
 
 ## What goes here
 
 - One subdirectory per external system, named by the system: `integrations/zoho-desk/`, `integrations/slack-mcp/`, `integrations/google-calendar/`, `integrations/stripe-api/`.
-- Inside each subdirectory: docs about that integration. Authentication, endpoints, rate limits, payload schemas, gotchas, runbooks for setup and troubleshooting.
-- Or, if the integration is small enough, a single markdown file at the root: `integrations/<system-name>.md`.
+- Inside each subdirectory:
+  - **Docs.** Authentication, endpoints, rate limits, payload schemas, gotchas, runbooks for setup and troubleshooting.
+  - **Operational scripts.** Integration-specific tooling that only makes sense for this one external system — bulk-push utilities, sync helpers, data extractors, auth-token helpers, batch importers. Co-locate them with the integration's docs.
+- Or, if the integration is small enough and has no scripts, a single markdown file at the root: `integrations/<system-name>.md`.
 
 ## What does NOT go here
 
 - Skills that USE the integration → `skills/`.
+- General-purpose utilities used across the workspace → `tools/`. (See "Distinction from `tools/`" below.)
 - Configuration / secrets → environment variables or your secret store, never in this directory.
 - Long-lived data extracted from the integration → wherever that data belongs in your substrate (decisions, glossary, etc.), not here.
 
-This directory documents *how* the workspace talks to external systems. Operational use of those systems happens through skills.
+This directory documents *how* the workspace talks to external systems and houses integration-specific tooling. Skills are the operational layer that uses both.
+
+## Distinction from `tools/`
+
+Use `tools/` for utilities that work across multiple integrations or that aren't tied to any one external system: linters, formatters, schema validators, manifest helpers, scaffolding tools, etc.
+
+Use `integrations/<system>/` for tooling that only exists because this one external system exists. If you removed the integration, the script would be deleted with it. That's the test.
 
 ## Organization is operator-driven
 
-ACW canonical doesn't enforce structure beyond this README's existence. Each operator decides per-workspace how to organize integration docs. If a single workspace has two integrations, two subdirectories or two files is fine. If it has thirty, the operator can add their own grouping conventions.
+ACW canonical doesn't enforce structure beyond this README's existence. Each operator decides per-workspace how to organize integration docs and scripts. If a single workspace has two integrations, two subdirectories is fine. If it has thirty, the operator can add their own grouping conventions.
 
-When in doubt: one directory per integration, README.md per directory describing that integration's purpose and how to set it up.
+When in doubt: one directory per integration, README.md per directory describing that integration's purpose, with any integration-specific scripts alongside the README.

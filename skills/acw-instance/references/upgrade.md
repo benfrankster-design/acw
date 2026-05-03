@@ -1,177 +1,311 @@
 # upgrade
 
-Interactive verb. Reconciles instance state with ACW canonical. Walks gaps in `acw-state.yaml`, applies adopt-mode for unregistered workspaces (with hard-stop above the organic threshold), respects divergence markers. Writes `acw-state.yaml`, refreshes `rules/instance-current-manifest.md` from canonical, logs a decision-log entry.
+Executes the migration plan produced by the spine. Single approval gate. After the operator approves, full migration runs without per-file prompts (unless `[?]` rows remain). Uses `git mv` on tracked workspaces. Recommends a pre-migration safety commit. Refreshes `rules/instance-current-manifest.md` from canonical, bumps `last_reconciled_version`, logs a decision-log entry.
+
+## Mental model
+
+Adopt-and-migrate. The workspace's pre-ACW persistent-memory content moves into ACW-canonical destinations, reshaped to canonical format. Source files delete after content lands at the destination. The end state: the workspace looks structurally identical to ACW canonical but holds its own operational history.
+
+This verb is not interactive at the per-file level. It's interactive at the **plan level** — one approval gate before any write fires. After approval, execution is bulk and visible in chat as it runs.
 
 ## After the spine
 
-The orchestrator's Step 5 produces the routing table. Upgrade's job is to walk it action-by-action with operator confirmation, then bump versions and log.
+The orchestrator's Step 5 produces the migration plan. Upgrade's job is to:
 
-## Adopt-mode hard-stop (only when registration is missing)
+1. Run pre-flight safety checks.
+2. Print the plan and request a single approval.
+3. Resolve any `[?]` rows interactively (this is the only per-file prompt).
+4. Execute the plan in bulk.
+5. Refresh canonical cache, bump versions, log decision-log entry.
 
-If Step 2 of the spine flagged this workspace as unregistered (substrate signals at-or-above 3), check the `adopt_mode_organic_threshold` in canonical defaults (default 5):
+## Pre-flight safety checks
 
-Compute the organic-substrate count as follows:
+Before printing the plan for approval:
 
-1. Markdown files in `decisions/` and `rules/` excluding any files byte-identical or near-identical to ACW canonical copies (files that came from an earlier scaffold).
-2. **Plus** root-level directories that look substrate-like and are not in ACW canonical's `template_layer` or `instance_layer` lists. Each such directory counts as 1, regardless of how many files it contains. Examples: `briefings/`, `runbooks/`, `integrations/`, `notes/`, `context/`, `journal/`, `inbox/`, custom-named substrate directories the operator created.
-3. **Plus** root-level markdown files that aren't canonical (anything other than `tasks-status.md`, `build-log.md`, `glossary.md`, `threat-model.md`, `incidents.jsonl`, README, CHANGELOG, etc.). Each such file counts as 1.
+### Git initialization
 
-If the total at-or-above the threshold → bail:
-> This workspace has substantial existing substrate (`<N>` items detected). Adopt-mode could overwrite or conflict with organic conventions. Run `/acw-instance audit` first to route divergences before any writes fire.
-
-If below the threshold → proceed to adoption.
-
-Rationale: the v0.4.0 hard-stop counted only `decisions/` and `rules/` files, which missed the case it was designed to catch — workspaces like `_Command` accumulate organic substrate at the root (briefings/, context/, runbooks/, integrations/, notes/) far more than inside `decisions/` or `rules/`. The expanded scope catches those cases. (Earned by `_Command` audit dogfood incident.)
-
-### Adoption sequence
-
-Surface the prompt:
+If the workspace is not a git repository:
 
 ```
-This workspace looks like an ACW instance that pre-dates registration.
+This workspace is not git-tracked. Migration includes destructive operations
+(file moves, deletes, reshape-and-delete-source). Without git history, mistakes
+are unrecoverable.
 
-Detected substrate signals: <list>
-Existing substrate files: <count> (below organic threshold of <threshold>)
-
-Adopt as a formal ACW instance? This will:
-  - Write the GitHub-fetched canonical to your local rules/instance-current-manifest.md
-  - Create acw-state.yaml with last_reconciled_version: "0.0.0" (drives noisy first reconciliation)
-  - Walk you through reconciling each recommended block
-
-[y/N]
+Initialize git and create an initial commit before proceeding?
+  [y]  Recommended — run `git init`, stage current state, commit as "pre-acw-migration baseline"
+  [n]  Proceed anyway (NOT recommended)
+  [q]  Quit
 ```
 
-On `y`:
-1. Write fetched canonical manifest to `<workspace>/rules/instance-current-manifest.md`. Create `rules/` if absent.
-2. Write minimal `acw-state.yaml` with: `version` (from canonical's "current ACW version"), `last_reconciled: <today>`, `last_reconciled_version: "0.0.0"`, `is_canonical_source: false`, minimal `paths:` block matching detected substrate files.
-3. Print: `Adoption complete. Now reconciling against current ACW canonical.` Continue to "Walk gaps."
+On `[y]`: run `git init`, then `git add -A`, then `git commit -m "pre-acw-migration baseline"`. Use `git mv` for the upgrade run.
 
-On `n` (or empty): exit cleanly.
+On `[n]`: warn loudly, use plain `mv` and `rm` for the upgrade run.
 
-## Walk gaps
+On `[q]`: exit cleanly.
 
-For each gap entry from the routing table:
+### Pre-migration safety commit
+
+If the workspace is git-tracked AND has uncommitted changes:
+
+```
+Workspace has uncommitted changes. A pre-migration safety commit is recommended
+so the entire migration can be rolled back as a single revert if anything goes wrong.
+
+Create pre-migration safety commit now?
+  [y]  Recommended — stage current state and commit as "pre-acw-migration safety commit"
+  [n]  Proceed without safety commit (rollback becomes manual)
+  [q]  Quit
+```
+
+On `[y]`: `git add -A`, `git commit -m "pre-acw-migration safety commit"`.
+
+On `[n]`: proceed.
+
+On `[q]`: exit cleanly.
+
+### Pre-commit hook awareness
+
+If `.git/hooks/pre-commit` exists or `.pre-commit-config.yaml` is present, note in the safety prompt: *"pre-commit hooks detected. Migration commits will run them. Secret-scanning hooks (gitleaks, etc.) may catch sensitive content during the migration commit; address findings before the commit lands."*
+
+## Plan approval gate
+
+Print the migration plan from `references/audit.md` (verbatim format). After the plan, prompt:
+
+```
+──────────────────────────────────────────────────────────────────────
+Migration plan summary:
+  <N> moves
+  <M> reshapes
+  <P> merges
+  <Q> write-canonical
+  <R> deletes
+  <S> instance-specific declarations
+  <T> absorption candidates  (will write to ACW _buffer/)
+  <U> ambiguous [?] routings  (will resolve interactively before bulk execution)
+
+Total file operations: <total>
+
+Approve and execute the full plan?
+  [y]  Approve — resolve [?] rows then execute
+  [n]  Cancel — no writes
+  [m]  Modify the plan first (operator pastes annotations or asks for revisions)
+```
+
+On `[n]`: exit. Print one-line: *"upgrade cancelled. No writes performed."*
+
+On `[m]`: enter a revision dialogue. Operator names rows to change action on; verb updates the plan; reprompt approval. Loop until `[y]` or `[n]`.
+
+On `[y]`: proceed to `[?]` resolution (if any), then bulk execution.
+
+## Resolve `[?]` rows
+
+For each `[?]` row in the approved plan, prompt:
 
 ```
 ─────────────────────────────────────
-Block: <name>
-Earned in: <version>
-Required: <yes / no>
+Ambiguous routing: <path>
+Candidate routings:
+  a) <action> → <destination>  — <rationale>
+  b) <action> → <destination>  — <rationale>
+  ...
+  s) skip (leave-untouched on this pass)
 
-What: <description from registry>
-Why it helps: <rationale from registry>
-
-Proposed default content:
-<canonical default block>
-
-Options:
-  [a] Add as proposed (write to acw-state.yaml or copy file from canonical)
-  [m] Modify before adding (operator provides the value)
-  [s] Skip (block stays absent on this pass)
+Choose:
 ─────────────────────────────────────
 ```
 
-- **`a`** — write the default. For dict-shaped blocks with canonical defaults (`paths`), upsert each key. For list-shaped blocks (`auto_load_at_session_start`, `empty_dirs`), append each entry. For file-naming blocks (`rules/multi-instance-topology.md`), fetch the file from GitHub and write to the instance's `rules/` directory, then add to `template_layer` and `auto_load_at_session_start` per the registry entry's "How to add" guidance. For blocks with no canonical default (e.g., `project` with `name`/`code`/`domain` placeholders), force the `[m]` path.
-- **`m`** — prompt for value, validate per the registry's "How to add" shape, write via `manifest.append`.
-- **`s`** — no write. Note for summary.
+Update the plan in memory. After all `[?]` rows resolve, proceed to bulk execution.
 
-Honor the routing table's existing markers:
-- Files in `divergent_pending_review` → no canonical proposal; surface "pending review of absorption candidate sent <date>; not modifying."
-- Files in `instance_specific_substrate` → no canonical proposal; surface "instance-specific per <decision_ref>; not modifying."
+## Bulk execution
+
+Execute plan rows in this order (dependency-aware):
+
+1. **`write-canonical`** for new directories and skeletal files (so destinations exist before moves/reshapes target them).
+2. **`reshape`** in place (no source path change).
+3. **`move`** — `git mv <source> <destination>` on tracked workspaces; plain `mv` otherwise.
+4. **`reshape`** with source-to-destination path change — write reshaped content at canonical destination, then delete source (`git rm` or `rm`).
+5. **`merge`** — read source, integrate into destination per the plan's one-line description, then delete source.
+6. **`delete`** — `git rm` or `rm`.
+7. **`instance-specific`** — append to `acw-state.yaml::instance_specific_substrate` with operator-supplied rationale and a generated decision-log id; create the corresponding decision-log entry.
+8. **`absorption-candidate`** — verify cross-repo write authority, write candidate to ACW `_buffer/`, append to local `divergent_pending_review`. (Detail below.)
+9. **Recommended-blocks gaps** — `tools/manifest.py append` (or upsert) on `acw-state.yaml`. Block-by-block.
+
+For each row, print one line as it executes: `[move] decisions/old.md → decisions/decision-log.md ✓` or `[reshape] tasks-status.md (in place) ✓` or `[error] <row> — <message>`.
+
+On error: stop, print summary of completed rows, do not bump `last_reconciled_version`. Operator decides whether to roll back via `git revert` of the safety commit, fix the issue, or re-run.
+
+### Reshape execution
+
+Reshape is the most content-sensitive action. The verb:
+
+1. Reads the source file.
+2. Applies canonical format (frontmatter, sections, ids, append-only structure).
+3. Writes the reshaped content at the canonical destination.
+4. **Verifies content presence at destination** — read it back, confirm size and content checks pass.
+5. Deletes the source (only after verification succeeds).
+
+For complex reshapes (multi-source merges, content composition from operator inputs), the verb may delegate to a research subagent for content drafting, then verify and write. Today's `_Command` dogfood used 8 parallel research subagents for content proposals; this is supported and recommended for substantial reshape rows.
+
+### Absorption candidate execution
+
+For each `absorption-candidate` row:
+
+1. **Verify cross-repo write authority.** Check this workspace's `acw-state.yaml::cross_repo_writes` for the absolute path of ACW's `_buffer/` directory.
+   - If declared → proceed.
+   - If not declared → prompt: *"Cross-repo write to ACW's `_buffer/` requires declaration in `cross_repo_writes`. Add now? [y/N]"* On `y`: append the path to `cross_repo_writes`. On `n`: skip the absorption write; leave the source file in place; note in summary report.
+2. **Write the absorption candidate** to `ACW/_buffer/YYYY-MM-DD-<workspace>-<topic-slug>-absorption-candidate.md` per the format in `rules/multi-instance-topology.md` § "Absorption candidate format."
+3. **Record divergence locally:** append to `acw-state.yaml::divergent_pending_review` with `path`, `absorption_candidate` (path to the `_buffer/` note), `sent_date: <today>`, `status: pending`.
+4. The source file stays in place pending ACW's absorption review. Do NOT delete or reshape it.
 
 ## v0.5.0 migration: `_inbox/` → `_buffer/`
 
-Before walking gaps, detect the legacy directory name:
+Before bulk execution, detect the legacy directory name (this is automatic, no operator prompt needed beyond the plan-approval gate which already includes it):
 
-- If `<workspace>/_inbox/` exists AND `<workspace>/_buffer/` does not exist → propose migration:
-  > Detected legacy `_inbox/` directory. v0.5.0 renamed this surface to `_buffer/` (DIP vocabulary canon; clears semantic space for the operator-facing `inbox/` arriving in v0.6.0). Rename `_inbox/` → `_buffer/` now? [y/N]
-- On `y`: `git mv _inbox _buffer` (or filesystem move if not a git repo). Update `acw-state.yaml::paths::buffer_dir` to `_buffer` and remove any `inbox_dir` key. Update `acw-state.yaml::empty_dirs` to replace `_inbox` with `_buffer`.
-- On `n`: skip the rename; surface a warning that v0.5.0+ skills expect `_buffer/` and will not find this workspace's notifications until the rename happens.
-- If both `_inbox/` and `_buffer/` exist → bail with: ambiguous state, manual cleanup required.
+- If `<workspace>/_inbox/` exists AND `<workspace>/_buffer/` does not exist → execute as part of the plan: `git mv _inbox _buffer` (or filesystem move). Update `acw-state.yaml::paths::buffer_dir` and `acw-state.yaml::empty_dirs`.
+- If both exist → halt with: ambiguous state, manual cleanup required. Bail before any other writes.
 
-## Resolve meta-layer staleness (conditional on meta_layer block)
+## Resolve existing `divergent_pending_review` entries
 
-If `acw-state.yaml::meta_layer` is present and non-empty, after walking gap entries from the routing table, walk the meta-layer staleness entries the audit verb flagged. For each stale file:
-
-```
-─────────────────────────────────────
-Meta-layer file: <path>
-Triggers fired since v<last_reconciled_version>:
-  - <trigger 1>
-  - <trigger 2>
-
-Proposed edit:
-<diff candidate or text addition>
-
-Options:
-  [a] Apply as proposed
-  [m] Modify before applying (operator provides the value)
-  [s] Skip (file stays stale on this pass; flag persists for next audit)
-─────────────────────────────────────
-```
-
-Operator confirms per-file. Apply or modify writes the meta-file directly. Skip leaves the file stale for the next audit/upgrade cycle. The harness gates on `meta_layer` block presence; consumer instances without the block see no meta-layer pass.
-
-## Resolve divergent_pending_review entries
-
-After the gap walk, for each existing `divergent_pending_review` entry with `status: pending`:
+After bulk execution, for each existing `divergent_pending_review` entry with `status: pending`:
 
 - Compare the entry's file shape against the freshly-fetched canonical. If canonical now matches the workspace's shape → mark `absorbed`, surface to operator, clear the entry.
-- If a rejection notification exists in this workspace's `_buffer/` from ACW (filename pattern `acw-rejection-<topic>.md`) → mark `rejected`, surface to operator, route to adopt flow on next run.
+- If a rejection notification exists in this workspace's `_buffer/` from ACW (filename pattern `acw-rejection-<topic>.md`) → mark `rejected`, surface to operator. The rejected file then routes via the next `/acw-instance audit` as `move` or `reshape` to canonical.
 - Else → keep `pending`, surface a one-line status reminder.
 
 ## Refresh canonical cache
 
 Overwrite `<workspace>/rules/instance-current-manifest.md` with the fetched canonical content. The local file is now an up-to-date snapshot of "what canonical looks like at last reconciliation."
 
+If `rules/instance-current-manifest.md` was missing entirely (common in unregistered adoption), this write also lands as part of bulk execution, before this step.
+
 ## Bump versions
 
 1. Set `last_reconciled` to today's date (UTC, `YYYY-MM-DD`).
 2. Set `last_reconciled_version` to the canonical's current `<version>`.
 
-Use `manifest.append` (key/value upsert) or direct edit. Preserve all other content.
+Use `tools/manifest.py append` (key/value upsert) or direct edit. Preserve all other content, comments, and ordering.
 
-## Log a decision-log entry
+## Log decision-log entry
 
 Append to `paths.decisions_log` `section_conventions.decisions`:
 
 ```markdown
-### D-<CODE>-NNN — Instance reconciled to ACW <version>
+### D-<CODE>-NNN — Instance migrated to ACW <version>
 
 **Date:** YYYY-MM-DD
-**Decision:** Reconciled this instance to ACW recommended-blocks registry as of version <version>. <N> blocks added: <names>. <M> blocks skipped: <names>. <K> divergence markers respected. Canonical manifest fetched from GitHub and cached locally.
-**Rationale:** Drift alert from /acw-session start prompted reconciliation.
+**Decision:** Migrated this instance to ACW canonical shape as of version <version>.
+  Moved <N> files into canonical destinations.
+  Reshaped <M> files to canonical format.
+  Merged <P> files into existing canonical destinations.
+  Wrote <Q> new canonical files.
+  Deleted <R> source files post-migration.
+  Declared <S> instance-specific substrate entries (see decision-log entries for rationale).
+  Sent <T> absorption candidates to ACW _buffer/.
+  Reconciled <V> recommended-blocks gaps in acw-state.yaml.
+  Canonical manifest fetched from GitHub and cached locally.
+**Rationale:** Adopt-and-migrate per /acw-instance upgrade. Workspace now structurally identical to ACW canonical; operational history preserved in canonical files.
+**Source:** /acw-instance upgrade run on <date>.
+**Pre-migration safety commit:** <commit hash, if created>.
+**Migration commit:** <to be created after this entry lands>.
+```
+
+For each `instance-specific` row, additionally append a per-file rationale entry to `decisions/decision-log.md`:
+
+```markdown
+### D-<CODE>-NNN — <path> declared instance-specific substrate
+
+**Date:** YYYY-MM-DD
+**Decision:** Substrate at `<path>` declared instance-specific; will not be promoted to ACW canonical.
+**Rationale:** <operator-supplied rationale during upgrade>.
 **Source:** /acw-instance upgrade run on <date>.
 ```
 
-If this run was an adoption, prepend an additional entry recording the adoption itself.
+If this run was an unregistered-workspace adoption, prepend an additional entry recording the adoption itself (workspace registered, canonical manifest cached, initial `acw-state.yaml` written).
 
-## Report
+## Final summary report
 
-Print summary:
+Print to chat:
 
 ```
-Instance reconciliation complete.
+Instance migration complete.
 
 [Adopted from unregistered substrate-shaped workspace.]   <-- only on adoption
+[Pre-migration safety commit: <hash>]                      <-- only if created
+
 Reconciled to ACW <version> as of <date>.
 Canonical manifest cache: refreshed from GitHub.
-Added: <list>
-Skipped: <list>
-Pending review (respected): <list>
-Instance-specific (respected): <list>
+
+Operations executed:
+  Moved: <N>
+  Reshaped: <M>
+  Merged: <P>
+  Wrote canonical: <Q>
+  Deleted: <R>
+  Declared instance-specific: <S>
+  Absorption candidates sent: <T>
+  Recommended blocks added to acw-state.yaml: <V>
+
+Skipped: <list of skipped rows with reasons>
+Pending review (respected, not modified): <list>
+Instance-specific declared (respected, not modified): <list>
+
 Logged: <decision-log entry id(s)>
 
-The /acw-session start drift alert will quiet for blocks at-or-before <version>.
+Recommended next step: review the workspace, verify substrate shape, then commit:
+  git add -A
+  git commit -m "feat: migrate to ACW v<version> canonical shape"
+
+The /acw-session start drift alert will quiet for blocks at-or-before v<version>.
 ```
+
+The verb does NOT auto-commit the migration. Operator commits manually after review (consistent with ACW's general "no auto-commit" discipline). The pre-migration safety commit and the final migration commit bracket the entire operation; the operator can `git revert <migration-commit>` to roll back if needed.
+
+## Adopt-mode (unregistered workspace)
+
+When Step 2 of the spine flagged the workspace as unregistered (canonical signals at-or-above 3 OR substrate-shaped patterns present), the same plan-approval flow applies. The plan will include:
+
+- `write-canonical` rows for the missing canonical files (`acw-state.yaml`, `rules/instance-current-manifest.md`, `decisions/decision-log.md` if absent, `tasks-status.md` if absent, `glossary.md` if absent, etc.).
+- `move` and `reshape` rows for the substrate-shaped patterns the workspace already has.
+- `instance-specific` declarations for substrate the operator wants kept as-is.
+- `absorption-candidate` rows for net-new patterns that should flow upstream to ACW.
+
+The hard-stop threshold from D-ACW-022 (`adopt_mode_organic_threshold`, default 5) is no longer a blocking gate at adopt time. Instead, the plan-approval gate IS the safety net: the operator sees every proposed routing in one coherent view before any write fires. This supersedes the v0.4.0 hard-stop — that gate existed to prevent steamrolling unregistered workspaces, and the plan-approval gate accomplishes the same thing more transparently.
+
+The threshold remains in `acw-state.yaml` for backward compatibility but is no longer enforced as a bail condition. (Decision-log entry recommended on first upgrade post-v0.7.0 to formally retire the gate.)
+
+For an unregistered workspace, the initial `acw-state.yaml` written as part of the plan execution carries:
+
+```yaml
+version: "<canonical-current-version>"
+last_reconciled: "<today>"
+last_reconciled_version: "0.0.0"   # drives a noisy first re-audit; quiets after next upgrade pass
+is_canonical_source: false
+project:
+  name: "<operator-supplied>"
+  code: "<operator-supplied>"
+  domain: "<operator-supplied>"
+paths:
+  # canonical defaults; operator can override post-migration
+```
+
+After the migration commit, the next `/acw-instance audit` run will produce a clean plan (most rows `leave-untouched`) and a future `/acw-instance upgrade` will bump `last_reconciled_version` to the current canonical.
 
 ## Safety
 
-- Writes to `acw-state.yaml`, `rules/instance-current-manifest.md` (cache refresh), and `paths.decisions_log`. On adoption, also writes to canonical paths the canonical manifest names.
-- Never demotes a layer or removes a block. Pure additive reconciliation plus marker respect.
-- Operator confirms each block individually. The skill never silently writes recommended blocks. Adoption requires explicit operator confirmation; substance below threshold bails; substance above organic threshold also bails.
-- If operator aborts mid-pass, partial state is fine: blocks already added stay; skipped/unprocessed remain on gap list. `last_reconciled_version` bumped only after the full pass completes.
+- Single approval gate. No writes fire before operator approves the full plan.
+- Pre-migration safety commit recommended; offered automatically.
+- `git init` offered for untracked workspaces before destructive operations.
+- `git mv` preserves history on tracked workspaces.
+- Source files delete only after content is verified at the canonical destination.
+- Errors halt execution; partial state is preserved; `last_reconciled_version` only bumps after full pass completes.
+- Cross-repo writes (absorption candidates) require explicit `cross_repo_writes` declaration.
+- The verb never demotes layers, never removes blocks from `acw-state.yaml` without operator confirmation via `[?]` row, and never auto-commits the migration.
 
 ## Output
 
-Edits to `acw-state.yaml`. Refresh of `rules/instance-current-manifest.md`. One or two decision-log entries. Chat summary report.
+- Edits across the substrate boundary identified in Step 4 of the spine.
+- Refresh of `rules/instance-current-manifest.md` from canonical.
+- One or more decision-log entries (one for the migration, one per `instance-specific` declaration).
+- Zero or more absorption candidates in ACW's `_buffer/`.
+- Chat summary report.
+- Operator commits the migration manually after review.

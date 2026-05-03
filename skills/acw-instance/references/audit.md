@@ -1,169 +1,176 @@
 # audit
 
-Read-only verb on substrate. Walks Mode A (canonical-conventions comparison) then Mode B (organic substrate discovery), prompting the operator interactively for routing on each finding. Writes absorption candidates to ACW's `_buffer/` immediately on operator routing to `[b]`. Aggregates final report at end.
+Read-only verb. Produces a per-file migration plan: source → canonical destination → action. The plan is what `/acw-instance upgrade` executes. The audit verb itself writes nothing to the workspace; optional absorption candidates to ACW's `_buffer/` are surfaced in the plan and only written on operator confirmation during plan review.
+
+## Mental model
+
+ACW is the gold standard for substrate shape. This verb's job is to look at the workspace's substrate, identify what's already canonical, what needs to migrate into canonical, what's genuinely workspace-specific, and what's a candidate for upstream absorption — then state all of that as one coherent plan.
+
+The verb does NOT interrogate the operator per-finding. It uses canonical knowledge to make sensible routing calls and presents the full plan in one pass. Interactive prompting is reserved for genuinely ambiguous cases, flagged `[?]` in the plan.
+
+This supersedes the v0.4.0 / v0.5.0 interactive Mode B walk. Today's workspaces (post-v0.6.0 absorption of the cockpit cluster — `briefings/`, `runbooks/`, `integrations/`, `context/`, `inbox/`, `_buffer/`) usually require few or zero `[?]` rows.
 
 ## After the spine
 
-The orchestrator's Step 5 produces the routing table. Audit's job is to walk it, prompt the operator per-finding, write absorption candidates as the operator confirms, and emit the final report.
+The orchestrator's Step 5 produces the migration plan structure. Audit's job is to fill it in fully and print it.
 
-## Walk order
+## Plan construction
 
-1. Mode A — canonical comparison (every canonical substrate type the workspace has a counterpart for).
-2. Mode A — skills audit (every directory under `skills/` validated against `rules/skill-format.md`).
-3. Mode B — organic substrate discovery (substrate-like patterns ACW canonical doesn't know about).
-4. Final aggregated report.
+Walk the in-scope substrate from Step 4 of the spine. For each file or directory, classify and route per the action enum in `SKILL.md`. The default reasoning model:
 
-Within Mode A and Mode B, each finding is **interactive** — prompt the operator before moving to the next finding. Writes happen during the walk, not after.
+1. **Is this already canonical-shape at the canonical location?** → `leave-untouched`.
+2. **Is the content right but the location wrong?** → `move` to canonical destination.
+3. **Is the location right but the format wrong?** → `reshape` in place to canonical format.
+4. **Does the content belong inside an existing canonical destination?** → `merge` into that destination.
+5. **Is canonical missing entirely?** → `write-canonical` from template.
+6. **Is the file an empty placeholder or byte-identical scaffold artifact never used?** → `delete`.
+7. **Is the substrate-shaped pattern uniquely this workspace's domain, won't generalize upstream?** → `instance-specific` (record rationale; declaration goes in `acw-state.yaml::instance_specific_substrate` with decision-log entry).
+8. **Is the substrate-shaped pattern net-new (ACW lacks the canonical shape) or judged better than canonical?** → `absorption-candidate`.
+9. **Cannot decide between two reasonable routings?** → `[?]` with the candidate options inline.
 
-## Mode A — canonical comparison
+The verb is opinionated. After v0.6.0 absorbed the cockpit cluster, well-formed substrate should route cleanly. Use `[?]` sparingly.
 
-For each canonical substrate type the workspace has a counterpart for:
+## Canonical comparison reference
 
-1. Identify the canonical rule file (e.g., `rules/decision-tracking.md`) and template (e.g., `tools/templates/decision-log.md.tmpl`) governing this substrate type.
-2. Fetch both from GitHub canonical.
-3. Compare the workspace's file:
-   - **Frontmatter** — does it have the expected fields per the rule? Missing fields go in the report.
-   - **Sections** — does it follow the section conventions per the rule?
-   - **Id format** — does it use the canonical id format (e.g., `D-{CODE}-NNN`)?
-   - **Append-only discipline** — for files declared append-only in canonical, does the workspace's file show evidence of past edits?
-4. Classify the file: canonical-shape OK / canonical-shape incomplete / divergent-fix-canonical / divergent-better-absorb.
+For each canonical substrate type the workspace touches, compare the workspace's file against canonical:
 
-The audit verb does the comparison the same way an agent would do it manually: read the rule, read the file, spot the differences. No new schema artifact is needed.
+- **`CLAUDE.md`** — frontmatter, auto-load imports, hard-rule pointers, structure per `tools/templates/CLAUDE.md.tmpl`.
+- **`AGENTS.md`** — directives present, host-agnostic posture per ACW canonical.
+- **`tasks-status.md`** — three-section structure (Pending / Done / Parked); Done entries dated `YYYY-MM-DD —` heading per `rules/task-tracking.md`.
+- **`build-log.md`** — chronological narrative entries with date stamps per `tools/templates/build-log.md.tmpl`.
+- **`decisions/decision-log.md`** — four sections (Open Questions / Decisions and Rationale / Constraints and Gotchas / Resolved Questions); ids prefixed `D-{CODE}-NNN` per `rules/decision-tracking.md`.
+- **`incidents.jsonl`** — one event per line; schema per `rules/incident-tracking.md`.
+- **`glossary.md`** — operator's domain vocabulary per `tools/templates/glossary.md.tmpl`.
+- **`research/`** — `01-problem-framing.md`, `evolution.md`, `sources.md`, `research-state.yaml`, `sessions/`, `queries/`, `queries/_consumed/`.
+- **`context/`** — `goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`.
+- **`integrations/README.md`** — present per `tools/templates/integrations-README.md.tmpl`.
+- **`acw-state.yaml`** — structure per `rules/manifest-discipline.md`; recommended blocks per `rules/instance-current-manifest.md`.
+- **Skills under `skills/`** — frontmatter (name, description, role, capabilities), classification table, gotchas.md presence per `rules/skill-format.md`.
 
-For `divergent-better-absorb` cases, immediately surface the absorption prompt (see "Absorption flow" below) and act on operator response before continuing.
+Differences become plan rows: `reshape` if format is fixable in place at the canonical location, `move` if location is wrong, `write-canonical` if missing.
 
-## Mode A — skills audit (part of the spine, not a follow-up)
+## Recommended-blocks registry pass
 
-For each subdirectory under `skills/` that is not marked `status: superseded`:
+Walk every entry in the fetched canonical `rules/instance-current-manifest.md`. For each entry:
 
-1. Check that `SKILL.md` exists. Missing → flag.
-2. Validate `SKILL.md` frontmatter against `rules/skill-format.md`:
-   - Required fields: `name`, `description`, `role`, `capabilities`.
-   - `role` must match one of the four normative groups (`orchestrator`, `pipeline-worker`, `guardian`, `broker-sideband`).
-   - `description` is third-person, names when-to-fire and when-NOT-to-fire, names artifact and destination.
-3. Check that the **classification table** (Domain / 6C Primary / Governance) exists immediately after frontmatter.
-4. Check that `gotchas.md` exists with at least one entry.
-5. For orchestrators with command tables, check that every command has a matching `references/<command>.md` and that no reference file redeclares the spine (the latter is a heuristic — flag if a reference file is over ~80 lines and looks workflow-shaped).
+- Compare earned-in version against `acw-state.yaml::last_reconciled_version`. If earned-in ≤ last_reconciled_version, skip (already reconciled).
+- If earned-in > last_reconciled_version, check the workspace's `acw-state.yaml`:
+  - **Block absent** → plan row: `write-canonical` on `acw-state.yaml` (add proposed default block).
+  - **Block present-but-empty** (`block: []`) → operator deliberately opted out; skip silently.
+  - **Block present and populated** → already declared; skip.
+  - **Block malformed** (wrong shape) → `[?]` plan row, ask operator to confirm intent.
 
-Each finding becomes a row in the final report under "Skills compliance." No interactive prompt for skill findings — they're enrichment proposals for the upgrade verb to walk.
+Each plan row carries the registry entry's "How to add" content as the proposed default.
 
-## Mode A — meta-layer staleness (conditional)
+## Substrate-shaped pattern walk
 
-After Mode A canonical comparison and skills audit, run a meta-layer staleness check **only if** `acw-state.yaml::meta_layer` is present and non-empty. If absent or empty, skip silently — most consumer instances don't have meta-layer narrative files and don't need this check.
+For each in-scope substrate-shaped file or directory NOT covered by canonical types:
 
-For each file listed in `meta_layer`, evaluate the same trigger table the `/acw-session end` Phase 2 step uses (see `skills/acw-session/references/end.md` § "Meta-layer maintenance"). Compare against `last_reconciled_version`:
+- Apply the default reasoning model above. Most cases route cleanly to one of `move` (rename into canonical destination), `reshape` (rewrite in canonical format at canonical destination), `instance-specific`, or `absorption-candidate`.
+- If a file's path is suggestive of a canonical type (`my-decisions.md`, `team-todo.md`, `wiki/`, `kb/`, etc.) → propose the canonical mapping, route as `move` or `reshape`.
+- If a file looks like a near-clone of a recently-absorbed v0.6.0 surface (briefings, runbooks, integrations, context, inbox) → route to that canonical destination.
+- If genuinely ambiguous → `[?]` with proposed alternatives.
 
-- For each trigger that has fired since the file was last updated → flag as stale.
-- For files with no trigger fired → flag as current.
+## Skills audit
 
-Surface in the final report under "Meta-layer staleness" with one line per stale file naming the specific trigger(s) that fired:
+For each subdirectory under `skills/` not marked `status: superseded`:
 
-```
-Meta-layer staleness (<N> files):
-  - README.md — directory map missing: <new-substrate-entries>; load-bearing-files list shifted in v<X>
-  - CHANGELOG.md — missing entries for v<A>, v<B>, v<C>
-  - LINEAGE.md — primitives shipped without lineage entries: <names>
-```
+- Validate `SKILL.md` per `rules/skill-format.md` (frontmatter fields, classification table, body structure).
+- Validate `gotchas.md` exists with at least one entry; if missing, plan row: `write-canonical` on `skills/<name>/gotchas.md` with stub content.
+- For orchestrators with command tables, validate every command has a matching `references/<command>.md` that does not redeclare the spine.
 
-Each flagged entry is a proposal the upgrade verb walks during its gap pass — operator confirms the proposed edit before it lands. Audit verb itself never writes to meta-layer files; it only flags.
+Skill-shape findings become plan rows under the skill's path; default action is `reshape` for fixable frontmatter/structure issues, `write-canonical` for missing files.
 
-## Mode B — organic substrate discovery
+## Meta-layer staleness (conditional)
 
-After Mode A completes, walk the workspace looking for substrate-like patterns not covered by canonical types:
+Run only if `acw-state.yaml::meta_layer` is present and non-empty. For each file listed in `meta_layer`, evaluate the trigger table from `skills/acw-session/references/end.md` § "Meta-layer maintenance" against `last_reconciled_version`. Stale files become plan rows with action `reshape` and the proposed edit inline.
 
-- Markdown files with frontmatter that aren't in any canonical substrate location.
-- Dated-prefix filenames (`YYYY-MM-DD-*.md`) suggesting append-only or session patterns.
-- Structured directories (numbered files, ordered patterns).
-- Any directory at the workspace root that looks like substrate (briefings/, journals/, custom-named-substrate/).
+If `meta_layer` is absent or empty, skip silently.
 
-For each finding, **immediately surface the four-option prompt to the operator and wait for input.** Do not auto-classify; do not produce a static report with proposed routings. The default is "ask, don't guess."
+## Migration-plan output format
 
-```
-Substrate-like pattern detected: <path>
-Pattern shape: <brief description — frontmatter? dated? structured?>
-Comparison to canonical: <closest canonical type if any, or "no canonical equivalent">
-
-Route to:
-  [a] Adopt-as-canonical — similar to a canonical type but uses different conventions; route via Mode A migration flow
-  [b] Absorption candidate — net-new pattern ACW doesn't have but maybe should; flag for upstream review
-  [s] Instance-specific — uniquely this workspace's; declare in instance_specific_substrate
-  [n] Not substrate — project work, ignore
-```
-
-Process the operator's choice immediately:
-
-- **`[a]`** → Add to "Mode A migration" list for the upgrade verb.
-- **`[b]`** → Run absorption flow (next section). Write the candidate to ACW `_buffer/` now; record locally for the report.
-- **`[s]`** → Record locally; on next `/acw-instance upgrade`, propose adding to `instance_specific_substrate` with operator-supplied rationale and decision-log reference.
-- **`[n]`** → Drop from the report.
-
-After all Mode B findings have been routed, continue to the final report.
-
-## Absorption flow
-
-Fires for `divergent-better-absorb` (Mode A) and `[b] Absorption candidate` (Mode B). Identical mechanics in both cases.
-
-1. **Verify cross-repo write authority.** Check this workspace's `acw-state.yaml::cross_repo_writes` for the absolute path of ACW's `_buffer/` directory.
-   - If declared → proceed.
-   - If not declared → surface the required path and prompt: *"Cross-repo write to ACW's `_buffer/` requires declaration in `cross_repo_writes`. Add now? [y/N]"* If `y`, write the path to `cross_repo_writes` (creating the block if absent) and continue. If `n`, skip the absorption write and note in report.
-2. **Write the absorption candidate** to ACW `_buffer/YYYY-MM-DD-<workspace>-<topic-slug>-absorption-candidate.md` per the format in `rules/multi-instance-topology.md` § "Absorption candidate format."
-3. **Record divergence locally:**
-   - If this workspace is registered (has `acw-state.yaml`) → append to `divergent_pending_review` with `status: pending`, `sent_date: <today>`, `absorption_candidate: <path>`.
-   - If unregistered (audit running pre-adoption) → record the pending entry to a transient list; the upgrade verb materializes it into `divergent_pending_review` when it writes the new `acw-state.yaml`.
-
-Absorption candidates flow upstream regardless of registration status. The flow is not gated on adoption.
-
-## Final aggregated report
-
-Print to chat at the end of the walk:
+Print to chat:
 
 ```
 ACW Instance Audit — <workspace name> (<workspace path>)
 Reconciled to ACW <last_reconciled_version> as of <last_reconciled>.
 Current ACW canonical: <version-from-fetched-manifest>.
-Registration status: <REGISTERED | UNREGISTERED with N/6 substrate signals>.
+Registration status: <REGISTERED | UNREGISTERED — N canonical signals, M substrate-shaped patterns>.
+Substrate boundary: <N> files / <M> directories in scope; <K> project items skipped.
+Ambiguous routings: <count of [?] rows>
 
-Substrate Routing Table
+Migration Plan
+──────────────────────────────────────────────────────────────────────
 
-Canonical-shape OK (<N>):
+leave-untouched (<N>):
   - <path>
 
-Canonical-shape incomplete (<N>; enrichment proposed for upgrade):
-  - <path> — missing: <fields>
+move (<N>):
+  - <source path>  →  <canonical destination>
+  - ...
 
-Divergent — fix to canonical (<N>; migration with backup proposed for upgrade):
-  - <path> — divergence: <summary>
+reshape (<N>):
+  - <path>  (in place)  — <one-line description of the reshape>
+  - <source path>  →  <canonical destination>  — <one-line description>
 
-Divergent — absorbed upstream (<N>; absorption candidates written this run):
-  - <path> → ACW _buffer/<filename>
+merge (<N>):
+  - <source path>  →  <canonical destination>  — <one-line description of merge>
 
-Skills compliance (<N> issues):
-  - skills/<name>/SKILL.md — <issue>
+write-canonical (<N>):
+  - <canonical destination>  — <source: template | composed from <inputs> | rendered default block>
 
-Meta-layer staleness (<N> stale files; conditional on meta_layer block):
-  - <file> — triggers fired: <list>
+delete (<N>):
+  - <path>  — <reason>
 
-Organic substrate (<N> findings):
-  - <path> — operator routed to: <choice>
-  - (any [b] entries link to absorption candidates written above)
+instance-specific (<N>):
+  - <path>  — <one-line rationale; will require decision-log entry on upgrade>
 
-Pending review (existing divergent_pending_review entries; <N>):
-  - <path> — sent <date> — status: <pending|absorbed|rejected>
+absorption-candidate (<N>):
+  - <path>  →  ACW _buffer/<proposed candidate filename>  — <pattern summary>
 
-Instance-specific (existing instance_specific_substrate entries; <N>):
+pending-review (<N>; existing divergent_pending_review entries):
+  - <path>  — sent <date>; status <pending|absorbed|rejected>
+
+instance-specific-declared (<N>; existing instance_specific_substrate entries):
   - <path>
 
-Absorption candidates written this run: <N>
-Cross-repo writes declared: <yes|no>
+[?] ambiguous (<N>; operator input required before upgrade):
+  - <path>
+      candidates:
+        a) <action> → <destination>  — <rationale>
+        b) <action> → <destination>  — <rationale>
 
-Run /acw-instance upgrade to act on enrichments, migrations, and Mode B routings recorded above.
+──────────────────────────────────────────────────────────────────────
+Recommended-blocks registry pass:
+  Gaps to write to acw-state.yaml: <N>
+  - <block name>  (earned in v<X>)  → <action>
+
+Skills compliance:
+  <N> issues  → see migration plan rows above
+
+Meta-layer staleness (conditional on meta_layer block):
+  <N> stale files  → see migration plan rows above
+
+──────────────────────────────────────────────────────────────────────
+Pre-upgrade recommendations:
+  <if not git-initialized>: Run `git init` and create an initial commit before /acw-instance upgrade.
+  <if git-initialized with uncommitted changes>: Commit current state as a pre-migration safety net before /acw-instance upgrade.
+  <if [?] rows exist>: Resolve ambiguous routings (run /acw-instance upgrade interactively, or annotate manually) before bulk execution.
+
+Run /acw-instance upgrade to execute this plan.
 ```
+
+## Plan persistence
+
+Audit does not persist the plan to disk. The plan is reproducible: `/acw-instance upgrade` re-runs the spine and rebuilds the plan from the same inputs. This avoids stale-plan-on-disk failure modes.
+
+If the operator wants the plan saved (for review, sharing, or later execution), they can capture the chat output manually. A future earn-by-incident may add `--save-plan <path>` if persistence becomes load-bearing.
 
 ## When NOT to fire (verb-specific)
 
 - Workspace has no substrate at all (orchestrator Step 2 bails first).
-- Operator wants only Mode A and not Mode B (not currently supported as a flag; future earn-by-incident if requested).
+- Operator wants only canonical comparison and not pattern walk (not currently supported as a flag; future earn-by-incident if requested).
 
 ## Output
 
-Interactive prompts during walk. Routing-table report to chat at end. Zero-or-more absorption candidate files in ACW `_buffer/`. Optionally: appends to `divergent_pending_review` in this workspace's `acw-state.yaml`, or to `cross_repo_writes` if the operator authorized it during the absorption flow. No other writes.
+Migration plan to chat. Zero writes to the workspace. Zero writes to ACW's `_buffer/` (absorption candidates are proposed, not yet written; the upgrade verb writes them on plan execution).
