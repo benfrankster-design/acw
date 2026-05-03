@@ -9,6 +9,26 @@ loaded_by_agent: yes
 
 Every ACW instance maintains a `tasks-status.md` at the repo root tracking active, completed, and parked work. Distinct from `decisions/decision-log.md` (settled choices) and `incidents.jsonl` (forensic events). Tasks are *units of work*; decisions are *settled choices*; incidents are *evidence*.
 
+## What `tasks-status.md` tracks (workspace-purpose, not operator-personal)
+
+`tasks-status.md` tracks **the workspace's purpose-tracker** — work items that advance what this workspace is for. It adapts to its workspace type:
+
+| Workspace type | What `tasks-status.md` holds |
+|---|---|
+| **Cockpit** | Workspace configuration + chief-of-staff operations. *"Configure the new Slack MCP, set up daily briefing skill, run weekly metrics review."* |
+| **Project** | Project deliverables. *"Ship feature X, fix bug Y, complete migration Z."* |
+| **Full / org-brain** | Org-level coordination work. *"Promote departmental pattern A to org-brain, retire deprecated taxonomy B."* |
+
+What `tasks-status.md` does **NOT** hold:
+
+- **Operator's personal life tasks** — *"pick up kids, doctor's appointment, call mom."* These live in the operator's external task app (Todoist, Reminders, etc.), not in workspace substrate. The chief-of-staff affordance ("what's on my plate today?") lives in agents that call the task app's MCP at query time. Mirroring tasks locally creates sync rot; the operator already has them on their phone.
+- **Calendar events** — same logic. Calendar lives in Google/iCloud/Nextcloud; never mirrored to workspace substrate. When a snapshot is wanted, briefing skills aggregate calendar + workspace state into a `briefings/` artifact at generation time.
+- **Email** — same logic. Email lives in Gmail/Outlook; never mirrored.
+
+The general rule: **don't duplicate operator-accessible-on-phone surfaces in workspace substrate.** Lean on MCP integrations for live data; lean on briefings for moment-in-time aggregations.
+
+The operator's `inbox/` (v0.6.0) is the workspace-side capture surface for items the operator wants to triage *into* `tasks-status::Pending`, parked, or deleted. It's an inbound-funnel; tasks-status is the committed-work outcome.
+
 ## File location
 
 `tasks-status.md` at the repo root. Auto-loaded at session start (see `acw-state.yaml::auto_load_at_session_start`).
@@ -73,6 +93,17 @@ Ideas surfaced during sessions but not earning a build. Each entry names what wa
 
 Decisions answer *what was chosen*. Tasks answer *what is being worked on*. A decision creates tasks; a task does not create a decision. The two files are MECE: a settled choice goes in `decision-log.md`, a unit of work goes in `tasks-status.md`.
 
-## Relation to capture-and-metabolize
+## Relation to `/acw-session end`
 
-The session-end skill (`capture-and-metabolize` or equivalent) writes the dated Done block as part of Phase 2 distribution. The skill never edits past Done blocks. The skill never auto-removes Parked items.
+The session-end verb writes the dated Done block as part of Phase 2 distribution. The skill never edits past Done blocks. The skill never auto-removes Parked items.
+
+## Relation to `inbox/` (operator capture surface)
+
+`inbox/` is the operator's untriaged-items surface. Items there get triaged into one of:
+
+- `tasks-status.md::Pending` — committed workspace work.
+- `tasks-status.md::Parked` — deferred or maybe-someday workspace work.
+- The operator's external task app — personal life tasks (not workspace substrate).
+- Deleted — not actually a task.
+
+Triage is operator-driven (or triage-skill-driven where applicable). `tasks-status.md` is the committed-work outcome of that triage; `inbox/` is the inbound funnel. Items don't live in `inbox/` long-term; they get processed and removed. This keeps `inbox/` light and the triage signal sharp.
