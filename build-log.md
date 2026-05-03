@@ -53,6 +53,32 @@ The harness should prevent recurrence of the v0.5.1-style staleness incident: fu
 - Cross-instance write trigger entry in `DEFERRED.md` for capability broker (carried over from v0.5.0 metabolize report; still pending).
 - Lint gate for command-routed skills (carried over).
 
+## 2026-05-03 — `/acw-session end` post-v0.6.0 capture + first meta-layer harness test
+
+Continuation session-end run after the v0.5.1 + v0.6.0 ships. Capture file written at `research/sessions/2026-05-03--v051-frontdoor-and-v060-operator-centric.md`. Incident logged: `e167b922` (meta-layer-maintenance, med, process-gap) — README went stale across four versions before someone noticed; harness shipped same release closed the gap.
+
+This is the **first invocation** of the v0.6.0 meta-layer maintenance harness. ACW has `meta_layer` block populated, so the trigger walk fires. Results:
+
+| Meta file | Triggers fired | Status | Proposed action |
+|---|---|---|---|
+| `README.md` | substrate-shape changes (`context/`, `inbox/` added in v0.6.0); version bumps to 0.5.1 and 0.6.0 | Partially updated (full rewrite in v0.5.1; v0.6.0 substrate not reflected in directory map) | **Surface proposal** — extend directory map with `context/` and `inbox/`. Update version reference in any hardcoded text. |
+| `CHANGELOG.md` | version bumps | Updated in both ships | **No action** — current. |
+| `LINEAGE.md` | new primitives this session: `context/` canonical, `inbox/` canonical, meta-layer maintenance harness | Stale — no entries for v0.2.0+ primitives | **Surface proposal** — add primitive-trace entries for the v0.2.0–v0.6.0 cluster. |
+| `ORCHESTRATION.md` | new methodology pattern earned (substrate-vs-meta-layer symmetry; earn-by-incident applied to spec evolution, not just primitives) | Stale — documents only the v0.1.0 build process | **Surface proposal** — add a "v0.2.0+ evolution methodology" section documenting the recurring pattern. |
+| `SKEPTIC.md` | new incident logged this session: `e167b922` (severity med, process-gap) | Stale — no warnings absorbed from recent incidents | **Surface proposal** — should this incident (asymmetric build between substrate and meta-layer) earn a new warning about treating any substrate class as static reference? |
+
+Three proposals for operator review. The harness ran end-to-end without bugs on this first test (OQ-ACW-010's earn-by-incident path appears clean for now), though it has not been stress-tested against `_Command` or other instances yet. Operator can either accept the proposals (which would land in a v0.6.1 follow-up commit) or defer them.
+
+**Auto-updated** (executed):
+- `research/sessions/2026-05-03--v051-frontdoor-and-v060-operator-centric.md` — full session capture for the v0.5.1 + v0.6.0 arc.
+- `incidents.jsonl` — `e167b922` appended.
+- This metabolize report.
+
+**Proposed for operator review** (this session):
+- Three meta-layer staleness proposals above (README, LINEAGE, ORCHESTRATION, SKEPTIC).
+- OQ-ACW-010: meta-layer harness first-test bugs — accept earn-by-incident, or pre-emptive subagent stress test?
+- OQ-ACW-011: meta-layer trigger table — keep hardcoded, declare per-instance, or move into meta-file frontmatter?
+
 ## 2026-05-02 — v0.5.0: audit verb fixes from `_Command` dogfood + new canonical substrate
 
 Operator opened by pasting the first real `/acw-instance audit` output from `_Command`. Audit ran cleanly at the surface — produced a routing table, identified 5 canonical-shape OK files, 1 enrichment-incomplete, 1 divergent (sessions/ at root), 6 organic findings (briefings, context, notes, runbooks, integrations, etc.). But the agent in `_Command` produced the report with PROPOSED routings ("Likely [s]", "Possibly [b]") rather than walking each finding interactively with the four-option prompt. Result: nothing landed in ACW's `_buffer/`. Five v0.4.0 bugs fell out of the analysis.
