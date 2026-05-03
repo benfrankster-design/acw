@@ -9,6 +9,50 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-02 — v0.6.0: operator-centric substrate + meta-layer harness
+
+Continuation session immediately after v0.5.1's front-door cleanup. Operator approved the v0.6.0 scope queued at end of v0.5.1 and said simply: "ship." Four commits, one push.
+
+The v0.6.0 cluster has two coherent halves:
+
+**Operator-centric substrate.** `context/` fills the lightweight-context-layer gap that decisions/rules/skills/glossary didn't address — the "what is this workspace for, who matters, how does the operator work" layer that helps agents calibrate. Four canonical files (goals, objectives, how-i-work, key-people) ship as instance_layer with templates. ACW's own context/ files were populated with current operating reality (lightweight; ACW's deeper lineage lives in LINEAGE/ORCHESTRATION/research). `inbox/` fills the operator-capture surface — distinct from `_buffer/` (system handoffs) and `briefings/` (agent-generated snapshots). Three different surfaces, three different lifecycles. Items in inbox get triaged into tasks-status, parked, the operator's external task app, or deleted.
+
+`rules/task-tracking.md` framing update made the workspace-purpose-vs-operator-personal split explicit. Tasks-status adapts per workspace type (cockpit = config + chief-of-staff ops; project = deliverables; full = org coordination). Operator-personal life tasks live in external task apps. Calendar lives in Google/iCloud/Nextcloud. Email lives in Gmail/Outlook. Same general rule applied consistently: don't duplicate operator-accessible-on-phone surfaces in workspace substrate. Lean on MCP integrations for live data; lean on briefings for moment-in-time aggregations.
+
+**Meta-layer maintenance harness.** Closes the gap that produced v0.5.1's front-door cleanup. Substrate had Phase 2 distribution since v0.4.0; meta-layer had nothing, which let README go stale across four versions before someone noticed. The harness adds:
+
+- `/acw-session end` Phase 2: walks a per-file trigger table (README on substrate-shape change, CHANGELOG on version bump, LINEAGE on new primitive, ORCHESTRATION on new methodology, SKEPTIC on med+ incident). For each trigger that fires, surfaces a proposed edit; operator confirms.
+- `/acw-instance audit` Mode A extension: meta-layer staleness check using the same trigger table; flags stale files in the report.
+- `/acw-instance upgrade`: walks audit-flagged meta-layer entries with operator-per-file confirmation prompts.
+
+All three gated on `acw-state.yaml::meta_layer` block presence — consumer instances without the block see no meta-layer pass and pay no cost. Triggers are hardcoded sensible defaults; per-instance trigger overrides are earn-by-incident if needed.
+
+The harness should prevent recurrence of the v0.5.1-style staleness incident: future ACW evolutions will surface meta-layer maintenance proposals automatically. README/CHANGELOG/LINEAGE/etc. won't drift across multiple versions before someone notices.
+
+### Metabolize report
+
+**Auto-updated** (executed):
+- `acw-state.yaml` — `version` and `last_reconciled_version` → `0.6.0`. `instance_layer` extended with four `context/*.md` entries. `empty_dirs` extended with `inbox`. `paths` gained `context_dir` and `inbox_dir` (canonical defaults; instance overrides via paths block).
+- `tools/templates/acw-state.yaml.tmpl` — baseline `last_reconciled_version` bumped to `0.6.0`.
+- `tools/manifest.py` and `rules/manifest-discipline.md` — canonical default paths added for `context_dir` and `inbox_dir`.
+- `tools/templates/context-{goals,objectives,how-i-work,key-people}.md.tmpl` — four new templates.
+- `context/{goals,objectives,how-i-work,key-people}.md` — ACW's own context files populated.
+- `inbox/.gitkeep` — directory marker for ACW's empty operator inbox.
+- `rules/instance-current-manifest.md` — two new registry entries (`context/`, `inbox/`).
+- `rules/task-tracking.md` — framing section added.
+- `skills/acw-session/references/end.md` — Phase 2 meta-layer maintenance step added.
+- `skills/acw-instance/references/audit.md` — Mode A meta-layer staleness check added; report format extended.
+- `skills/acw-instance/references/upgrade.md` — meta-layer staleness resolution step added.
+- `decisions/decision-log.md` — D-ACW-031 through D-ACW-034 (four entries).
+- `tasks-status.md::Done` — Session 10 dated block. Pending now empty for the moment.
+- `CHANGELOG.md` — v0.6.0 entry per Keep a Changelog format.
+- `CLAUDE.md` — "Where things live" extended with `context/` and `inbox/` entries.
+
+**Proposed for operator review** (deferred):
+- Re-dogfood `/acw-instance audit` against `_Command` after v0.6.0 lands. Should now surface meta-layer staleness if `_Command` declares its own meta_layer block; otherwise skip the meta-layer pass silently.
+- Cross-instance write trigger entry in `DEFERRED.md` for capability broker (carried over from v0.5.0 metabolize report; still pending).
+- Lint gate for command-routed skills (carried over).
+
 ## 2026-05-02 — v0.5.0: audit verb fixes from `_Command` dogfood + new canonical substrate
 
 Operator opened by pasting the first real `/acw-instance audit` output from `_Command`. Audit ran cleanly at the surface — produced a routing table, identified 5 canonical-shape OK files, 1 enrichment-incomplete, 1 divergent (sessions/ at root), 6 organic findings (briefings, context, notes, runbooks, integrations, etc.). But the agent in `_Command` produced the report with PROPOSED routings ("Likely [s]", "Possibly [b]") rather than walking each finding interactively with the four-option prompt. Result: nothing landed in ACW's `_buffer/`. Five v0.4.0 bugs fell out of the analysis.

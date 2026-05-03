@@ -14,8 +14,6 @@ section_conventions:
 Three-section task tracker. See `rules/task-tracking.md` for format and discipline.
 
 ## Pending
-
-- [ ] **v0.6.0 — operator-centric substrate cluster + meta-layer harness:** ship `context/` canonical (with `goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`); ship `inbox/` as operator-facing surface (folder of dated files); update `rules/task-tracking.md` framing — `tasks-status.md` is workspace-purpose tracker, personal tasks live in external task apps; add doc note clarifying calendar/tasks/email stay external (use MCP integrations + briefings for snapshots); ship meta-layer maintenance harness — Phase 2 of `/acw-session end` extends with per-file triggers (CHANGELOG on version bump, README on substrate-shape change, LINEAGE on new primitive, ORCHESTRATION on new methodology pattern, SKEPTIC on med+ incident); audit verb adds meta-layer staleness check; both gated on `acw-state.yaml::meta_layer` block presence so consumer instances pay no cost.
 - [ ] Re-dogfood `/acw-instance audit` against `_Command` after v0.5.0 ships (the audit verb fixes should now produce interactive Mode B prompts and surface absorption candidates correctly; runbooks/integrations/briefings should be marked as canonical-shape OK now that they're absorbed).
 - [ ] Dogfood `/acw-instance audit` against cs-copilot (substrate-shaped, below organic threshold; should adopt cleanly).
 - [ ] Dogfood `/acw-instance upgrade` against gsg-copilot (older registered instance; should fetch canonical and walk v0.3.0/v0.4.0/v0.5.0 gaps; the v0.5.0 migration step should propose `_inbox/` → `_buffer/` rename).
@@ -29,6 +27,19 @@ Three-section task tracker. See `rules/task-tracking.md` for format and discipli
 - [ ] Promote `v0.4.0` to `v1.0.0` after a soak window once lattice-level dogfooding has accumulated evidence.
 
 ## Done
+
+### 2026-05-02 — v0.6.0: operator-centric substrate + meta-layer harness (Session 10)
+
+- Shipped `context/` canonical with four templated files (`goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`). Lightweight pointers to operating reality. ACW's own context populated. D-ACW-031.
+- Shipped `inbox/` canonical as operator capture surface (folder of dated files). Distinct from `_buffer/` (system) and `briefings/` (agent-generated snapshots). D-ACW-033.
+- Updated `rules/task-tracking.md` framing — `tasks-status.md` is workspace-purpose tracker adapted per workspace type; operator-personal life tasks, calendar, and email stay external. D-ACW-032.
+- Shipped meta-layer maintenance harness:
+  - `/acw-session end` Phase 2 gained per-file trigger walk (README, CHANGELOG, LINEAGE, ORCHESTRATION, SKEPTIC).
+  - `/acw-instance audit` gained "Meta-layer staleness" check (Mode A extension).
+  - `/acw-instance upgrade` gained "Resolve meta-layer staleness" step.
+  - All three gated on `acw-state.yaml::meta_layer` block presence. D-ACW-034.
+- Bumped ACW version `0.5.1` → `0.6.0`. Bumped `last_reconciled_version` and template baseline.
+- Backfilled CHANGELOG with v0.6.0 entry.
 
 ### 2026-05-02 — v0.5.1: front-door cleanup (Session 9)
 

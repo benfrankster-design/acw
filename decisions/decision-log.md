@@ -27,6 +27,34 @@ This file tracks all decisions, open questions, constraints, and resolved questi
 
 ## Decisions and Rationale
 
+### D-ACW-034 — Meta-layer maintenance harness gated on `meta_layer` block presence
+
+**Date:** 2026-05-02
+**Decision:** `/acw-session end` Phase 2 gains a "Meta-layer maintenance" step; `/acw-instance audit` Mode A gains a staleness check; `/acw-instance upgrade` gains a "Resolve meta-layer staleness" step. All three are gated on `acw-state.yaml::meta_layer` block presence — most consumer instances don't have meta-layer narrative files and pay no cost. Trigger table is hardcoded sensible defaults (README on substrate-shape change, CHANGELOG on version bump, LINEAGE on new primitive, ORCHESTRATION on new methodology pattern, SKEPTIC on med+ incident).
+**Rationale:** v0.5.1's front-door cleanup exposed a structural gap — substrate had Phase 2 distribution; meta-layer had nothing. README went stale across four versions before someone noticed. The harness closes the gap. Gating on `meta_layer` block presence (not `is_canonical_source`) generalizes correctly: any workspace with declared meta-layer narrative files inherits the discipline; workspaces without it pay nothing.
+**Source:** Operator question on README staleness during the v0.5.1 turn; meta-layer audit revealed five staleness candidates; harness designed in same conversation.
+
+### D-ACW-033 — `inbox/` canonical as operator capture surface
+
+**Date:** 2026-05-02
+**Decision:** `inbox/` (no underscore) ships as canonical empty_dir for the operator's untriaged-items surface. Folder of dated markdown files plus loose entries. Items get processed and removed: routed to `tasks-status::Pending`, `tasks-status::Parked`, the operator's external task app, or deleted. Distinct from `_buffer/` (system surface for cross-instance handoffs) and `briefings/` (agent-generated dated snapshots) — three different surfaces, three different lifecycles.
+**Rationale:** Operator needs a workspace-side capture surface for raw inbound items needing triage. Without it, mid-session captures and triage-skill outputs have nowhere to land that's distinct from committed work. The `_inbox/` → `_buffer/` rename in v0.5.0 cleared semantic space for this; v0.6.0 fills it. The triage-flow model (inbox → tasks/parked/external/deleted) is operator-driven; substrate shape is light (folder of dated files, no enforced structure).
+**Source:** Operator design conversation during v0.5.0/v0.6.0 scoping; reaffirmed during v0.6.0 ship.
+
+### D-ACW-032 — `tasks-status.md` is workspace-purpose tracker; personal tasks stay external
+
+**Date:** 2026-05-02
+**Decision:** `rules/task-tracking.md` updated to clarify that `tasks-status.md` tracks the workspace's purpose, adapted per workspace type (cockpit = config + chief-of-staff ops; project = deliverables; full = org coordination). Operator-personal life tasks (pick up kids, doctor's appointment, call mom) explicitly do NOT live in workspace substrate — they live in the operator's external task app, accessed via MCP at query time. Same logic applies to calendar (stays in Google/iCloud/Nextcloud) and email (Gmail/Outlook).
+**Rationale:** The general rule: don't duplicate operator-accessible-on-phone surfaces in workspace substrate. Mirroring creates sync rot. Lean on MCP integrations for live data; lean on briefings/ for moment-in-time aggregations when a snapshot is wanted. Earlier conversation considered `my-tasks.yaml` as a separate operator-personal surface; rejected for the same reason calendar mirror was rejected. Same logic applied consistently.
+**Source:** Operator decision during v0.5.0/v0.6.0 scoping; codified in rules/task-tracking.md framing update.
+
+### D-ACW-031 — `context/` canonical for operator/project context layer
+
+**Date:** 2026-05-02
+**Decision:** `context/` ships as canonical instance_layer with four templated files: `goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`. Lightweight pointers to operating reality. Read on demand by agents that need the context, not auto-loaded into every chat. Templates render at scaffold time; operator fills with workspace-specific content. Updates happen as operating reality shifts, not on a schedule.
+**Rationale:** Substrate categories so far covered decisions (specific choices), rules (governance), skills (operations), glossary (vocabulary). Missing: lightweight context that helps agents calibrate ("what is this workspace for? who matters? how does the operator work?"). `context/` fills the gap. Especially load-bearing for cockpit-shaped instances where personal + business context blends; useful in any workspace type. The four canonical files match `_Command/context/` shape (which surfaced the absorption candidate).
+**Source:** Operator design conversation during v0.5.0/v0.6.0 scoping; absorbed from `_Command`'s organic substrate.
+
 ### D-ACW-030 — Front-door cleanup: retire `bootstrap/`, `migration/`, `LAYERS.md`; refresh README
 
 **Date:** 2026-05-02

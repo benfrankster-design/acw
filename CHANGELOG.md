@@ -12,6 +12,27 @@ All notable changes to ACW (Agentic Contract Workspace) will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-05-02
+
+Operator-centric substrate cluster + meta-layer maintenance harness. The substrate cluster fills the operator-context gap (context/, inbox/, tasks-status framing). The harness closes the staleness gap that produced v0.5.1 — substrate had Phase 2 distribution; meta-layer now has the same.
+
+### Added
+- `context/` canonical (instance_layer with four templated files: `goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`). Lightweight pointers to operating reality, read on demand by agents that need context. Templates ship in `tools/templates/context-*.md.tmpl`.
+- `inbox/` canonical (empty_dir) — operator's untriaged-items surface. Folder of dated markdown files plus loose entries. Items get processed and removed: routed to `tasks-status::Pending` (committed work), parked, sent to external task app (personal life), or deleted.
+- `acw-state.yaml::paths` keys for `context_dir` and `inbox_dir`. Mirrored in `rules/manifest-discipline.md` and `tools/manifest.py`.
+- `rules/instance-current-manifest.md` — two new registry entries earned in v0.6.0 (`context/`, `inbox/`).
+- Meta-layer maintenance harness:
+  - `/acw-session end` Phase 2 gains a "Meta-layer maintenance" step. Walks per-file triggers (README on substrate-shape change, CHANGELOG on version bump, LINEAGE on new primitive, ORCHESTRATION on new methodology, SKEPTIC on med+ incident). Surfaces proposed edits; operator confirms.
+  - `/acw-instance audit` gains a "Meta-layer staleness" check (Mode A extension). Compares meta-files against the same trigger table; flags stale ones in the report.
+  - `/acw-instance upgrade` gains a "Resolve meta-layer staleness" step. Walks audit-flagged meta-layer entries with operator-per-file confirmation.
+  - All three gated on `acw-state.yaml::meta_layer` block presence — consumer instances without the block pay no cost.
+
+### Changed
+- `rules/task-tracking.md` — framing update. `tasks-status.md` tracks workspace purpose adapted per workspace type (cockpit = config + chief-of-staff ops; project = deliverables; full = org coordination). Operator-personal life tasks, calendar, and email explicitly stay external (MCP integrations + briefings for snapshots, never local mirroring).
+
+### Decisions
+D-ACW-031 through D-ACW-034 (four entries). See `decisions/decision-log.md`.
+
 ## [0.5.1] — 2026-05-02
 
 Front-door cleanup. Retires content functionally absorbed by the v0.4–v0.5 tooling; refreshes the README with current substrate, current operator commands, and a prominent scaffold quickstart so anyone landing on the GitHub repo can stand up an instance in 60 seconds.
