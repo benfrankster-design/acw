@@ -12,6 +12,78 @@ All notable changes to ACW (Agentic Contract Workspace) will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] — 2026-05-02
+
+Front-door cleanup. Retires content functionally absorbed by the v0.4–v0.5 tooling; refreshes the README with current substrate, current operator commands, and a prominent scaffold quickstart so anyone landing on the GitHub repo can stand up an instance in 60 seconds.
+
+### Removed
+- `bootstrap/README.md` — the seven-question greenfield instantiation interview. Functionally absorbed by `tools/scaffold-instance.py` (mechanical work) plus `research/01-problem-framing.md` (thinking work; templated for every new instance).
+- `migration/README.md` — the brownfield audit guide. Functionally absorbed by `/acw-instance audit` (Mode A canonical comparison + Mode B operator-routed organic discovery) and `/acw-instance upgrade` adopt-mode.
+- `LAYERS.md` — ACW-specific narrative on how the three-layer manifest applies to ACW itself. Conceptual content folded into README.md as a "How ACW is layered" section; the generic pattern lives (and continues to live) in `rules/manifest-discipline.md`.
+
+### Changed
+- `README.md` — full refresh. New "Scaffold a new instance (60 seconds)" quickstart up front. New "Four operator commands" table covering `/acw-session start|end` and `/acw-instance audit|upgrade`. Directory map reflects current substrate (runbooks/, integrations/, briefings/, _buffer/). Load-bearing files updated to current architecture (skill-format, multi-instance-topology, instance-current-manifest, the bookend orchestrators). LAYERS.md content absorbed.
+- `acw-state.yaml::template_layer` — removed `bootstrap/` and `migration/`.
+- `acw-state.yaml::meta_layer` — removed `LAYERS.md`.
+
+## [0.5.0] — 2026-05-02
+
+Audit verb fixes earned by the first `/acw-instance audit` dogfood against `_Command`, plus three new universal canonical surfaces absorbed from the same dogfood, plus the system buffer rename. v0.5.0 closes the loop between the audit verb's intent and its actual behavior.
+
+### Added
+- `runbooks/` — canonical surface for operator-facing how-to docs. Empty dir, ships with `.gitkeep`. Universal pattern.
+- `integrations/` — canonical surface for external-system documentation (APIs, MCPs, adapters, webhooks). Ships with a templated `README.md` (`tools/templates/integrations-README.md.tmpl`) explaining the convention. Universal pattern.
+- `briefings/` — canonical surface for agent-generated dated snapshots. Universal pattern; content varies by workspace type (cockpit aggregates calendar+tasks+email; project aggregates PR+build+issues; full/org-brain aggregates cross-domain rollups).
+- `acw-state.yaml::paths` keys for `runbooks_dir`, `integrations_dir`, `briefings_dir`, `buffer_dir` (canonical defaults in `rules/manifest-discipline.md` and `tools/manifest.py`).
+- `rules/instance-current-manifest.md` — three new registry entries earned in v0.5.0 (runbooks, integrations, briefings) plus updated `_buffer` entry with rename history.
+- `/acw-instance upgrade` — v0.5.0 migration step that detects legacy `_inbox/` and proposes rename to `_buffer/`.
+
+### Changed
+- `skills/acw-instance/references/audit.md` — Mode B walk made interactive. Each finding prompts the operator with the four-option route (`[a]/[b]/[s]/[n]`); writes happen during the walk on `[b]`, no static-report shortcut. Default routing changed from `[s] instance-specific` to "ask, don't guess" with explicit canonical comparison surfaced in the prompt. Skills audit landed inside the verb spine (SKILL.md frontmatter validation against `rules/skill-format.md`). Absorption flow works for unregistered workspaces — candidates flow upstream during audit before formal adoption.
+- `skills/acw-instance/references/upgrade.md` — hard-stop scan widened to count root-level organic substrate (briefings/, runbooks/, integrations/, custom-named directories) plus root-level non-canonical markdown files, in addition to the v0.4.0 logic that counted only `decisions/` and `rules/`. The threshold (default 5) applies to the total. Caught the case the threshold was designed to catch — workspaces like `_Command` accumulate organic substrate at root.
+- `_inbox/` → `_buffer/` rename across all active substrate. Per the operator's DIP vocabulary canon ("buffer" replaces inbox/queue/staging) and to clear semantic space for the operator-facing `inbox/` arriving in v0.6.0. Active files updated; append-only history retained historical references.
+
+### Decisions
+D-ACW-023 through D-ACW-029 (seven entries). See `decisions/decision-log.md`.
+
+## [0.4.0] — 2026-05-02
+
+Skills restructured as object-centered command-routed orchestrators. Multi-instance topology baked into canonical with absorption mechanics specified. Skill-format rule tightened to reconcile its strict-voice with the object-centered carve-out.
+
+### Added
+- `skills/acw-instance/` — orchestrator with verbs `audit` (read-only routing-table report) and `upgrade` (interactive reconciliation). Replaces `skills/upgrade-instance/`.
+- `skills/acw-session/` — orchestrator with verbs `start` (load context, drift check, surface buffer) and `end` (five-phase capture-distribute-metabolize). Replaces `skills/resume-session/` and `skills/capture-and-metabolize/`.
+- `rules/multi-instance-topology.md` (template_layer) — lattice model + knowledge-placement discriminator + reference-not-duplicate principle + three-flow resolution model (adopt / absorb / instance-specific) + absorption candidate format + divergence markers + re-adoption flow + cross-repo write governance.
+- `rules/instance-current-manifest.md` — new registry entries: `_inbox` directory in `empty_dirs` (renamed `_buffer` in v0.5.0), `divergent_pending_review`, `instance_specific_substrate`, `adopt_mode_organic_threshold` (default 5).
+
+### Changed
+- `rules/skill-format.md` — three corrections to reconcile strict-voice with object-centered carve-out. Reframed "same invariant workflow" as "same shared spine"; split strongest-version rule by orientation; scoped deltas-are-configuration to spine only. Ported the full command-routed orchestrator material from the operator's synapse global rules into ACW canonical.
+
+### Decisions
+D-ACW-016 through D-ACW-022 (seven entries). See `decisions/decision-log.md`.
+
+### Superseded
+- `skills/upgrade-instance/` (→ `skills/acw-instance/`)
+- `skills/resume-session/` (→ `skills/acw-session/`, verb `start`)
+- `skills/capture-and-metabolize/` (→ `skills/acw-session/`, verb `end`)
+
+## [0.3.0] — 2026-05-02
+
+Multi-instance topology shipped as canonical rule + research note. GitHub-first canonical fetch closes the loop on instance reconciliation. Adopt mode lets pre-ACW substrate-shaped workspaces register without manual scaffolding.
+
+### Added
+- `rules/multi-instance-topology.md` (initial version, expanded in v0.4.0).
+- `research/10-multi-instance-topology.md` — provenance/derivation note.
+- `acw-state.yaml::is_canonical_source` flag — gates `capture-and-metabolize` Phase 2 propagation behavior. ACW sets `true`; every child instance defaults `false`.
+- `/upgrade-instance` adopt-mode — when `acw-state.yaml` is missing but ≥3 substrate signals are present, offers to register the workspace as a formal instance.
+- `capture-and-metabolize` Phase 2 canonical-edit detection — branches on `is_canonical_source`. Publishers prompt for version bump and push to GitHub; consumers warn that local edits won't propagate.
+
+### Changed
+- `/upgrade-instance` now fetches `rules/instance-current-manifest.md` from the ACW GitHub repo on every run via `gh` CLI (private repo). Single source of truth: GitHub. Local cache refreshed after each successful pass. Fail-closed if GitHub unreachable.
+
+### Decisions
+D-ACW-012 through D-ACW-015. See `decisions/decision-log.md`.
+
 ## [0.2.0-rc4] — 2026-05-02
 
 Framework-agnostic bookend skills, drift detection, and the upgrade skill that closes the loop. Seven atomic phases with subagent verification at four checkpoints. The bookend skills are now portable across any ACW-derived workspace; existing instances learn they're behind via a one-line alert at session start and reconcile through `/upgrade-instance`.

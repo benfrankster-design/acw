@@ -15,7 +15,7 @@ Three-section task tracker. See `rules/task-tracking.md` for format and discipli
 
 ## Pending
 
-- [ ] **v0.6.0 — operator-centric substrate cluster:** ship `context/` canonical (with `goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`); ship `inbox/` as operator-facing surface (folder of dated files); update `rules/task-tracking.md` framing — `tasks-status.md` is workspace-purpose tracker, personal tasks live in external task apps; add doc note clarifying calendar/tasks/email stay external (use MCP integrations + briefings for snapshots).
+- [ ] **v0.6.0 — operator-centric substrate cluster + meta-layer harness:** ship `context/` canonical (with `goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`); ship `inbox/` as operator-facing surface (folder of dated files); update `rules/task-tracking.md` framing — `tasks-status.md` is workspace-purpose tracker, personal tasks live in external task apps; add doc note clarifying calendar/tasks/email stay external (use MCP integrations + briefings for snapshots); ship meta-layer maintenance harness — Phase 2 of `/acw-session end` extends with per-file triggers (CHANGELOG on version bump, README on substrate-shape change, LINEAGE on new primitive, ORCHESTRATION on new methodology pattern, SKEPTIC on med+ incident); audit verb adds meta-layer staleness check; both gated on `acw-state.yaml::meta_layer` block presence so consumer instances pay no cost.
 - [ ] Re-dogfood `/acw-instance audit` against `_Command` after v0.5.0 ships (the audit verb fixes should now produce interactive Mode B prompts and surface absorption candidates correctly; runbooks/integrations/briefings should be marked as canonical-shape OK now that they're absorbed).
 - [ ] Dogfood `/acw-instance audit` against cs-copilot (substrate-shaped, below organic threshold; should adopt cleanly).
 - [ ] Dogfood `/acw-instance upgrade` against gsg-copilot (older registered instance; should fetch canonical and walk v0.3.0/v0.4.0/v0.5.0 gaps; the v0.5.0 migration step should propose `_inbox/` → `_buffer/` rename).
@@ -29,6 +29,16 @@ Three-section task tracker. See `rules/task-tracking.md` for format and discipli
 - [ ] Promote `v0.4.0` to `v1.0.0` after a soak window once lattice-level dogfooding has accumulated evidence.
 
 ## Done
+
+### 2026-05-02 — v0.5.1: front-door cleanup (Session 9)
+
+- Retired `bootstrap/README.md` (functions absorbed by `tools/scaffold-instance.py` + templated `research/01-problem-framing.md`).
+- Retired `migration/README.md` (functions absorbed by `/acw-instance audit` and `/acw-instance upgrade` adopt-mode).
+- Retired `LAYERS.md`; folded the ACW-specific three-layer narrative into `README.md` as a "How ACW is layered" section; generic pattern stays in `rules/manifest-discipline.md`.
+- Refreshed `README.md` end-to-end: 60-second scaffold quickstart up front; four operator commands table (`/acw-session start|end`, `/acw-instance audit|upgrade`); current directory map (runbooks/, integrations/, briefings/, _buffer/); current load-bearing files; current Tools quickstart.
+- Backfilled `CHANGELOG.md` for v0.3.0, v0.4.0, v0.5.0, v0.5.1 — each entry summarizes Added / Changed / Decisions per Keep a Changelog format.
+- Updated `acw-state.yaml::template_layer` and `meta_layer` to remove the retired files.
+- Bumped ACW version `0.5.0` → `0.5.1`. D-ACW-030 records the rationale.
 
 ### 2026-05-02 — v0.5.0: audit verb fixes from `_Command` dogfood + new canonical substrate (Session 8)
 
