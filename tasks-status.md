@@ -15,9 +15,10 @@ Three-section task tracker. See `rules/task-tracking.md` for format and discipli
 
 ## Pending
 
+- [ ] **v0.6.0 — operator-centric substrate cluster:** ship `context/` canonical (with `goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`); ship `inbox/` as operator-facing surface (folder of dated files); update `rules/task-tracking.md` framing — `tasks-status.md` is workspace-purpose tracker, personal tasks live in external task apps; add doc note clarifying calendar/tasks/email stay external (use MCP integrations + briefings for snapshots).
+- [ ] Re-dogfood `/acw-instance audit` against `_Command` after v0.5.0 ships (the audit verb fixes should now produce interactive Mode B prompts and surface absorption candidates correctly; runbooks/integrations/briefings should be marked as canonical-shape OK now that they're absorbed).
 - [ ] Dogfood `/acw-instance audit` against cs-copilot (substrate-shaped, below organic threshold; should adopt cleanly).
-- [ ] Dogfood `/acw-instance audit` against `_Command` (substantial organic substrate; should hard-stop adopt-mode and surface routing table). Operator manually reviews each Mode B finding for absorption candidate vs. instance-specific.
-- [ ] Dogfood `/acw-instance upgrade` against gsg-copilot (older registered instance; should fetch canonical and walk v0.3.0/v0.4.0 gaps).
+- [ ] Dogfood `/acw-instance upgrade` against gsg-copilot (older registered instance; should fetch canonical and walk v0.3.0/v0.4.0/v0.5.0 gaps; the v0.5.0 migration step should propose `_inbox/` → `_buffer/` rename).
 - [ ] Manually delete superseded skills after dogfood validates v0.4.0: `skills/capture-session/`, `skills/upgrade-instance/`, `skills/resume-session/`, `skills/capture-and-metabolize/` (careful guardrail blocks automated `rm -rf`).
 - [ ] Sync `~/synapse/Rules/Procedures/` copies with ACW canonical (mitigation for D-01). Particularly `skill-format.md` since ACW canonical now has the corrected version.
 - [ ] Decide: should `tools/scaffold-instance.py` optionally create user-level skill junctions at scaffold time? (OQ-ACW-006 from Session 5.)
@@ -28,6 +29,25 @@ Three-section task tracker. See `rules/task-tracking.md` for format and discipli
 - [ ] Promote `v0.4.0` to `v1.0.0` after a soak window once lattice-level dogfooding has accumulated evidence.
 
 ## Done
+
+### 2026-05-02 — v0.5.0: audit verb fixes from `_Command` dogfood + new canonical substrate (Session 8)
+
+- First `/acw-instance audit` dogfood run against `_Command` (4/6 substrate signals, unregistered, substantial organic substrate). Audit ran but exposed five v0.4.0 bugs.
+- Audit/upgrade verb fixes (D-ACW-023, D-ACW-024, D-ACW-026):
+  - Hard-stop scan widened to count root-level organic substrate, not just `decisions/` and `rules/`.
+  - Mode B walk made interactive: prompt per finding, write absorption candidates immediately on `[b]`, no static-report shortcut.
+  - Mode B default routing changed from `[s] instance-specific` to "ask, don't guess" with explicit canonical comparison in prompt.
+  - Skills audit landed inside the verb spine (SKILL.md frontmatter validation against `rules/skill-format.md`).
+  - Absorption flow works for unregistered workspaces: candidates flow upstream during audit before formal adoption.
+- `_inbox/` → `_buffer/` rename per DIP vocabulary canon (D-ACW-027). Updated all active substrate; preserved historical references in append-only files. Directory renamed via `git mv`.
+- Three new canonical surfaces from `_Command` absorption (D-ACW-025, D-ACW-029):
+  - `runbooks/` (empty_dir, .gitkeep) — operator-facing how-to docs.
+  - `integrations/` (instance_layer with templated README) — external-system docs (APIs, MCPs, adapters, webhooks).
+  - `briefings/` (empty_dir, .gitkeep) — agent-generated dated snapshots; universal pattern across workspace types.
+- Calendar / tasks / email stay external (D-ACW-028); briefings is the snapshot mechanism when aggregation is wanted.
+- `/acw-instance upgrade` adds v0.5.0 migration step: detects legacy `_inbox/`, proposes rename to `_buffer/` with operator confirmation.
+- Bumped ACW version `0.4.0` → `0.5.0`. Bumped `last_reconciled_version` to `0.5.0`. Updated template baseline to `0.5.0`.
+- Verified scaffolder dry-run produces correct shape with new directories.
 
 ### 2026-05-02 — v0.4.0: command-routed skills, full audit verb, absorption mechanics (Session 7)
 

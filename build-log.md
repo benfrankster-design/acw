@@ -9,6 +9,53 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-02 — v0.5.0: audit verb fixes from `_Command` dogfood + new canonical substrate
+
+Operator opened by pasting the first real `/acw-instance audit` output from `_Command`. Audit ran cleanly at the surface — produced a routing table, identified 5 canonical-shape OK files, 1 enrichment-incomplete, 1 divergent (sessions/ at root), 6 organic findings (briefings, context, notes, runbooks, integrations, etc.). But the agent in `_Command` produced the report with PROPOSED routings ("Likely [s]", "Possibly [b]") rather than walking each finding interactively with the four-option prompt. Result: nothing landed in ACW's `_buffer/`. Five v0.4.0 bugs fell out of the analysis.
+
+Conversation arc:
+
+1. Operator surfaced the bugs by reading the audit output critically. *"It sent nothing to your inbox."* Pointed at exactly the right thing.
+2. Hard-stop scan was too narrow — counted only `decisions/` and `rules/`, missed `_Command`'s organic substrate at root. Fix: widen scope.
+3. Mode B walk wasn't actually interactive. Spec was ambiguous; agent reading produced static report. Fix: tighten spec, prompt-per-finding, write-on-routing.
+4. Default Mode B classification was `[s] instance-specific` — too conservative. Fix: "ask, don't guess" with canonical comparison surfaced in prompt.
+5. Skills audit wasn't part of the verb spine. The audit found 6 skills under `_Command/skills/` but didn't validate frontmatter. Fix: bring SKILL.md frontmatter validation into the spine.
+6. Absorption flow was gated on workspace registration. `_Command` is unregistered; even if Mode B had been interactive, absorption candidates couldn't have flowed because the workspace had no `acw-state.yaml::cross_repo_writes` block. Fix: candidates flow during audit pre-adoption; pending entries queue for upgrade verb to materialize when it writes the new acw-state.yaml.
+
+Then the substrate-categorization conversation. Initial audit verdict had flagged `briefings/`, `runbooks/`, `integrations/` all as "Likely [s] instance-specific." Operator pushed back: most of these are universal patterns. Briefings is universal because cockpit + project + full all benefit from agent-generated snapshots, just with different aggregation content. Runbooks is universal because every workspace accumulates operator-facing how-to docs. Integrations is universal because most workspaces touching external systems via MCP/API/webhook accumulate docs about them. Verdict reversed; three new canonical surfaces shipped.
+
+Sub-decisions during the substrate conversation:
+- `notes/` deferred — needs lived experience for per-workspace-type subfolder defaults.
+- `my-tasks.yaml` rejected — same logic as calendar; operator uses external task app, accessible on phone.
+- Calendar mirror rejected — lean on MCP for live data; briefings handle aggregation when wanted.
+- `inbox/` (operator-facing) and `_inbox/` (system) need to be distinct surfaces. Different generators, different lifecycles. Rename `_inbox/` → `_buffer/` per DIP vocabulary canon to avoid the collision when v0.6.0 ships operator inbox.
+
+Operator's framing correction: leadership is cockpit; cockpit isn't role-gated. Anyone with a personal command center crossing personal+business surfaces is a cockpit operator. Per `research/07-instance-types.md` the canonical types are Full/Cockpit/Project/Read-Only — leadership doesn't appear because it's not a separate type. Updated examples accordingly.
+
+Three commits in v0.5.0:
+1. `fix(skills): audit/upgrade verb fixes + _inbox/ -> _buffer/ rename` — five bug fixes plus the system surface rename, all touching the same skill files.
+2. `feat: runbooks/, integrations/, briefings/ as canonical substrate` — three registry entries, ACW declarations, scaffolder verified.
+3. This housekeeping commit — version bump, decision log entries D-ACW-023 through D-ACW-029, this build-log entry, tasks-status update.
+
+### Metabolize report
+
+**Auto-updated** (executed):
+- `tasks-status.md::Done` — added Session 8 dated block. Pending updated to remove the v0.5.0 dogfood-audit line item (it ran; the bugs are fixed; next dogfood comes after v0.5.0 lands) and add v0.6.0 scope note + re-dogfood task.
+- `decisions/decision-log.md` — added D-ACW-023 through D-ACW-029 (seven entries) in chronological order.
+- `acw-state.yaml` — bumped `version` and `last_reconciled_version` to `0.5.0`; updated `empty_dirs` (added `runbooks`, `briefings`; renamed `_inbox` → `_buffer`); added `integrations/README.md` to `instance_layer`; renamed `paths.inbox_dir` → `paths.buffer_dir`.
+- `tools/templates/acw-state.yaml.tmpl` — bumped baseline `last_reconciled_version` to `0.5.0`.
+- `_inbox/` → `_buffer/` directory rename via `git mv` (preserves history).
+- `tools/manifest.py` and `tests/test_manifest.py` — updated canonical defaults and corresponding test assertions.
+- `rules/manifest-discipline.md` — canonical default paths added for new dirs.
+- `rules/instance-current-manifest.md` — three new registry entries earned in v0.5.0; `_buffer` entry rewritten with rename history.
+- `rules/multi-instance-topology.md`, `rules/skill-format.md`, `CLAUDE.md`, all skill files — `_inbox` references updated to `_buffer`.
+
+**Proposed for operator review** (deferred):
+- v0.6.0 ship: `context/`, operator `inbox/`, tasks-status framing update, doc note about external systems.
+- Re-dogfood `_Command` audit after v0.5.0 ships to validate the interactive Mode B walk works end-to-end.
+- Cross-instance write trigger entry in `DEFERRED.md` for capability broker.
+- Lint gate for command-routed skills.
+
 ## 2026-05-02 — v0.4.0: command-routed skills, full audit verb, absorption mechanics
 
 Operator opened the session with a session capture from cs-copilot where they had tried to run `/upgrade-instance` and the agent there bailed because cs-copilot is substantively an ACW instance but lacks formal registration. This was already addressed in v0.3.0 via adopt mode, but the operator's question went deeper: what about workspaces with **organic substrate** that's evolved its own conventions (like `_Command`)? Steamrolling those into canonical shape would destroy institutional learning.

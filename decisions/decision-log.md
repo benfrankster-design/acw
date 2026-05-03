@@ -27,6 +27,55 @@ This file tracks all decisions, open questions, constraints, and resolved questi
 
 ## Decisions and Rationale
 
+### D-ACW-029 — `briefings/`, `runbooks/`, `integrations/` shipped as universal canonical substrate
+
+**Date:** 2026-05-02
+**Decision:** Three new substrate directories earned by `_Command` audit dogfood. All three are universal patterns; content varies by workspace type but the shape is the same. `runbooks/` (operator how-tos), `integrations/` (external-system docs with templated README), `briefings/` (agent-generated dated snapshots). All earned in v0.5.0 via `rules/instance-current-manifest.md` registry entries.
+**Rationale:** Initial `_Command` audit verdict flagged all three as "Likely [s] instance-specific." Operator pushed back: briefings is universal (cockpit aggregates calendar+tasks; project aggregates PR+build+issues; same shape, different content); runbooks is universal (operator how-tos that don't fit in any skill); integrations is universal (every workspace touching external systems via MCP/API/webhook accumulates docs about them). Verdict reversed. Three absorption candidates ship as canonical.
+**Source:** `_Command` audit report + operator reframing.
+
+### D-ACW-028 — Calendar, tasks, email stay external; briefings is the snapshot mechanism
+
+**Date:** 2026-05-02
+**Decision:** Don't duplicate calendar, task app, or email in workspace substrate. Lean on MCP integrations for live data. When the operator wants a snapshot of aggregated external state, briefing skills aggregate calendar + tasks + email + integrations into a dated artifact in `briefings/`. Documented as a doc note in `rules/instance-current-manifest.md` § briefings.
+**Rationale:** Operator extended the calendar-stays-external logic to tasks and email. Same reasoning for all three: they're already operator-accessible on phone/desktop via native apps; mirroring locally creates sync rot. The chief-of-staff affordance ("what's on my plate?") lives in agents that call the appropriate MCP at query time, not in cached substrate.
+**Source:** Operator decision during v0.5.0 / v0.6.0 scoping turn.
+
+### D-ACW-027 — `_inbox/` renamed to `_buffer/` per DIP vocabulary canon
+
+**Date:** 2026-05-02
+**Decision:** System cross-instance handoff directory renamed from `_inbox/` to `_buffer/` in v0.5.0. All active substrate (skills, rules, state, tools, tests) updated. Append-only history (decisions/, build-log, CHANGELOG, research/) retains historical `_inbox` references. `/acw-instance upgrade` v0.5.0+ adds a migration step proposing the rename to legacy workspaces.
+**Rationale:** Two reasons pulling the same direction: (a) operator's DIP vocabulary canon already declares "buffer" as the canonical term replacing inbox/queue/staging — the rename brings ACW canonical inline with existing vocabulary. (b) v0.6.0 will introduce an operator-facing `inbox/` surface; the system surface keeping `_inbox/` would collide. Renaming now (one downstream instance, `_Command`) is cheap; renaming later (after lattice scale) would be expensive.
+**Source:** Operator decision during v0.5.0 / v0.6.0 scoping turn; DIP vocabulary in `~/synapse/Rules/Procedures/dip-vocabulary.md`.
+
+### D-ACW-026 — `_Command` audit dogfood incident retrospective
+
+**Date:** 2026-05-02
+**Decision:** First `/acw-instance audit` against `_Command` produced clean Mode A output but exposed five bugs in v0.4.0: (1) hard-stop scan counted only `decisions/` and `rules/` files; missed root-level organic substrate. (2) Mode B walk produced static report with proposed routings instead of interactive prompts; nothing landed in `_buffer/`. (3) Default routing was `[s] instance-specific`; should be `ask, don't guess`. (4) Skills audit not part of verb spine. (5) Absorption flow gated on workspace registration. Five bugs all earned by this single dogfood.
+**Rationale:** Earn-by-incident in action. v0.4.0 design was sound at the rule level but the verb implementation had ambiguities and gaps that only surfaced under real-workspace use. v0.5.0 fixes all five, plus reverses the conservative routing on three substrate categories that turned out to be universal patterns.
+**Source:** Operator pasted `_Command` audit report; agent reading produced the bug list; operator confirmed fixes.
+
+### D-ACW-025 — `briefings/` as universal pattern, not cockpit-specific
+
+**Date:** 2026-05-02
+**Decision:** Reversed earlier framing that flagged briefings/ as cockpit-specific. The pattern (agent-generated dated snapshot of aggregated state) is universal across workspace types. Cockpit, Project, and Full instances all benefit from it; only the aggregation content varies.
+**Rationale:** Initial audit conservatism mis-classified. Operator's cockpit framing made it sound role-specific (leadership, CS, etc.) but cockpit is itself a workspace TYPE, not a role — anyone with a personal command center qualifies. And briefings work in project workspaces too (PR/build/issue snapshots). Universal pattern.
+**Source:** Operator clarification on cockpit-vs-leadership framing during v0.5.0 scoping.
+
+### D-ACW-024 — Mode B walk in audit verb is interactive, not static-report
+
+**Date:** 2026-05-02
+**Decision:** Audit verb's Mode B (organic substrate discovery) prompts the operator interactively per finding with the four-option route (`[a]/[b]/[s]/[n]`). Writes happen during the walk on `[b]` routing, not after the report finalizes. Default is "ask, don't guess" with explicit comparison to canonical surfaced in the prompt.
+**Rationale:** v0.4.0 spec said "surface to the operator" which an agent could plausibly interpret as "include in the report." `_Command` audit produced static report; nothing landed in `_buffer/`. Spec tightened to make the interactive walk unambiguous. Also: default routing of `[s]` was too conservative — Mode B's whole point is the operator-as-judgment-call; auto-classifying defeats the purpose.
+**Source:** `_Command` audit dogfood incident.
+
+### D-ACW-023 — Hard-stop scan widened to root-level organic substrate
+
+**Date:** 2026-05-02
+**Decision:** `/acw-instance upgrade` adopt-mode hard-stop now counts (a) markdown files in `decisions/` and `rules/` (existing v0.4.0 logic) PLUS (b) root-level directories not in canonical PLUS (c) root-level non-canonical markdown files. The threshold (default 5) applies to the total. v0.4.0 counted only (a) and missed exactly the case it was designed to catch — workspaces like `_Command` accumulate organic substrate at root, not inside `decisions/` or `rules/`.
+**Rationale:** `_Command` audit revealed ~1 file each in `decisions/` and `rules/` (well under threshold) despite having `briefings/`, `runbooks/`, `integrations/`, `notes/`, `context/` directories at root. v0.4.0 hard-stop wouldn't have fired; would have steamrolled into adoption. v0.5.0 fixes scope.
+**Source:** `_Command` audit dogfood incident.
+
 ### D-ACW-022 — Hard-stop threshold for adopt-mode set at 5
 
 **Date:** 2026-05-02
