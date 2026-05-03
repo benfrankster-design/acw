@@ -9,6 +9,36 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-03 — `/acw-session end` post-v0.6.1 (harness's second run; quiet)
+
+Session-end run after the v0.6.1 meta-layer backfill commit landed. Capture file at `research/sessions/2026-05-03--v061-meta-layer-backfill.md`.
+
+This is the **second invocation** of the v0.6.0 meta-layer maintenance harness. Walks the same trigger table the first run walked. Results:
+
+| Meta file | Trigger fired this session? | Status |
+|---|---|---|
+| `README.md` | Substrate-shape: no new categories (v0.6.1 was a patch). Version bump 0.6.0→0.6.1 fired but no hardcoded version refs in README to update. | Current. |
+| `CHANGELOG.md` | Version bump → already updated this session. | Current. |
+| `LINEAGE.md` | New primitive: no (v0.2.0+ section was documentation, not new primitive). | Current — just-updated. |
+| `ORCHESTRATION.md` | New methodology pattern: no (v0.2.0+ section was documentation). | Current — just-updated. |
+| `SKEPTIC.md` | New med+ incident this session: no (no new incidents). | Current — just-updated. |
+
+The harness's second run is quiet. Validates that trigger detection correctly identifies "no triggers fired" after a session that updated all the meta-files. The harness doesn't false-fire on freshly-updated files.
+
+Phase 4 skipped (synapse_log_path null). Phase 5 skipped (no design questions surfaced this session; the carry-over open questions are operator-decision-shaped, not research-shaped).
+
+### Metabolize report
+
+**Auto-updated** (executed):
+- `research/sessions/2026-05-03--v061-meta-layer-backfill.md` — session capture for v0.6.1 ship.
+- This build-log entry.
+
+**Proposed for operator review** (carry-over from prior sessions; no new proposals):
+- Re-dogfood `/acw-instance audit` against `_Command`, `cs-copilot`, `gsg-copilot`.
+- Cross-instance write trigger entry in `DEFERRED.md` for capability broker.
+- Lint gate for command-routed skills.
+- OQ-ACW-010 (now positive on two runs); OQ-ACW-011 (still open).
+
 ## 2026-05-03 — v0.6.1: meta-layer backfill from harness's first run
 
 Single-word ship request after the v0.6.0 meta-layer harness's first invocation surfaced four staleness proposals. Operator accepted all four; v0.6.1 lands the meta-file updates that close the v0.2.0+ backfill gap.
