@@ -198,6 +198,33 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 - **How to add:** Edit `acw-state.yaml::empty_dirs` to include `briefings`. Briefing skills write dated files into the directory; the operator (or `/acw-session start`) reads the latest at session-start.
 - **Earned in:** `0.5.0`.
 
+## `context/` directory
+
+- **What:** A `context/` directory at the workspace root holding lightweight pointers to operating reality. Four canonical files: `goals.md` (long-arc goals), `objectives.md` (current near-term focus), `how-i-work.md` (operator preferences, schedule, communication), `key-people.md` (who matters in this workspace's domain). Read on demand by agents that need the context, not auto-loaded into every chat.
+- **Why it helps:** Distinct from decisions (specific choices), rules (governance), skills (operations), or glossary (vocabulary). Captures the "operating reality" that agents need to calibrate their work — what the workspace is for, who matters, how the operator works — without bloating every chat's context window. Especially load-bearing for cockpit-shaped instances where personal + business context blends; useful in any workspace type.
+- **Required:** No. Workspaces with thin context can leave `context/` empty or absent. Recommended for any workspace where agents would benefit from operator-/project-context cues beyond what canonical substrate captures.
+- **How to add:** Add four entries to `acw-state.yaml::instance_layer` mapping each canonical file to its template:
+  ```yaml
+  - path: context/goals.md
+    template: tools/templates/context-goals.md.tmpl
+  - path: context/objectives.md
+    template: tools/templates/context-objectives.md.tmpl
+  - path: context/how-i-work.md
+    template: tools/templates/context-how-i-work.md.tmpl
+  - path: context/key-people.md
+    template: tools/templates/context-key-people.md.tmpl
+  ```
+  Scaffolder renders the four files at scaffold time. Operator fills them with workspace-specific content. Updates happen as operating reality shifts (new goal, person moves on, working preference changes), not on a schedule.
+- **Earned in:** `0.6.0`.
+
+## `inbox/` directory
+
+- **What:** An `inbox/` directory at the workspace root holding the operator's untriaged items. Folder of dated markdown files (`YYYY-MM-DD-<topic>.md`) plus optional loose entries. Operator captures things mid-session ("remember this for later") or triage skills route external items in (calendar surfacing, email digest, etc.). Items get processed and removed: routed to `tasks-status.md::Pending` (committed work), parked, or deleted.
+- **Why it helps:** Distinct from `_buffer/` (system surface for cross-instance handoffs) and from `briefings/` (agent-generated dated snapshots). Inbox is the operator's *write* surface for raw inbound items needing triage; buffer is the system's *write* surface for cross-instance messages; briefings are agent-generated *read* surfaces for aggregated snapshots. Three different surfaces, three different lifecycles.
+- **Required:** No. Workspaces without operator-capture flow can leave `inbox/` empty or absent. Recommended for any workspace where the operator wants a triage queue distinct from the workspace task tracker.
+- **How to add:** Edit `acw-state.yaml::empty_dirs` to include `inbox`. Scaffolder creates the directory with `.gitkeep`. Operator captures into it directly or via triage skills.
+- **Earned in:** `0.6.0`.
+
 ## `adopt_mode_organic_threshold`
 
 - **What:** A scalar integer in `acw-state.yaml` setting the threshold above which `/acw-instance upgrade` adopt-mode bails (with pointer to `/acw-instance audit`) instead of offering automatic adoption. Counts markdown files in `decisions/` and `rules/` excluding canonical files copied from ACW.

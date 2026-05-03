@@ -121,6 +121,14 @@ instance_layer:
     instance_only: true   # do not expect a populated counterpart at ACW root
   - path: integrations/README.md
     template: tools/templates/integrations-README.md.tmpl
+  - path: context/goals.md
+    template: tools/templates/context-goals.md.tmpl
+  - path: context/objectives.md
+    template: tools/templates/context-objectives.md.tmpl
+  - path: context/how-i-work.md
+    template: tools/templates/context-how-i-work.md.tmpl
+  - path: context/key-people.md
+    template: tools/templates/context-key-people.md.tmpl
   # Host-specific entry files implementing AGENTS.md directive 7. Each host's
   # entry file is instance_layer with template: null because content is
   # host-specific and regenerable; the scaffolder writes it directly when
@@ -159,6 +167,7 @@ empty_dirs:
   - _buffer
   - runbooks
   - briefings
+  - inbox
 
 # =============================================================================
 # Operational substrate references

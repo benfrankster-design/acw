@@ -50,6 +50,8 @@ CANONICAL_DEFAULTS: dict[str, dict[str, str]] = {
         "runbooks_dir": "runbooks",
         "integrations_dir": "integrations",
         "briefings_dir": "briefings",
+        "context_dir": "context",
+        "inbox_dir": "inbox",
     },
 }
 

@@ -117,6 +117,8 @@ The bookend skills and any other consumer that needs to locate substrate read pa
 | `runbooks_dir` | `runbooks` |
 | `integrations_dir` | `integrations` |
 | `briefings_dir` | `briefings` |
+| `context_dir` | `context` |
+| `inbox_dir` | `inbox` |
 
 An instance that wants to override one or more of these declares the override in its `acw-state.yaml::paths` block. Defaults remain in effect for any key the instance does not override.
 
