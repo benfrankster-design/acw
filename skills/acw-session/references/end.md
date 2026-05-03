@@ -58,6 +58,18 @@ The skill does not block the edit. The warning surfaces the consequence.
 
 If no canonical files were edited, skip silently.
 
+**Meta-layer maintenance (conditional).** If `acw-state.yaml::meta_layer` is present and non-empty, walk a small triggers table to detect when meta-layer files need updates. For each trigger that fires, surface a proposed edit; operator confirms before write. If the block is absent or empty, skip silently — most consumer instances don't have meta-layer narrative files.
+
+| Meta file | Trigger detector | Proposed edit |
+|---|---|---|
+| `README.md` | Any of: `acw-state.yaml::template_layer` changed (file added/removed); new top-level skill command shipped; `acw-state.yaml::version` changed | Surface diff candidates: directory map needs new entry, four-load-bearing-files list shifted, version reference outdated |
+| `CHANGELOG.md` | `acw-state.yaml::version` changed | Surface a `## [<new-version>] — <date>` entry stub with sections derived from the current session capture's "What was decided" + "What was built / changed" |
+| `LINEAGE.md` | New file shipped in `rules/` template_layer or new file in `tools/` (heuristic: detect via this session's git diff) | Surface a primitive-trace stub: "<new primitive> — derived from <research/N entry or operator-confirmed source>" |
+| `ORCHESTRATION.md` | New methodology pattern earned (heuristic: this session's capture documents a pattern in its "What changed in the conception" section that's reusable) | Surface a candidate addition with operator confirmation |
+| `SKEPTIC.md` | New incident logged this session with severity at-or-above med | Surface "should this incident earn a new warning? [y/N]" with proposed warning text drawn from the incident's `symptom` field |
+
+The harness gates on `meta_layer` block presence (not on `is_canonical_source`) — any workspace with declared meta-layer files inherits the maintenance discipline. Triggers themselves are sensible defaults; if a workspace's meta-layer needs different update conditions, that's an earn-by-incident moment.
+
 **Cross-repo writes.** If a finding implies a write to a path outside the project repo, the path MUST be in `acw-state.yaml::cross_repo_writes`. If not, refuse and surface the path.
 
 **Cross-project notifications.** If the session touched another project, drop a notification at the other project's `paths.buffer_dir / YYYY-MM-DD-<source-project>-<topic-slug>.md`. Frontmatter: `from_project`, `from_session_capture`, `date`, `topic`, `read: false`. Body: 5–15 lines summarizing what the receiving project should know. Append-only; never edit once written.

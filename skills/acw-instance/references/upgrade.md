@@ -89,6 +89,29 @@ Before walking gaps, detect the legacy directory name:
 - On `n`: skip the rename; surface a warning that v0.5.0+ skills expect `_buffer/` and will not find this workspace's notifications until the rename happens.
 - If both `_inbox/` and `_buffer/` exist → bail with: ambiguous state, manual cleanup required.
 
+## Resolve meta-layer staleness (conditional on meta_layer block)
+
+If `acw-state.yaml::meta_layer` is present and non-empty, after walking gap entries from the routing table, walk the meta-layer staleness entries the audit verb flagged. For each stale file:
+
+```
+─────────────────────────────────────
+Meta-layer file: <path>
+Triggers fired since v<last_reconciled_version>:
+  - <trigger 1>
+  - <trigger 2>
+
+Proposed edit:
+<diff candidate or text addition>
+
+Options:
+  [a] Apply as proposed
+  [m] Modify before applying (operator provides the value)
+  [s] Skip (file stays stale on this pass; flag persists for next audit)
+─────────────────────────────────────
+```
+
+Operator confirms per-file. Apply or modify writes the meta-file directly. Skip leaves the file stale for the next audit/upgrade cycle. The harness gates on `meta_layer` block presence; consumer instances without the block see no meta-layer pass.
+
 ## Resolve divergent_pending_review entries
 
 After the gap walk, for each existing `divergent_pending_review` entry with `status: pending`:

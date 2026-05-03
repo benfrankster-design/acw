@@ -47,6 +47,26 @@ For each subdirectory under `skills/` that is not marked `status: superseded`:
 
 Each finding becomes a row in the final report under "Skills compliance." No interactive prompt for skill findings — they're enrichment proposals for the upgrade verb to walk.
 
+## Mode A — meta-layer staleness (conditional)
+
+After Mode A canonical comparison and skills audit, run a meta-layer staleness check **only if** `acw-state.yaml::meta_layer` is present and non-empty. If absent or empty, skip silently — most consumer instances don't have meta-layer narrative files and don't need this check.
+
+For each file listed in `meta_layer`, evaluate the same trigger table the `/acw-session end` Phase 2 step uses (see `skills/acw-session/references/end.md` § "Meta-layer maintenance"). Compare against `last_reconciled_version`:
+
+- For each trigger that has fired since the file was last updated → flag as stale.
+- For files with no trigger fired → flag as current.
+
+Surface in the final report under "Meta-layer staleness" with one line per stale file naming the specific trigger(s) that fired:
+
+```
+Meta-layer staleness (<N> files):
+  - README.md — directory map missing: <new-substrate-entries>; load-bearing-files list shifted in v<X>
+  - CHANGELOG.md — missing entries for v<A>, v<B>, v<C>
+  - LINEAGE.md — primitives shipped without lineage entries: <names>
+```
+
+Each flagged entry is a proposal the upgrade verb walks during its gap pass — operator confirms the proposed edit before it lands. Audit verb itself never writes to meta-layer files; it only flags.
+
 ## Mode B — organic substrate discovery
 
 After Mode A completes, walk the workspace looking for substrate-like patterns not covered by canonical types:
@@ -119,6 +139,9 @@ Divergent — absorbed upstream (<N>; absorption candidates written this run):
 
 Skills compliance (<N> issues):
   - skills/<name>/SKILL.md — <issue>
+
+Meta-layer staleness (<N> stale files; conditional on meta_layer block):
+  - <file> — triggers fired: <list>
 
 Organic substrate (<N> findings):
   - <path> — operator routed to: <choice>
