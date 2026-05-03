@@ -49,12 +49,16 @@ Three commits in v0.5.0:
 - `rules/manifest-discipline.md` — canonical default paths added for new dirs.
 - `rules/instance-current-manifest.md` — three new registry entries earned in v0.5.0; `_buffer` entry rewritten with rename history.
 - `rules/multi-instance-topology.md`, `rules/skill-format.md`, `CLAUDE.md`, all skill files — `_inbox` references updated to `_buffer`.
+- `incidents.jsonl` — appended `73cf90d2` (v0.4.0 audit verb bugs from `_Command` dogfood, severity med, category implementation-bug; resolution shipped same release) and `64689988` (substrate-classification conservatism, severity low, category process-gap).
+- `research/sessions/2026-05-02--v050-audit-fixes-and-substrate-absorption.md` — full session capture written by `/acw-session end`.
 
 **Proposed for operator review** (deferred):
 - v0.6.0 ship: `context/`, operator `inbox/`, tasks-status framing update, doc note about external systems.
 - Re-dogfood `_Command` audit after v0.5.0 ships to validate the interactive Mode B walk works end-to-end.
 - Cross-instance write trigger entry in `DEFERRED.md` for capability broker.
 - Lint gate for command-routed skills.
+- OQ-ACW-008: how does operator-facing `inbox/` (v0.6.0) relate to `tasks-status.md` and `briefings/`? Three candidate models in the session capture; needs lived experience to resolve.
+- OQ-ACW-009: should briefings be configured per workspace type, per workspace, or per domain? Defer until first briefing skill ships.
 
 ## 2026-05-02 — v0.4.0: command-routed skills, full audit verb, absorption mechanics
 
