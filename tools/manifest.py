@@ -64,6 +64,12 @@ KNOWN_LISTS: set[str] = {
     "voice",
 }
 
+# Lists whose entries may be either bare scalar (legacy) or dict (structured).
+# `load` returns paths only (extracts `path:` from dict entries) for backward
+# compat; `load_structured` returns full dict per entry. See
+# `rules/auto-load-discipline.md` for the structured shape.
+STRUCTURED_LISTS: set[str] = {"auto_load_at_session_start"}
+
 KNOWN_DICTS: set[str] = {"paths", "project"}
 
 UNSUPPORTED: set[str] = {"instance_layer"}
@@ -158,9 +164,95 @@ def _parse_list_block(lines: list[str], start: int, end: int) -> list[str]:
         if not stripped or stripped.startswith("#"):
             continue
         if stripped.startswith("- "):
-            value = _parse_scalar(stripped[2:])
+            payload = stripped[2:]
+            # Dict-shaped item: `- key: value` (path: <something> for
+            # structured lists). Extract the value of the first key when
+            # that key is `path`. Otherwise parse as scalar.
+            if ":" in payload and not (
+                payload.startswith('"') or payload.startswith("'")
+            ):
+                key, _, val = payload.partition(":")
+                if key.strip() == "path":
+                    parsed = _parse_scalar(val)
+                    if parsed is not None:
+                        items.append(parsed)
+                    continue
+            value = _parse_scalar(payload)
             if value is not None:
                 items.append(value)
+    return items
+
+
+def _parse_structured_list_block(
+    lines: list[str], start: int, end: int
+) -> list[dict]:
+    """Parse a list whose entries may be bare scalars or inline-dict items.
+
+    Bare entry `- foo` → {"path": "foo", "claim": None,
+                           "earned_by": "legacy-pending-review"}.
+    Dict entry → all fields present in the entry.
+    """
+    header = lines[start].rstrip("\n")
+    inline = header.split(":", 1)[1].strip() if ":" in header else ""
+    if inline:
+        return [
+            {"path": v, "claim": None, "earned_by": "legacy-pending-review"}
+            for v in _parse_inline_list(inline)
+        ]
+
+    items: list[dict] = []
+    current: Union[dict, None] = None
+    # `- ` lives at indent 2; continuation keys at indent 4.
+    for j in range(start + 1, end):
+        line = lines[j].rstrip("\n")
+        stripped = line.lstrip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("- "):
+            # Close prior entry
+            if current is not None:
+                items.append(current)
+                current = None
+            payload = stripped[2:]
+            if ":" in payload and not (
+                payload.startswith('"') or payload.startswith("'")
+            ):
+                key, _, val = payload.partition(":")
+                key = key.strip()
+                parsed = _parse_scalar(val)
+                # Start a structured entry
+                current = {
+                    "path": None,
+                    "claim": None,
+                    "earned_by": None,
+                }
+                if parsed is not None:
+                    current[key] = parsed
+                continue
+            # Bare scalar entry
+            value = _parse_scalar(payload)
+            if value is not None:
+                items.append(
+                    {
+                        "path": value,
+                        "claim": None,
+                        "earned_by": "legacy-pending-review",
+                    }
+                )
+            continue
+        # Continuation line (indented further than `- `)
+        if current is not None and ":" in stripped:
+            key, _, val = stripped.partition(":")
+            key = key.strip()
+            parsed = _parse_scalar(val)
+            if parsed is not None:
+                current[key] = parsed
+    if current is not None:
+        items.append(current)
+    # Default earned_by for structured entries that didn't declare one
+    for entry in items:
+        if entry.get("earned_by") is None and entry.get("claim") is not None:
+            entry["earned_by"] = "structural"
     return items
 
 
@@ -192,7 +284,12 @@ def _check_known(list_name: str) -> None:
 
 
 def load(state_file: Path, list_name: str):
-    """Read a manifest block. Returns list or dict with defaults applied."""
+    """Read a manifest block. Returns list or dict with defaults applied.
+
+    For STRUCTURED_LISTS, returns paths only (extracted from `path:` keys
+    on dict entries; bare entries returned as-is). Use `load_structured`
+    to get full dict entries.
+    """
     _check_known(list_name)
     lines = _read_lines(state_file)
     block = _find_block(lines, list_name)
@@ -207,6 +304,27 @@ def load(state_file: Path, list_name: str):
     if block is None:
         return []
     return _parse_list_block(lines, block[0], block[1])
+
+
+def load_structured(state_file: Path, list_name: str) -> list[dict]:
+    """Read a structured-list block. Returns list of dicts (path/claim/earned_by).
+
+    Bare-path entries → {"path": ..., "claim": None,
+                          "earned_by": "legacy-pending-review"}.
+    Dict entries → all declared fields plus defaults for missing ones.
+
+    Raises ManifestError if `list_name` is not in STRUCTURED_LISTS.
+    """
+    _check_known(list_name)
+    if list_name not in STRUCTURED_LISTS:
+        raise ManifestError(
+            f"{list_name!r} is not a structured-list block; use load() instead"
+        )
+    lines = _read_lines(state_file)
+    block = _find_block(lines, list_name)
+    if block is None:
+        return []
+    return _parse_structured_list_block(lines, block[0], block[1])
 
 
 def append(state_file: Path, list_name: str, value) -> bool:
@@ -332,6 +450,24 @@ def validate(state_file: Path, list_name: str) -> None:
         for key, val in parsed.items():
             if not isinstance(val, str):
                 raise ManifestError(f"{list_name}.{key} is not a string")
+        return
+
+    if list_name in STRUCTURED_LISTS:
+        parsed_structured = _parse_structured_list_block(
+            lines, block[0], block[1]
+        )
+        seen_paths: set[str] = set()
+        for entry in parsed_structured:
+            path = entry.get("path")
+            if not path:
+                raise ManifestError(
+                    f"{list_name} entry missing required 'path' field"
+                )
+            if path in seen_paths:
+                raise ManifestError(
+                    f"duplicate entry in {list_name}: {path!r}"
+                )
+            seen_paths.add(path)
         return
 
     parsed_list = _parse_list_block(lines, block[0], block[1])

@@ -12,7 +12,7 @@ ACW is a single-operator project at present. This file is sparse by design.
 
 ## Downstream instance operators
 
-(Same operator; multi-instance setup is single-human across `cs-copilot`, `gsg-copilot`, `_Command`, plus ACW itself. When a second human operator adopts ACW, this section grows.)
+(Same operator; multi-instance setup is single-human across `cs-copilot`, `_Command`, plus ACW itself. When a second human operator adopts ACW, this section grows.)
 
 ## Reference humans (cited in research)
 

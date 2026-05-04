@@ -57,22 +57,27 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 
 ## `auto_load_at_session_start`
 
-- **What:** A list block in `acw-state.yaml` naming files agent hosts auto-load at session start.
-- **Why it helps:** The cross-vendor contract per `AGENTS.md` directive 7. Each host implements via its native mechanism (Claude Code: `@`-imports in `CLAUDE.md`).
+- **What:** A list block in `acw-state.yaml` naming files agent hosts auto-load at session start. From v0.9.0, entries are structured (`path` / `claim` / `earned_by`); bare-path entries remain valid as a backward-compat form (treated as `legacy-pending-review` by the audit verb).
+- **Why it helps:** The cross-vendor contract per `AGENTS.md` directive 7. Each host implements via its native mechanism (Claude Code: `@`-imports in `CLAUDE.md`). The structured form earns each entry's slot per `rules/auto-load-discipline.md`.
 - **Required:** No. When absent, the host has no canonical auto-load list and either reads nothing automatically or relies on host-specific files only.
-- **How to add:** Edit `acw-state.yaml`. Recommended canonical set (matches the rc4 default for new instances):
+- **How to add:** Edit `acw-state.yaml`. Canonical default (matches the v0.9.0 default for new instances) — four entries that earned their slot per `rules/auto-load-discipline.md`:
   ```yaml
   auto_load_at_session_start:
-    - decisions/decision-log.md
-    - rules/instance-hard-rules.md
-    - rules/manifest-discipline.md
-    - rules/instance-current-manifest.md
-    - tasks-status.md
-    - glossary.md
-    - incidents.jsonl
+    - path: decisions/decision-log.md
+      claim: "Recently decided history must be visible to agents at session start; without it agents re-litigate settled choices."
+      earned_by: structural
+    - path: rules/instance-hard-rules.md
+      claim: "Stop-work rules must be visible to every agent at session start; loading them on demand is too late."
+      earned_by: structural
+    - path: tasks-status.md
+      claim: "Pending work surface must be visible at session start; without it agents propose duplicate work and lose continuity."
+      earned_by: structural
+    - path: glossary.md
+      claim: "Vocabulary canon prevents drift to colloquial English in agent output."
+      earned_by: structural
   ```
-  Add or remove entries as substrate enters/leaves the auto-load discipline.
-- **Earned in:** `0.2.0-rc1`. Set expanded to seven entries in `0.2.0-rc4` to include the manifest-discipline and instance-current-manifest rules.
+  Each new entry MUST declare a structured `claim` and `earned_by`. Adding to or removing from the list is governed by `rules/auto-load-discipline.md`. The audit verb walks the list and proposes demotion for entries that fail the gate.
+- **Earned in:** `0.2.0-rc1`. Set expanded in `0.2.0-rc4` to seven entries to include manifest-discipline and instance-current-manifest. **Restructured in `0.9.0`** to structured form with discipline gate; canonical recommendations narrowed to four entries (the four declared `earned_by: structural` above). Demoted from canonical: `rules/manifest-discipline.md`, `rules/instance-current-manifest.md`, `rules/multi-instance-topology.md`, `incidents.jsonl` — each consumer-skill loads them directly.
 
 ## `template_layer`, `instance_layer`, `meta_layer`
 
@@ -224,6 +229,72 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 - **Required:** No. Workspaces without operator-capture flow can leave `inbox/` empty or absent. Recommended for any workspace where the operator wants a triage queue distinct from the workspace task tracker.
 - **How to add:** Edit `acw-state.yaml::empty_dirs` to include `inbox`. Scaffolder creates the directory with `.gitkeep`. Operator captures into it directly or via triage skills.
 - **Earned in:** `0.6.0`.
+
+## `sessions/` at root
+
+- **What:** Session captures live in `sessions/` at the workspace root, not under `research/`. The default for `paths.session_captures_dir` is `sessions`. Existing instances on v0.7.0 or earlier with substrate at `research/sessions` either keep the override in their `acw-state.yaml::paths` block or migrate via `git mv research/sessions sessions`.
+- **Why it helps:** Session captures are operational logs (what happened in this session, what was decided, what's pending), not research artifacts (problem framing, design notes, queued prompts). Naming them with their actual purpose at root improves the workspace's mental model and clears semantic space in `research/` for what `research/` actually holds.
+- **Required:** No. Workspaces that override `paths.session_captures_dir` to a different location remain valid.
+- **How to add:** Edit `acw-state.yaml::paths`. Set:
+  ```yaml
+  paths:
+    session_captures_dir: sessions
+  ```
+  Edit `acw-state.yaml::empty_dirs`: replace `research/sessions` with `sessions`. Migrate any existing capture files: `git mv research/sessions sessions`.
+- **Earned in:** `0.8.0`.
+
+## `.current-session` tracker
+
+- **What:** A single-line file at `<paths.session_captures_dir>/.current-session` containing the relative filename of the active capture. Created by `/acw-session start`; read (or self-bootstrapped) by `/acw-session update`; cleared by `/acw-session end`.
+- **Why it helps:** Lets `/acw-session update` append timestamped notes to the active capture without taking a filename argument. Without the tracker, every `update` invocation would have to either prompt the operator for the filename or glob the directory and guess the latest. The tracker makes the active session a first-class state.
+- **Required:** No. Workspaces that don't use the `update` verb can ignore the tracker; `start` will still create it but no consumer reads it. Cost: one tiny file.
+- **How to add:** No state-file change required. The tracker is created and managed by the bookend skills automatically. The first `/acw-session start` after upgrade writes it.
+- **Earned in:** `0.8.0`.
+
+## `plans/` directory
+
+- **What:** A `plans/` directory at the workspace root holding plan artifacts. Plans saved as dated markdown (`plans/YYYY-MM-DD--<slug>.md`) — operational outputs from planning agents (e.g., the Plan agent's structured plans, ExitPlanMode outputs) or operator hand-written plans. Distinct from `decisions/` (governance choices), `tasks-status.md` (live work tracker), and `research/` (design notes) — plans are *intent before execution*, written before substantive work begins, and either get executed (then archived) or get parked.
+- **Why it helps:** Plans currently land in the global Claude Code state directory (`.claude/`) or in chat-only ephemeral form. Both lose the plan to the workspace's history. Routing plans into instance substrate makes them durable, git-tracked, and reviewable across sessions. Plans are operational artifacts; instance-substrate is where operational artifacts belong.
+- **Required:** No. Workspaces with no plan-driven workflow can leave the directory empty or absent. Recommended for any workspace with substantive multi-session features, refactors, or investigations.
+- **How to add:** Edit `acw-state.yaml::empty_dirs` to include `plans`. Add canonical default path to `acw-state.yaml::paths`:
+  ```yaml
+  paths:
+    plans_dir: plans
+  ```
+  Scaffolder creates the directory with `.gitkeep`. Operator (or planning agents) write plans there directly. v0.8.0 ships convention only — no automatic writer skill; the writer earns its build when convention demands automation.
+- **Earned in:** `0.8.0`.
+
+## `model:` frontmatter for bookend skills
+
+- **What:** `skills/acw-session/SKILL.md` declares `model: claude-haiku-4-5` in frontmatter. Phase steps that need real reasoning (Phase 3 operator-confirm proposals, Phase 5 research-prompt construction, meta-layer trigger proposed-edit text) escalate to Sonnet inline. Bookend invokes a fresh subagent context to avoid inheriting the parent session's larger-context pricing.
+- **Why it helps:** The bookend's work is overwhelmingly mechanical — read transcript, append to file, classify against manifest. Running it at the most expensive Claude variant (Opus 4.7 1M context, the parent session's likely default) is structurally wrong. Haiku-grade is correct for 80%+ of phases. Earned by the cost-friction incident logged in v0.8.0 (operator hit halfway through Max-plan weekly budget after 2 days, with `/acw-session end` taking 7-10 minutes per invocation).
+- **Required:** No. The field may not be honored by all Claude Code versions; if not honored, the skill still works at whatever model the harness picks. No breakage.
+- **How to add:** Edit `skills/acw-session/SKILL.md` frontmatter:
+  ```yaml
+  ---
+  name: acw-session
+  ...
+  model: claude-haiku-4-5
+  ---
+  ```
+  Operators wanting to override per-instance can change the model field; not normative.
+- **Earned in:** `0.8.0`.
+
+## `rules/auto-load-discipline.md`
+
+- **What:** A template_layer rule file declaring earn-by-incident applied to the auto-load list. Every entry in `auto_load_at_session_start` MUST declare a structured claim ("what fails if this isn't loaded every session?") and an `earned_by` field. The rule includes canonical recommendations (the four files ACW recommends) and declared demotion candidates (paths that fail the gate).
+- **Why it helps:** The auto-load list is the most expensive substrate surface in the workspace. Every entry costs context every chat. Without an earn-by-incident gate, the list bloats accumulatively, costing real money across thousands of agent invocations per week. The discipline rule applies the same earn-by-incident discipline that governs the deferred library and the recommended-blocks registry, but for auto-load specifically.
+- **Required:** No. Workspaces that don't run `/acw-instance audit` won't enforce the discipline; the rule's gate fires only at audit time. Recommended for any workspace where the operator wants to reduce session-load context cost.
+- **How to add:** Run `/acw-instance upgrade`, which fetches the canonical content from GitHub and walks the operator through adoption. Or manually: copy `rules/auto-load-discipline.md` from ACW canonical into the instance's `rules/` directory. The rule is loaded by `/acw-instance audit` when it walks the workspace's `auto_load_at_session_start` block; not auto-loaded into chat context.
+- **Earned in:** `0.9.0`.
+
+## `tasks-status-YYYY-Q.md` archive (rolling-window discipline)
+
+- **What:** Archive files for older `tasks-status.md::Done` session blocks. Format `tasks-status-YYYY-Q.md` (e.g., `tasks-status-2026-Q2.md`). Live at workspace root. Classified `meta_layer` (about the instance's history; not propagated to children). Replace archived content in `tasks-status.md` with a one-line pointer.
+- **Why it helps:** `tasks-status.md` is auto-loaded at session start. Inline Done entries cost context every chat. The rolling-window discipline keeps the file lean (last 2–3 sessions inline) while preserving full history in archive files. Build-log narrative covers the same period in fuller form; archive is the structured-task version.
+- **Required:** No. Instances with thin Done logs can leave Done inline indefinitely. Earned when inline Done exceeds ~3 sessions or the file's auto-load cost surfaces as friction.
+- **How to add:** When inline Done exceeds rolling-window threshold, operator (or `/acw-session end` proposal) creates `tasks-status-YYYY-Q.md` with frontmatter (class: archive, authority: derived, stability: stable, loaded_by_agent: no), copies older session blocks into it, and replaces the archived content in `tasks-status.md` with a pointer line. See `rules/task-tracking.md` § "Rolling-window discipline." Add the archive file to `acw-state.yaml::meta_layer`.
+- **Earned in:** `0.9.0`.
 
 ## `adopt_mode_organic_threshold`
 

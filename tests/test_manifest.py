@@ -16,11 +16,13 @@ from manifest import (  # noqa: E402
     CANONICAL_DEFAULTS,
     KNOWN_DICTS,
     KNOWN_LISTS,
+    STRUCTURED_LISTS,
     UNSUPPORTED,
     ManifestError,
     append,
     contains,
     load,
+    load_structured,
     validate,
 )
 
@@ -298,6 +300,113 @@ template_layer:
 
     def test_instance_layer_unsupported(self):
         self.assertIn("instance_layer", UNSUPPORTED)
+
+    # ---------- structured-list (auto_load_at_session_start) ----------
+
+    def test_auto_load_in_structured_lists(self):
+        self.assertIn("auto_load_at_session_start", STRUCTURED_LISTS)
+
+    def test_load_structured_bare_entries_become_legacy(self):
+        # Sample has bare-path entries
+        result = load_structured(self.state_file, "auto_load_at_session_start")
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["path"], "tasks-status.md")
+        self.assertEqual(result[0]["earned_by"], "legacy-pending-review")
+        self.assertIsNone(result[0]["claim"])
+
+    def test_load_paths_only_from_structured_form(self):
+        # Replace bare list with structured form
+        text = self.state_file.read_text(encoding="utf-8")
+        text = text.replace(
+            "auto_load_at_session_start:\n  - tasks-status.md\n  - glossary.md\n",
+            (
+                "auto_load_at_session_start:\n"
+                "  - path: tasks-status.md\n"
+                '    claim: "Pending work surface"\n'
+                "    earned_by: structural\n"
+                "  - path: glossary.md\n"
+                '    claim: "Vocabulary canon"\n'
+                "    earned_by: structural\n"
+            ),
+        )
+        self.state_file.write_text(text, encoding="utf-8")
+        # load() returns paths only
+        paths = load(self.state_file, "auto_load_at_session_start")
+        self.assertEqual(paths, ["tasks-status.md", "glossary.md"])
+
+    def test_load_structured_returns_full_dicts(self):
+        text = self.state_file.read_text(encoding="utf-8")
+        text = text.replace(
+            "auto_load_at_session_start:\n  - tasks-status.md\n  - glossary.md\n",
+            (
+                "auto_load_at_session_start:\n"
+                "  - path: tasks-status.md\n"
+                '    claim: "Pending work surface"\n'
+                "    earned_by: structural\n"
+            ),
+        )
+        self.state_file.write_text(text, encoding="utf-8")
+        result = load_structured(self.state_file, "auto_load_at_session_start")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["path"], "tasks-status.md")
+        self.assertEqual(result[0]["claim"], "Pending work surface")
+        self.assertEqual(result[0]["earned_by"], "structural")
+
+    def test_load_structured_mixed_form(self):
+        # Mix bare and structured entries
+        text = self.state_file.read_text(encoding="utf-8")
+        text = text.replace(
+            "auto_load_at_session_start:\n  - tasks-status.md\n  - glossary.md\n",
+            (
+                "auto_load_at_session_start:\n"
+                "  - path: tasks-status.md\n"
+                '    claim: "Pending work surface"\n'
+                "    earned_by: structural\n"
+                "  - glossary.md\n"
+            ),
+        )
+        self.state_file.write_text(text, encoding="utf-8")
+        result = load_structured(self.state_file, "auto_load_at_session_start")
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["earned_by"], "structural")
+        self.assertEqual(result[1]["path"], "glossary.md")
+        self.assertEqual(result[1]["earned_by"], "legacy-pending-review")
+
+    def test_load_structured_rejects_non_structured_list(self):
+        with self.assertRaises(ManifestError):
+            load_structured(self.state_file, "template_layer")
+
+    def test_validate_structured_passes_clean(self):
+        text = self.state_file.read_text(encoding="utf-8")
+        text = text.replace(
+            "auto_load_at_session_start:\n  - tasks-status.md\n  - glossary.md\n",
+            (
+                "auto_load_at_session_start:\n"
+                "  - path: tasks-status.md\n"
+                '    claim: "Pending work surface"\n'
+                "    earned_by: structural\n"
+            ),
+        )
+        self.state_file.write_text(text, encoding="utf-8")
+        validate(self.state_file, "auto_load_at_session_start")  # no exception
+
+    def test_validate_structured_rejects_duplicate_paths(self):
+        text = self.state_file.read_text(encoding="utf-8")
+        text = text.replace(
+            "auto_load_at_session_start:\n  - tasks-status.md\n  - glossary.md\n",
+            (
+                "auto_load_at_session_start:\n"
+                "  - path: tasks-status.md\n"
+                '    claim: "first"\n'
+                "    earned_by: structural\n"
+                "  - path: tasks-status.md\n"
+                '    claim: "second"\n'
+                "    earned_by: structural\n"
+            ),
+        )
+        self.state_file.write_text(text, encoding="utf-8")
+        with self.assertRaises(ManifestError):
+            validate(self.state_file, "auto_load_at_session_start")
 
 
 if __name__ == "__main__":

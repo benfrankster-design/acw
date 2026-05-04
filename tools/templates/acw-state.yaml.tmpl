@@ -17,7 +17,7 @@ project:
 
 version: "0.1.0"
 last_reconciled: "{{DATE}}"
-last_reconciled_version: "0.6.1"
+last_reconciled_version: "0.9.0"
 
 # Declares whether this instance publishes canonical content downstream to
 # other instances. Default false — this instance is a downstream consumer of
@@ -55,18 +55,24 @@ canonical_runtime_files:
 
 # Files auto-loaded into agent context at session start. Hosts implement via
 # their native mechanism (Claude Code: @-imports in CLAUDE.md). See AGENTS.md
-# directive 7. Capture-and-metabolize maintains this list (additive only;
-# removal requires a decision-log entry).
+# directive 7. Each entry MUST declare a claim per rules/auto-load-discipline.md
+# (earned in v0.9.0). Default canonical four — instance can override with
+# additional entries (each requires a structured claim) or drop entries (each
+# drop requires a decision-log entry). Bare-path entries are accepted but
+# flagged as legacy-pending-review by /acw-instance audit.
 auto_load_at_session_start:
-  - research/01-problem-framing.md
-  - decisions/decision-log.md
-  - rules/instance-hard-rules.md
-  - tasks-status.md
-  - glossary.md
-  - research/evolution.md
-  - research/sources.md
-  - research/research-state.yaml
-  - incidents.jsonl
+  - path: decisions/decision-log.md
+    claim: "Recently decided history must be visible to agents at session start; without it agents re-litigate settled choices."
+    earned_by: structural
+  - path: rules/instance-hard-rules.md
+    claim: "Stop-work rules must be visible to every agent at session start; loading them on demand is too late."
+    earned_by: structural
+  - path: tasks-status.md
+    claim: "Pending work surface must be visible at session start; without it agents propose duplicate work and lose continuity."
+    earned_by: structural
+  - path: glossary.md
+    claim: "Vocabulary canon prevents drift to colloquial English in agent output."
+    earned_by: structural
 
 # Cross-repo write surfaces explicitly allowed. Empty list means project
 # artifacts stay in the project repo (vault-boundary discipline).

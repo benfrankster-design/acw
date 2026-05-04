@@ -4,9 +4,54 @@ Session-end verb. Five-phase pass: capture, distribute, metabolize, optional syn
 
 ## After the spine
 
-The orchestrator's spine has resolved configuration, paths, buffer state, and recent capture paths. The end verb runs Phases 1–3 always; Phase 4 conditional on `synapse_log_path`; Phase 5 conditional on operator confirmation.
+The orchestrator's spine has resolved configuration, paths, buffer state, and recent capture paths. The end verb dispatches on mode:
+
+- **Quick mode (default)** — Phase 1 capture + Phase 2 append-only subset + Phase 3 auto-update sweep. Phase 4 and Phase 5 skipped unless their flag is present.
+- **Full mode** (`/acw-session end full`) — All five phases as previously documented. Phase 4 conditional on `synapse_log_path` set; Phase 5 conditional on operator confirmation.
+
+## Mode dispatch
+
+Parse the verb argument (after the spine has loaded). Argument variants:
+
+| Invocation | Mode | Phase 4 | Phase 5 |
+|---|---|---|---|
+| `/acw-session end` | quick | skip | skip |
+| `/acw-session end quick` | quick | skip | skip |
+| `/acw-session end quick --synapse` | quick | run if `synapse_log_path` set | skip |
+| `/acw-session end quick --research` | quick | skip | run (no operator confirmation prompt) |
+| `/acw-session end quick --synapse --research` | quick | run if `synapse_log_path` set | run |
+| `/acw-session end full` | full | run if `synapse_log_path` set | ask operator |
+| `/acw-session end full --no-synapse` | full | skip | ask operator |
+| `/acw-session end full --no-research` | full | run if `synapse_log_path` set | skip |
+
+Unknown argument errors with the table.
+
+## Quick mode behavior
+
+Quick mode collapses the bookend to its append-only essentials. It runs:
+
+- **Phase 1** in full (always — the capture file is the load-bearing artifact for the next session's `start`).
+- **Phase 2 — append-only subset only:**
+  - new decisions → `paths.decisions_log`
+  - tasks completed/added/parked → `paths.tasks_status` session block
+  - new incidents → `paths.incidents` (one JSONL line each)
+  - build-log entry → `paths.build_log`
+  - new sources → `paths.sources` (only if file already exists; do not scaffold in quick mode)
+  - new conceptual shifts → `paths.evolution` (only if file already exists)
+  - hard-rule changes → `rules/instance-hard-rules.md` (only if changes are unambiguous)
+  - **Skip:** glossary edits, manifest classification prompt, host-entry-file maintenance, canonical-edit detection branch, meta-layer trigger walk, cross-repo writes, cross-project notifications, research-state updates.
+- **Phase 3 — auto-update sweep only.** Move completed tasks `Pending` → today's `Done` block. Skip operator-confirm proposals. Skip consumed-prompt sweep.
+- **Phase 4 / Phase 5** — only if their flag is present.
+
+Quick-skipped operator-interactive work accumulates until the next `/acw-session end full` runs them. This is intentional. The audit verb catches structural gaps; operator picks the heavy session at logical boundaries.
+
+## Full mode behavior
+
+Full mode is the previously documented five-phase pass — every phase runs as written below.
 
 ## Phase 1 — Capture
+
+**Runs in both quick mode and full mode.** Resolve the active capture file via `<sessions_dir>/.current-session`. If the tracker exists and points to a real file (started by `/acw-session start` or self-bootstrapped by `/acw-session update`), use that file. Phase 1 may RENAME it from `untitled` to the topic-from-this-step. If the tracker is absent or empty, write a fresh capture at the path computed from today's date and topic-from-this-step (no rename needed).
 
 1. Identify the topic of the session: 3–7 word noun phrase.
 2. Identify decisions made (→ `paths.decisions_log` candidates).
@@ -21,6 +66,8 @@ The orchestrator's spine has resolved configuration, paths, buffer state, and re
 11. Clean transcript noise per `references/transcript-cleaning-rules.md`. If `voice` is non-empty, apply voice references; otherwise skip voice cleanup.
 
 ## Phase 2 — Distribute
+
+**Mode-gated.** Quick mode runs the append-only subset listed in "Quick mode behavior" above. Full mode runs everything documented below. The shared Distribution scope rule applies to both modes.
 
 **Distribution scope rule (load-bearing).** Distribute only project-specific findings into this project's substrate. A finding qualifies as project-specific when it shapes how *this* project will be built, decided, or used going forward. Findings about another project, a cross-cutting framework, or operator-personal infrastructure do NOT enter this project's substrate.
 
@@ -76,6 +123,10 @@ The harness gates on `meta_layer` block presence (not on `is_canonical_source`) 
 
 ## Phase 3 — Metabolize
 
+**Mode-gated.** Quick mode runs only the auto-update sweep (Pending → Done movements; mark resolved Open Questions). Full mode runs auto-update + operator-confirm proposals + consumed-prompt sweep + metabolize-report write.
+
+**Sonnet escalation (full mode only).** Operator-confirm proposals require judgment about what's stale. Use Sonnet for that step; Haiku for everything else in this phase.
+
 Read live state of the project. Compare against scaffolding. Find stale items per `references/metabolize-rules.md`. Categories:
 
 - **Auto-update** (always safe): move completed tasks from `section_conventions.pending` → the session's `section_conventions.done` block; mark resolved Open Questions as resolved when their decision is now in `section_conventions.decisions`.
@@ -88,14 +139,22 @@ Output the metabolize report appended to `paths.build_log` under the new session
 
 ## Phase 4 — Synapse session log (conditional)
 
-If `synapse_log_path` is set, append a session block to `<synapse_log_path>/YYYY-MM-DD.md`. Format in `references/synapse-log-format.md`. If null/absent, skip Phase 4 entirely; do not warn.
+**Quick mode:** runs only if `--synapse` flag is present AND `synapse_log_path` is set. Without the flag, skip.
+
+**Full mode:** runs if `synapse_log_path` is set. With `--no-synapse` flag, skip.
+
+When fired: append a session block to `<synapse_log_path>/YYYY-MM-DD.md`. Format in `references/synapse-log-format.md`. If `synapse_log_path` is null/absent in either mode, skip silently — no warning.
 
 ## Phase 5 — Research-prompt builder (conditional)
 
-After Phases 1–4 complete, prompt: **"Build research prompt now? [y/N]"**
+**Quick mode:** runs only if `--research` flag is present. No confirmation prompt — flag is the confirmation. Without the flag, skip.
+
+**Full mode:** ask operator: **"Build research prompt now? [y/N]"**
 
 - **`n` (or no answer):** exit cleanly with summary of artifacts written.
 - **`y`:** continue.
+
+**Sonnet escalation.** Research-prompt construction synthesizes Track A/B/C content; Haiku is too thin for this step. Use Sonnet.
 
 When fired:
 
@@ -108,6 +167,10 @@ When fired:
 4. **Append a one-line entry to `paths.build_log`** under the current session's metabolize report.
 
 If both Track A and Track B are empty, skip writing the artifact and pinning the fire-task. Track C alone never justifies firing.
+
+## Tracker cleanup (always)
+
+Both modes clear `<sessions_dir>/.current-session` at the end of the verb. Write empty content; preserve the file as a marker that no session is currently active. `/acw-session start` will repopulate it next time.
 
 ## Output
 

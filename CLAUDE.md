@@ -8,19 +8,20 @@ This file describes how to navigate ACW; it does not duplicate substrate. Specif
 
 The canonical list lives in `acw-state.yaml::auto_load_at_session_start`. Treat that array as the source of truth; the imports below mirror it. If they disagree, `acw-state.yaml` wins and this file gets reconciled.
 
+Each entry earns its slot per `rules/auto-load-discipline.md` — every entry declares a claim ("what fails if not loaded every session?"). Anything that doesn't earn its slot lives outside the auto-load list and is read on demand.
+
 @decisions/decision-log.md
 @rules/instance-hard-rules.md
-@rules/manifest-discipline.md
-@rules/instance-current-manifest.md
-@rules/multi-instance-topology.md
 @tasks-status.md
 @glossary.md
-@incidents.jsonl
 
 Other substrate is read on demand:
-- Append-only narrative (`build-log.md`) and meta-layer documents grow unboundedly; read when you need historical context for a specific phase or design decision.
-- Session captures and queued research prompts under `research/sessions/` and `research/queries/` are loaded by `/acw-session start`, not by auto-load.
-- Other research artifacts under `research/` are read on demand for design work; promotion into auto-load goes through a decision-log entry.
+- `rules/manifest-discipline.md`, `rules/instance-current-manifest.md`, `rules/multi-instance-topology.md` — consumed by `/acw-session start` (drift check), `/acw-instance audit|upgrade`, and the bookend's manifest-classification step. Loaded directly by those skills.
+- `incidents.jsonl` — consumed by `/acw-instance audit` and the promotion-ritual review. Read on demand.
+- `rules/auto-load-discipline.md` — consumed by `/acw-instance audit` to enforce auto-load discipline. Loaded by the verb at run time.
+- Append-only narrative (`build-log.md`, `tasks-status-YYYY-Q*.md` archives) and meta-layer documents grow unboundedly; read when you need historical context for a specific phase or design decision.
+- Session captures and queued research prompts under `sessions/` and `research/queries/` are loaded by `/acw-session start`, not by auto-load.
+- Other research artifacts under `research/` are read on demand for design work; promotion into auto-load goes through a decision-log entry AND must satisfy `rules/auto-load-discipline.md`.
 
 To boot a new session into full context, run `/acw-session start` first thing.
 

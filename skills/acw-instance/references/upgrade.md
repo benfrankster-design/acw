@@ -157,6 +157,31 @@ For each `absorption-candidate` row:
 3. **Record divergence locally:** append to `acw-state.yaml::divergent_pending_review` with `path`, `absorption_candidate` (path to the `_buffer/` note), `sent_date: <today>`, `status: pending`.
 4. The source file stays in place pending ACW's absorption review. Do NOT delete or reshape it.
 
+## v0.9.0 migration: auto-load discipline
+
+If the workspace's `acw-state.yaml::auto_load_at_session_start` block uses legacy bare-path form, OR contains entries declared as demotion candidates in `rules/auto-load-discipline.md`, the upgrade applies the audit's verdicts as part of the bulk execution:
+
+1. **Convert bare-path entries to structured form** — for each `KEEP` or `KEEP (migrate-to-structured)` entry, write the structured `path / claim / earned_by` triple. Use the canonical claim from `rules/auto-load-discipline.md` for canonical-recommendation paths; prompt the operator for `claim` text on `KEEP (instance-specific)` entries that lack one.
+2. **Remove demotion entries** — for each `DEMOTE` entry, remove from `auto_load_at_session_start`. The file itself stays in the workspace; only the auto-load reference is dropped. Print: `[demote] auto_load_at_session_start: removed <path> — <reason>` per row.
+3. **Resolve REVIEW entries interactively** — for each `[?]` REVIEW plan row, prompt with options:
+   ```
+   Auto-load entry: <path>
+   Form: bare-path (legacy)
+   Not on canonical recommendations; no declared claim.
+
+   Choose:
+     k) KEEP — declare a claim for this instance-specific override
+     d) DEMOTE — remove from auto_load_at_session_start (file stays in workspace)
+     s) skip — leave as-is (entry stays as legacy-pending-review; surfaces again on next audit)
+   ```
+4. **Update host entry files** — when `CLAUDE.md` (or other host-specific entry files) carry mirror `@`-imports of the auto-load list, propose a corresponding edit to keep them in sync. Operator confirms.
+5. **Decision-log entry** — append a row to the migration's decision-log entry naming the auto-load changes:
+   ```
+   - Auto-load discipline applied: kept <K> entries, migrated <M> to structured form, demoted <D> entries.
+   ```
+
+This step is performed only when the audit's plan includes auto-load rows. If `auto_load_at_session_start` is already fully canonical (4 structured entries matching the recommendations) the step is a no-op.
+
 ## v0.5.0 migration: `_inbox/` → `_buffer/`
 
 Before bulk execution, detect the legacy directory name (this is automatic, no operator prompt needed beyond the plan-approval gate which already includes it):

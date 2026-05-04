@@ -9,6 +9,92 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-04 — v0.9.0: auto-load discipline + tasks-status rolling-window archive (Session 14)
+
+Operator opened the session with a screenshot of the context-usage panel: 113.2k tokens / 1M, with `Memory files` consuming 83.1k. After v0.8.0's per-invocation cost cut shipped earlier the same day (Haiku default + quick mode), this session attacks the structural per-session-load cost. The lever was the auto-load list — 8 entries pulling ~50k of substrate into context every chat.
+
+The conversation arc:
+
+1. **Context audit.** Operator surfaced the bloat. I proposed three trim moves (demote, archive Done, split decision-log) with risk callouts. Operator focused on the auto-load list as the cheapest highest-impact lever.
+2. **Earn-its-ship reframe.** Operator pointed at the `## Project substrate (auto-loaded every session)` heading in `CLAUDE.md` and asked it to "earn its ship." The right move was applying ACW's existing earn-by-incident discipline (which governs the deferred library and the recommended-blocks registry) to auto-load entries themselves.
+3. **Schema design.** Two options surfaced: (a) inline structured entries in `acw-state.yaml`, or (b) parallel rule-file registry. Inline structured won — instances can declare per-entry claims without editing canonical doctrine; the rule file owns the gate but not the data.
+4. **Audit-as-active-discipline.** Operator pushed: "instances doing acw instance audit should be audited for demotions." This sharpened the audit verb's role from passive drift detection (additions) to active migration planning (additions AND removals AND form migration).
+5. **Ship directive.** "Get it all done. there should be nothing for 1.0.0." — committing v0.9.0 as the final pre-promotion substantive ship; v1.0.0 becomes a clean soak/promotion.
+
+**Core ship:**
+
+- `rules/auto-load-discipline.md` — new template_layer rule. Earn-by-incident applied to auto-load. Canonical recommendations name the four files ACW recommends (decision-log, instance-hard-rules, tasks-status, glossary). Declared demotion candidates name what fails the gate and why (manifest-discipline, instance-current-manifest, multi-instance-topology, incidents.jsonl).
+- `tools/manifest.py` — extended with `STRUCTURED_LISTS = {"auto_load_at_session_start"}`. Parser handles both bare and dict-shaped entries (backward compat). New `load_structured()` returns full dicts; `load()` continues returning paths only (existing consumers unchanged). `validate()` enforces no-duplicate-paths and required `path` field.
+- `tests/test_manifest.py` — 8 new tests covering structured-list parse, mixed-form, validate, and the rejection contract for non-structured lists. All 54 tests pass.
+
+**Substrate moves:**
+
+- `acw-state.yaml::auto_load_at_session_start` migrated to structured form; 4 demotions applied (4 entries kept, each with structured claim).
+- `tools/templates/acw-state.yaml.tmpl` migrated to structured form; new instances scaffold with the lean 4-entry default. Baseline `last_reconciled_version` bumped to `0.9.0`.
+- `CLAUDE.md` `@`-imports synced to the lean 4-entry list; "Other substrate is read on demand" section names the demoted files and their consumer-skills.
+- `acw-state.yaml::template_layer` extended with `rules/auto-load-discipline.md`; `meta_layer` extended with `tasks-status-2026-Q2.md`.
+
+**Skill extensions:**
+
+- `skills/acw-instance/references/audit.md` gained "Auto-load discipline" section: walks `auto_load_at_session_start`, classifies each entry against canonical recommendations and demotion candidates, produces consolidated `reshape` plan row with per-entry verdicts (KEEP / KEEP-migrate-to-structured / KEEP-instance-specific / DEMOTE / REVIEW).
+- `skills/acw-instance/references/upgrade.md` gained "v0.9.0 migration: auto-load discipline" section: applies the audit's verdicts under the existing single approval gate; converts bare entries to structured form using canonical claims; removes demotion entries; resolves REVIEW interactively; updates host entry files to mirror.
+
+**Tasks-status rolling-window:**
+
+- `tasks-status-2026-Q2.md` created (meta_layer): Sessions 1–11 archived. Pointer line in `tasks-status.md`. Sessions 12–14 stay inline.
+- `rules/task-tracking.md` extended with rolling-window discipline section declaring the inline ≤ 2–3 sessions convention and quarterly archive shape.
+- New earned-in-0.9.0 entry in `rules/instance-current-manifest.md` documents the archive convention (paired with the `auto_load_at_session_start` v0.9.0 restructure entry).
+
+**Discipline writes:**
+
+- D-ACW-038 records the bundle (8-item change list, 4 open follow-ups, 3 risk callouts).
+- Auto-load-bloat incident `e58b923d-5bfe-4c67-92b1-7ac981aade00` logged as activation evidence (severity med, category process-gap).
+- Two new earned-in-0.9.0 entries in `rules/instance-current-manifest.md`: `rules/auto-load-discipline.md` (the rule itself) and `tasks-status-YYYY-Q.md archive` (the rolling-window discipline). Existing `auto_load_at_session_start` entry rewritten to declare the structured form and reference the discipline rule.
+
+**Version bump:**
+
+- `acw-state.yaml::version` 0.8.0 → 0.9.0. `last_reconciled_version` bumped to 0.9.0. Template baseline `last_reconciled_version` bumped to 0.9.0.
+
+**Auto-load context impact:** ~30k off session-load when fully applied (5.2k manifest-discipline + 11.5k instance-current-manifest + 5.2k multi-instance-topology + ~3k incidents.jsonl + ~7k tasks-status Done section). Doctrine propagates to instances via `/acw-instance upgrade`; per-instance demotions stay operator-driven per audit.
+
+**v0.9.0 framing:** per operator directive, this is the final pre-promotion substantive ship. v1.0.0 will be a clean soak/promotion of what's currently shipped — no new substrate, no new rules, no new skills. Pending items for v1.0.0 are dogfood validation runs against cs-copilot and gsg-copilot under v0.7.0+ plan-based audit/upgrade and the v0.9.0 auto-load discipline check.
+
+## 2026-05-04 — v0.8.0: bookend efficiency cluster + plans/ + Kashef research (Session 13)
+
+Operator surfaced acute cost pressure: `/acw-session end` running 7-10 minutes per invocation on Opus 4.7 1M context, halfway through Max-plan weekly budget after 2 days. Translated into six-change ship plus `plans/` folder folded in mid-execution as the seventh.
+
+**Bookend efficiency:**
+
+- `skills/acw-session/SKILL.md` declares `model: claude-haiku-4-5` in frontmatter. Three-verb command table (start/update/end). Tracker convention documented.
+- `references/end.md` adds Mode dispatch + Quick mode (default) + Full mode sections. Each phase tagged with mode behavior. Sonnet escalation notes for Phase 3 operator-confirm and Phase 5 research-prompt. Tracker cleanup section.
+- `references/start.md` adds Step 0 — creates active capture file + writes `.current-session` tracker.
+- `references/update.md` ships as new file — mid-session checkpoint with self-bootstrap. Reads tracker, appends timestamped note under `## Updates`. Haiku-grade end-to-end.
+
+**Substrate moves:**
+
+- `git mv research/sessions sessions` — 8 capture files migrated. `paths.session_captures_dir` updated. `empty_dirs` swap.
+- `mkdir plans && touch plans/.gitkeep` — new directory at root for plan artifacts. `paths.plans_dir: plans` added. Convention only in v0.8.0; no automatic writer skill yet.
+
+**Cleanup:**
+
+- Deleted four superseded skill directories: `capture-session/`, `capture-and-metabolize/`, `resume-session/`, `upgrade-instance/`. Removed entries from `acw-state.yaml::meta_layer`. Closes v0.4.0 Pending item the careful guardrail blocked from automated removal.
+
+**Discipline writes:**
+
+- D-ACW-037 records the bundle (7-item change list, 5 open follow-ups, 5 risk callouts).
+- Cost-friction incident `a8e771f0-7686-484d-b89e-cc25e96f8c93` logged as activation evidence.
+- Four new earned-in-0.8.0 entries in `rules/instance-current-manifest.md`: `sessions/` at root, `.current-session` tracker, `plans/` directory, `model:` frontmatter for bookend skills.
+
+**Research:**
+
+- `research/12-kashef-hive-mind-comparison.md` shipped (25 sources). Filtered Kashef's Hive Mind setup through earn-by-incident lens. Zero patterns original to Kashef; ACW positioned in substrate layer of agentic-OS stack uniquely. Three earn-ship candidates surfaced (`/acw-session standup` verb, briefing skill, suggestions/drift surfacer) — none ship in v0.8.0; held for incident-driven activation.
+
+**Version bump:**
+
+- `acw-state.yaml::version` 0.7.0 → 0.8.0. `last_reconciled_version` bumped to 0.8.0. Template baseline `last_reconciled_version` bumped to 0.8.0.
+
+**Release gates:** vocab lint exit 0, drift check clean, 46/46 tests pass.
+
 ## 2026-05-03 — `/acw-session end` post-v0.6.1 (harness's second run; quiet)
 
 Session-end run after the v0.6.1 meta-layer backfill commit landed. Capture file at `research/sessions/2026-05-03--v061-meta-layer-backfill.md`.

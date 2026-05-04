@@ -18,14 +18,14 @@
 # Edited only via a decision-log entry. Every edit bumps `version` or
 # `last_reconciled`.
 
-version: "0.7.0"
-last_reconciled: "2026-05-03"
+version: "0.9.0"
+last_reconciled: "2026-05-04"
 
 # Version this instance is synced to in the recommended-blocks registry
 # (rules/instance-current-manifest.md). Used by /acw-session start drift
 # check to compare against each entry's earned-in version. Bumped
 # automatically by /acw-instance upgrade after a successful reconciliation.
-last_reconciled_version: "0.7.0"
+last_reconciled_version: "0.9.0"
 
 # Declares whether this instance publishes canonical content downstream to
 # other instances. ACW itself sets this to true (it IS the upstream source for
@@ -62,6 +62,7 @@ template_layer:
   # Generic doctrine — copied verbatim
   - AGENTS.md
   - DEFERRED.md
+  - rules/auto-load-discipline.md
   - rules/canon-governance.md
   - rules/canon-schema.yaml
   - rules/canon.yaml
@@ -151,15 +152,16 @@ meta_layer:
   - research/08-cross-model-audit.md
   - research/09-gsg-copilot-instance-extensions.md
   - research/10-multi-instance-topology.md
-  - skills/capture-session/             # superseded; awaiting manual delete
-  - skills/upgrade-instance/            # superseded by acw-instance in 0.4.0; awaiting manual delete
-  - skills/resume-session/              # superseded by acw-session (verb: start) in 0.4.0; awaiting manual delete
-  - skills/capture-and-metabolize/      # superseded by acw-session (verb: end) in 0.4.0; awaiting manual delete
+  - research/11-session-continuity-prior-art.md
+  # Tasks-status quarterly archives — ACW's history; not propagated.
+  - tasks-status-2026-Q2.md
+  # Four superseded skills (capture-session, capture-and-metabolize, resume-session, upgrade-instance)
+  # were deleted from disk in v0.8.0 per D-ACW-037, closing the v0.4.0 manual-delete pending item.
 
 # Empty directories the scaffold tool creates with .gitkeep so the
 # canonical layout is present from session zero.
 empty_dirs:
-  - research/sessions
+  - sessions
   - research/queries
   - research/queries/_consumed
   - skills
@@ -168,22 +170,29 @@ empty_dirs:
   - runbooks
   - briefings
   - inbox
+  - plans
 
 # =============================================================================
 # Operational substrate references
 # =============================================================================
 
 # Files agent hosts should auto-load at session start. Maintained additively
-# by capture-and-metabolize. See AGENTS.md directive 7.
+# by /acw-session end. See AGENTS.md directive 7. Each entry declares a claim
+# per rules/auto-load-discipline.md (earned in v0.9.0). Bare-path entries
+# remain valid (treated as legacy-pending-review by the audit verb).
 auto_load_at_session_start:
-  - decisions/decision-log.md
-  - rules/instance-hard-rules.md
-  - rules/manifest-discipline.md
-  - rules/instance-current-manifest.md
-  - rules/multi-instance-topology.md
-  - tasks-status.md
-  - glossary.md
-  - incidents.jsonl
+  - path: decisions/decision-log.md
+    claim: "Recently decided history must be visible to agents at session start; without it agents re-litigate settled choices."
+    earned_by: structural
+  - path: rules/instance-hard-rules.md
+    claim: "Stop-work rules must be visible to every agent at session start; loading them on demand is too late."
+    earned_by: structural
+  - path: tasks-status.md
+    claim: "Pending work surface must be visible at session start; without it agents propose duplicate work and lose continuity."
+    earned_by: structural
+  - path: glossary.md
+    claim: "Vocabulary canon prevents drift to colloquial English in agent output (campaign vs fundraiser, donor vs giver)."
+    earned_by: structural
 
 # Cross-repo write surfaces explicitly allowed for this instance.
 cross_repo_writes: []
@@ -224,10 +233,11 @@ paths:
   sources: research/sources.md
   research_state: research/research-state.yaml
   problem_framing: research/01-problem-framing.md
-  session_captures_dir: research/sessions
+  session_captures_dir: sessions
   research_queries_dir: research/queries
   research_queries_consumed_dir: research/queries/_consumed
   buffer_dir: _buffer
+  plans_dir: plans
 
 deferred_canonical_source: DEFERRED.md
 deferred_derived_view: deferred/

@@ -1,22 +1,30 @@
 ---
 name: acw-session
 description: >
-  Object-centered orchestrator for the ACW session lifecycle. Two verbs over
-  one shared spine: `start` (load context for a new session, surface state,
-  read buffer, run drift check) and `end` (capture transcript, distribute
-  findings into substrate, metabolize stale entries, optionally append a
-  synapse session log, optionally build a next-session research prompt).
-  Both verbs read the same setup spine — auto-load files, paths, buffer,
-  recent captures — before specialist work fires.
+  Object-centered orchestrator for the ACW session lifecycle. Three verbs
+  over one shared spine: `start` (load context for a new session, initialize
+  the active capture file, surface state, read buffer, run drift check),
+  `update` (mid-session checkpoint — append timestamped note to the active
+  capture file), and `end` (capture transcript, distribute findings into
+  substrate, metabolize stale entries, optionally append a synapse session
+  log, optionally build a next-session research prompt). Both `start` and
+  `end` read the full spine; `update` reads only `paths.session_captures_dir`.
 
-  Replaces /resume-session and /capture-and-metabolize from prior versions.
-  Triggered by the operator running /acw-session start at session-start or
-  /acw-session end at session-end. Never fires automatically.
+  `end` defaults to **quick mode** (Phase 1 + minimal Phase 2 + Phase 3
+  auto-update sweep, Haiku-grade). `/acw-session end full` runs all five
+  phases as previously documented. `--synapse` and `--research` flags
+  surface their respective phases inside quick mode.
 
-  Produces, per verb: state surfacing and drift report (start) or up to
-  five artifacts in the instance's substrate (end).
+  Replaces /resume-session, /capture-and-metabolize, and /capture-session
+  from prior versions. Triggered by the operator running /acw-session
+  start, update, or end. Never fires automatically.
+
+  Produces, per verb: state surfacing and drift report (start), one
+  appended note to the active capture file (update), or up to five
+  artifacts in the instance's substrate (end).
 role: orchestrator
 capabilities: []
+model: claude-haiku-4-5
 ---
 
 | Domain | 6C Primary | Governance |
@@ -31,10 +39,21 @@ Object-centered orchestrator. Object: this ACW instance's session lifecycle. Ver
 
 | Command | What it does | Reference |
 |---|---|---|
-| `start` | Loads context for a new session. Reads recent session captures, runs drift check against `rules/instance-current-manifest.md`, surfaces unread `_buffer/` notifications, reports state to the operator. Read-only on substrate. | `references/start.md` |
-| `end` | Five-phase pass: capture transcript, distribute findings into substrate, metabolize stale entries, optional synapse session log, optional next-session research prompt. Edits substrate per its discipline rules. | `references/end.md` |
+| `start` | Loads context for a new session. Initializes the active capture file (`sessions/YYYY-MM-DD--<name>.md`) and writes its path to `<sessions_dir>/.current-session`. Reads recent captures, runs drift check against `rules/instance-current-manifest.md`, surfaces unread `_buffer/` notifications, reports state to the operator. | `references/start.md` |
+| `update` | Mid-session checkpoint. Reads `.current-session`; if missing, self-bootstraps. Appends a timestamped note under `## Updates` in the active capture file. Cheap by design — Haiku-grade end-to-end, no metabolize, no distribute. | `references/update.md` |
+| `end` | Default: **quick mode** — Phase 1 (capture) + minimal Phase 2 (append-only writes only) + Phase 3 auto-update sweep. `/acw-session end full` runs all five phases as previously documented. `/acw-session end [quick] --synapse` and `/acw-session end [quick] --research` surface those phases inside quick mode. Always clears `.current-session` on completion. | `references/end.md` |
 
 Routing rules: argument required. `/acw-session` with no command prints the table. Unknown command errors with the table.
+
+### Tracker convention — `.current-session`
+
+The active capture file is tracked via a single tiny file at `<paths.session_captures_dir>/.current-session`. Contents: one line — the relative filename of the active capture (e.g., `2026-05-04--bookend-efficiency.md`).
+
+- **`start`** writes the tracker (and creates the capture file).
+- **`update`** reads the tracker (or self-bootstraps if missing).
+- **`end`** clears the tracker (writes empty content, preserves file as a marker of "no active session").
+
+The tracker exists only because `update` needs to know which file to append to without taking the filename as an argument. Pure machine state; never read by humans. Stays in `.gitignore` if the instance considers its presence noise; default is to commit it.
 
 ## Shared spine (every verb runs these in order)
 

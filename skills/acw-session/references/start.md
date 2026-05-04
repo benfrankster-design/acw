@@ -1,10 +1,41 @@
 # start
 
-Session-start verb. Loads variable context that doesn't belong in auto-loaded substrate, surfaces drift, reports state to the operator. Read-only on substrate.
+Session-start verb. Initializes the active capture file and tracker, loads variable context that doesn't belong in auto-loaded substrate, surfaces drift, reports state to the operator.
 
 ## After the spine
 
-The orchestrator's spine has already loaded `paths`, the `_buffer/` state (Step 3), and the 3 most recent session captures (Step 4 paths only). The start verb consumes those plus reads queued research prompts and runs the drift check.
+The orchestrator's spine has already loaded `paths`, the `_buffer/` state (Step 3), and the 3 most recent session captures (Step 4 paths only). The start verb consumes those, initializes today's capture file + tracker, reads queued research prompts, and runs the drift check.
+
+## Step 0 — Initialize active capture file and tracker
+
+Run before reading anything else. Creates the file `update` and `end` will operate on.
+
+1. Resolve `<sessions_dir>` from `paths.session_captures_dir` (canonical default `sessions`).
+2. Today's date: `YYYY-MM-DD` (use today's actual date, not the agent's training-data assumption).
+3. Session name: argument to `/acw-session start` if provided (e.g., `/acw-session start auth-refactor`), else `untitled`. Slug: lowercase, hyphens, ASCII only.
+4. Compute capture path: `<sessions_dir>/YYYY-MM-DD--<name>.md`.
+5. If the file already exists at that path (multiple `/acw-session start` calls same day with same name), append numeric suffix: `--<name>-2.md`, `--<name>-3.md`, etc.
+6. Create the file with frontmatter and `## Updates` section:
+
+```markdown
+---
+class: capture
+authority: skill
+stability: in-progress
+date: YYYY-MM-DD
+topic: <name or "untitled">
+---
+
+# Session capture YYYY-MM-DD — <name>
+
+## Updates
+
+<!-- /acw-session update appends timestamped notes here -->
+```
+
+7. Write the relative filename (e.g., `2026-05-04--bookend-efficiency.md`) to `<sessions_dir>/.current-session`. Single line, no trailing newline.
+
+If the instance does not use `/acw-session start` (skips straight to `update` or `end`), Steps in this verb don't run; `update` self-bootstraps and `end` writes its own capture at end-time. See those references.
 
 ## Step 1 — Read recent session captures (§5–§7 only)
 

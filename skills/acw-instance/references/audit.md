@@ -81,6 +81,44 @@ For each subdirectory under `skills/` not marked `status: superseded`:
 
 Skill-shape findings become plan rows under the skill's path; default action is `reshape` for fixable frontmatter/structure issues, `write-canonical` for missing files.
 
+## Auto-load discipline (earned in v0.9.0)
+
+Walk the workspace's `acw-state.yaml::auto_load_at_session_start` block per `rules/auto-load-discipline.md`. The rule defines:
+
+- **Canonical recommendations** — the four files ACW recommends with stated claims (`decisions/decision-log.md`, `rules/instance-hard-rules.md`, `tasks-status.md`, `glossary.md`).
+- **Declared demotion candidates** — paths that fail the gate (consumer-skill loads them directly, single-operator-doesn't-need-it, only-audit-reads-it). Currently named in the rule: `rules/manifest-discipline.md`, `rules/instance-current-manifest.md`, `rules/multi-instance-topology.md`, `incidents.jsonl`.
+
+For each entry in the workspace's `auto_load_at_session_start`, classify and add to the migration plan:
+
+| Verdict | Trigger | Plan action |
+|---|---|---|
+| `KEEP` | Entry on canonical recommendations list, declared structured form | leave-untouched |
+| `KEEP (migrate-to-structured)` | Entry on canonical recommendations list, bare-path legacy form | reshape — convert to structured form with the canonical claim |
+| `KEEP (instance-specific)` | Entry not on canonical list, declared structured form with operator-supplied claim | leave-untouched |
+| `DEMOTE` | Entry on declared demotion list (any form) | reshape `acw-state.yaml::auto_load_at_session_start` — remove the entry; file itself stays in workspace |
+| `REVIEW` | Entry not on canonical list, bare-path legacy form (no declared claim) | `[?]` plan row — operator confirms keep (with structured claim) or demote |
+
+If the workspace's `acw-state.yaml::auto_load_at_session_start` block is in legacy bare-path form entirely, propose ONE consolidated `reshape` plan row that migrates the whole block to structured form with verdicts applied per entry. This avoids N small plan rows for each entry.
+
+If `rules/auto-load-discipline.md` is absent from the workspace's `rules/` directory, propose `write-canonical` per the recommended-blocks registry pass (the rule earned in v0.9.0; instances at `last_reconciled_version` < 0.9.0 will see this as drift).
+
+Plan output format extension — add a new section after "Skills compliance":
+
+```
+Auto-load discipline (vs rules/auto-load-discipline.md):
+  Current entries: <N>   form: <all-structured | all-legacy | mixed>
+  Verdicts:
+    KEEP                           : <N>
+    KEEP (migrate-to-structured)   : <N>
+    KEEP (instance-specific)       : <N>
+    DEMOTE                         : <N>
+    REVIEW                         : <N>
+  Per-entry detail:
+    <path>   form: <structured | bare-legacy>   verdict: <KEEP | KEEP (migrate-to-structured) | KEEP (instance-specific) | DEMOTE | REVIEW>   reason: <one-line>
+```
+
+The audit verb does not write to `acw-state.yaml`. Demotions and migrations execute under `/acw-instance upgrade`'s single approval gate.
+
 ## Meta-layer staleness (conditional)
 
 Run only if `acw-state.yaml::meta_layer` is present and non-empty. For each file listed in `meta_layer`, evaluate the trigger table from `skills/acw-session/references/end.md` § "Meta-layer maintenance" against `last_reconciled_version`. Stale files become plan rows with action `reshape` and the proposed edit inline.

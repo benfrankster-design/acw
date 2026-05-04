@@ -70,7 +70,17 @@ Append-only dated session blocks, newest first. Format:
 - Captured session: research/sessions/YYYY-MM-DD--topic-slug.md
 ```
 
-Old entries are history. Do not collapse, edit, or remove them. If Done becomes long, archive to `tasks-status-YYYY-Q.md` via an explicit operator decision.
+Old entries are history. Do not collapse, edit, or remove them.
+
+**Rolling-window discipline.** `tasks-status.md` is auto-loaded at session start (per `acw-state.yaml::auto_load_at_session_start` and `rules/auto-load-discipline.md`). Inline Done entries cost context every chat. To keep the file lean:
+
+- Keep the last 2–3 session blocks inline.
+- Archive older blocks to `tasks-status-YYYY-Q.md` (e.g. `tasks-status-2026-Q2.md`).
+- The archive file lives at the workspace root, classified `meta_layer` (it's about this instance's history, not propagated to children).
+- Replace the archived content in `tasks-status.md` with a one-line pointer: *"(Sessions M–N archived to `tasks-status-YYYY-Q.md`.)"*
+- Build-log narrative (`build-log.md`) covers the same period in fuller form; the archive is the structured-task version.
+
+Archival is operator-driven; `/acw-session end` may propose archive when inline Done exceeds ~3 sessions, but the move is not automatic.
 
 ### Parked
 

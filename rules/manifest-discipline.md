@@ -110,10 +110,11 @@ The bookend skills and any other consumer that needs to locate substrate read pa
 | `sources` | `research/sources.md` |
 | `research_state` | `research/research-state.yaml` |
 | `problem_framing` | `research/01-problem-framing.md` |
-| `session_captures_dir` | `research/sessions` |
+| `session_captures_dir` | `sessions` |
 | `research_queries_dir` | `research/queries` |
 | `research_queries_consumed_dir` | `research/queries/_consumed` |
 | `buffer_dir` | `_buffer` |
+| `plans_dir` | `plans` |
 | `runbooks_dir` | `runbooks` |
 | `integrations_dir` | `integrations` |
 | `briefings_dir` | `briefings` |
