@@ -60,7 +60,7 @@ The four files ACW canonical recommends for auto-load. Each carries a stated cla
 
 **Earned by:** structural.
 
-**Caveat:** the value is concentrated in the most recent ~10–20 entries. Older history is reference material, not load-bearing for current decisions. If the file grows past ~15k tokens, archive older entries via the promotion ritual in `rules/decision-tracking.md`.
+**Caveat:** the value is concentrated in the most recent ~10–20 entries. Older history is reference material, not load-bearing for current decisions. Archive older entries per the bi-weekly rolling-window discipline in `rules/decision-tracking.md`. Threshold trigger: archive aggressively when the file exceeds ~15k tokens, regardless of cadence.
 
 ### `rules/instance-hard-rules.md`
 
@@ -74,7 +74,7 @@ The four files ACW canonical recommends for auto-load. Each carries a stated cla
 
 **Earned by:** structural.
 
-**Caveat:** the value is concentrated in the Pending and Parked sections. The Done section is historical narrative, redundant with `build-log.md`, and earns archival per the rolling-window discipline in `rules/task-tracking.md` once it exceeds ~3 sessions inline.
+**Caveat:** the value is concentrated in the Pending and Parked sections. The Done section is historical narrative, redundant with `build-log.md`. Archive Done blocks per the bi-weekly rolling-window discipline in `rules/task-tracking.md`. Threshold trigger: archive aggressively when the file exceeds ~15k tokens, regardless of cadence.
 
 ### `glossary.md`
 

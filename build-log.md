@@ -9,6 +9,23 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-05 — v0.9.1: bi-weekly rolling-window for decision-log + global synapse trim (Session 15)
+
+Operator opened with a screenshot of context-usage: 128k / 1M with Memory files at 79.2k. The bloat traced to two structural sources: (a) `~/synapse/Rules/instance-current-manifest.md` (35.8k) plus five other ACW-canonical duplicates auto-loading globally via the `~/.claude/rules` → `~/synapse/Rules/` junction, and (b) ACW's own `decisions/decision-log.md` at 24k, past the v0.9.0 ~15k canonical-recommendation threshold without a documented archive mechanism.
+
+The conversation arc:
+
+1. **Context audit.** Memory-files breakdown surfaced the synapse junction as the structural attack surface — every workspace, every session was paying for ACW-canonical content that only belongs in ACW workspaces.
+2. **Trim move proposed and approved.** Six ACW-canonical duplicates moved from `~/synapse/Rules/` → `~/synapse/Reference/acw-canonical/` (sibling, not under junction). Five citation references in `cs-copilot/` flagged as fix-on-touch. ~85k off global load every workspace, every session.
+3. **Doctrine gap surfaced.** v0.9.0's `rules/auto-load-discipline.md` named the ~15k threshold for `decisions/decision-log.md` and pointed at `rules/decision-tracking.md` for the mechanism — but the rolling-window mechanism analogous to v0.9.0's tasks-status pattern was missing. Operator overrode the v0.9.0 "nothing before 1.0.0" directive: "lets do this bi-weekly actually (every two weeks) rolling window with the decision logs. and we were supposed to split tasks status. lets just do it now."
+4. **Bi-weekly as unifying cadence.** Decision-log and tasks-status both adopt bi-weekly rolling-window discipline under one rule shape. v0.9.0's "Sessions ≥ N-2" placeholder for tasks-status aligns to bi-weekly; cadence is now consistent across both surfaces.
+5. **ACW substrate split applied.** D-ACW-034 down through D-004 (30 entries dated 2026-04-30 to 2026-05-02) archived to `decisions/decision-log-2026-Q2.md`. Live decision-log retains D-ACW-035 onward (8 entries inline including D-ACW-042 recording this ship).
+6. **Doctrine-completion patch framing.** v0.9.1 ships as patch — closes a v0.9.0 specification gap, does not extend scope. Distinct from a v0.10.0 that would add new content. Establishes a pattern: future v0.9.x patches may follow the same shape if other v0.9.0 gaps surface during soak.
+
+Files touched: `decisions/decision-log.md`, `decisions/decision-log-2026-Q2.md` (new), `rules/decision-tracking.md`, `rules/task-tracking.md`, `rules/auto-load-discipline.md`, `rules/instance-current-manifest.md`, `acw-state.yaml`, `tools/templates/acw-state.yaml.tmpl`, `tasks-status.md`, `~/synapse/Rules/` → `~/synapse/Reference/acw-canonical/` (six files moved), `~/.claude/CLAUDE.md`. Incident `f7994d0d-b85a-41c1-b944-b4f55050c771` logged for the memory-bloat that earned the synapse trim. 54/54 unit tests pass; vocab lint clean. Bumped version 0.9.0 → 0.9.1; bumped `last_reconciled_version` to 0.9.1; updated template baseline to 0.9.1.
+
+Net: ~30k off ACW workspace memory load + ~85k off every workspace globally + doctrine internally consistent across decision-log and tasks-status.
+
 ## 2026-05-04 — v0.9.0: auto-load discipline + tasks-status rolling-window archive (Session 14)
 
 Operator opened the session with a screenshot of the context-usage panel: 113.2k tokens / 1M, with `Memory files` consuming 83.1k. After v0.8.0's per-invocation cost cut shipped earlier the same day (Haiku default + quick mode), this session attacks the structural per-session-load cost. The lever was the auto-load list — 8 entries pulling ~50k of substrate into context every chat.

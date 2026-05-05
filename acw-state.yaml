@@ -18,14 +18,14 @@
 # Edited only via a decision-log entry. Every edit bumps `version` or
 # `last_reconciled`.
 
-version: "0.9.0"
-last_reconciled: "2026-05-04"
+version: "0.9.1"
+last_reconciled: "2026-05-05"
 
 # Version this instance is synced to in the recommended-blocks registry
 # (rules/instance-current-manifest.md). Used by /acw-session start drift
 # check to compare against each entry's earned-in version. Bumped
 # automatically by /acw-instance upgrade after a successful reconciliation.
-last_reconciled_version: "0.9.0"
+last_reconciled_version: "0.9.1"
 
 # Declares whether this instance publishes canonical content downstream to
 # other instances. ACW itself sets this to true (it IS the upstream source for
@@ -155,6 +155,8 @@ meta_layer:
   - research/11-session-continuity-prior-art.md
   # Tasks-status quarterly archives — ACW's history; not propagated.
   - tasks-status-2026-Q2.md
+  # Decision-log quarterly archives — ACW's history; not propagated. Added v0.9.1 per D-ACW-042.
+  - decisions/decision-log-2026-Q2.md
   # Four superseded skills (capture-session, capture-and-metabolize, resume-session, upgrade-instance)
   # were deleted from disk in v0.8.0 per D-ACW-037, closing the v0.4.0 manual-delete pending item.
 

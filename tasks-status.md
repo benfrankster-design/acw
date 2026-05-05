@@ -11,10 +11,12 @@ section_conventions:
 
 # Tasks Status — ACW
 
-Three-section task tracker. See `rules/task-tracking.md` for format and discipline. Done section uses a rolling window — Sessions ≥ N-2 stay inline; older sessions archive to `tasks-status-YYYY-Q.md` (see `tasks-status-2026-Q2.md` for Sessions 1–11).
+Three-section task tracker. See `rules/task-tracking.md` for format and discipline. Done section uses a bi-weekly rolling window — sessions within the last 14 days stay inline; older sessions archive to `tasks-status-YYYY-Q*.md` (see `tasks-status-2026-Q2.md` for Sessions 1–11). Same cadence applies to `decisions/decision-log.md` per `rules/decision-tracking.md`; D-ACW-034 down through D-004 archived to `decisions/decision-log-2026-Q2.md` in v0.9.1.
 
 ## Pending
 
+- [ ] Resolve cs-copilot citation drift from v0.9.1 synapse trim — five files reference `~/.claude/rules/Procedures/{skill-format, capability-broker, decision-tracking}.md` paths that no longer exist post-trim. Doc-only citations, not load-bearing. Fix when cs-copilot is touched next.
+- [ ] Dogfood `/acw-instance upgrade` against cs-copilot/gsg-copilot/_Command for v0.9.1 doctrine propagation: bi-weekly rolling window for decision-log, revised tasks-status cadence, two new manifest entries. Audit verb should walk decision-log and propose archive splits when the bi-weekly or threshold cutoff fires.
 - [ ] Dogfood `/acw-instance audit` against cs-copilot using v0.7.0+ plan-based behavior (substrate-shaped, below organic threshold; should adopt cleanly with one-shot migration plan).
 - [ ] Dogfood `/acw-instance upgrade` against gsg-copilot using v0.7.0+ plan-based behavior (older registered instance; should fetch canonical and walk through any drift gaps; the v0.5.0 `_inbox/` → `_buffer/` migration step should fold into the plan; v0.9.0 auto-load discipline check fires).
 - [ ] Decide: formal retirement of adopt-mode hard-stop (D-ACW-022) — structurally redundant after v0.7.0 plan-approval gate. Schema retained for backward compat; needs a decision-log entry to formally retire.
@@ -29,6 +31,18 @@ Three-section task tracker. See `rules/task-tracking.md` for format and discipli
 - [ ] Promote `v0.9.0` to `v1.0.0` after a soak window once lattice-level dogfooding has accumulated evidence. Per operator directive 2026-05-04: nothing new ships before 1.0.0 — v0.9.0 is the last pre-promotion substantive ship.
 
 ## Done
+
+### 2026-05-05 — v0.9.1: bi-weekly rolling-window discipline for decision-log + global synapse trim (Session 15)
+
+- D-ACW-042 records the bundle. Doctrine-completion patch on v0.9.0; closes the decision-log mechanism gap that v0.9.0 left under-specified.
+- **`rules/decision-tracking.md`** gains "Rolling-window discipline" section: bi-weekly cadence + ~15k threshold trigger; archive shape `decisions/decision-log-YYYY-Q*.md` (meta_layer, archive frontmatter); Open Questions/Constraints/Resolved sections do not archive. Mirrors `rules/task-tracking.md` shape under one unified rule pattern.
+- **`rules/task-tracking.md`** rolling-window cadence aligned to bi-weekly (was "Sessions ≥ N-2"). Both surfaces now share one cadence.
+- **`rules/auto-load-discipline.md`** caveats updated for both `decisions/decision-log.md` and `tasks-status.md` to reference bi-weekly cadence + threshold trigger.
+- **`rules/instance-current-manifest.md`** gains earned-in-0.9.1 entry for `decision-log-YYYY-Q*.md` archive shape; existing tasks-status archive entry text updated to bi-weekly cadence (still earned-in-0.9.0).
+- **ACW substrate split applied:** D-ACW-034 down through D-004 (dated 2026-04-30 to 2026-05-02, 30 entries) moved to `decisions/decision-log-2026-Q2.md`. Live decision-log retains D-ACW-035 onward (8 entries inline including new D-ACW-042). Archive file added to `acw-state.yaml::meta_layer`.
+- **Companion global-layer trim:** moved six ACW-canonical duplicates from `~/synapse/Rules/` (auto-loaded globally via `~/.claude/rules` junction) to `~/synapse/Reference/acw-canonical/` (sibling, not auto-loaded). ~85k off global memory load every workspace, every session. Files: `instance-current-manifest.md`, `auto-load-discipline.md`, `Procedures/{skill-format, pipeline-roles, capability-broker, decision-tracking}.md`. Global `~/.claude/CLAUDE.md` Rules Index updated to reflect new location.
+- Bumped ACW version `0.9.0` → `0.9.1`. Bumped `last_reconciled_version` to `0.9.1`. Updated template baseline `last_reconciled_version` to `0.9.1`.
+- Per operator directive (v0.9.0): nothing new ships before v1.0.0 promotion. v0.9.1 is a doctrine-completion patch — does not extend scope, just closes specification gaps. Soak window continues.
 
 ### 2026-05-04 — v0.9.0: auto-load discipline + tasks-status archive (Session 14)
 

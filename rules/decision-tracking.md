@@ -86,6 +86,21 @@ Decision records are append-only in spirit but not strictly immutable. A decisio
 
 Periodic review is the operator's job. A session where the operator reads through recent decisions is a cheap way to catch drift between intent and practice.
 
+## Rolling-window discipline
+
+`decisions/decision-log.md` is auto-loaded at session start (per `acw-state.yaml::auto_load_at_session_start` and `rules/auto-load-discipline.md`). Inline entries cost context every chat, every agent, every workspace where the file is loaded. To keep the file lean:
+
+- **Cadence: bi-weekly.** Entries dated more than 14 days old are candidates for archive on the next maintenance pass. The cadence is a maintenance schedule, not a strict freshness boundary — older entries don't auto-archive the moment they age out. Operator (or `/acw-session end`) makes the archive call when the schedule fires or when the threshold trigger fires, whichever comes first.
+- **Threshold trigger.** If the live file exceeds ~15k tokens before the bi-weekly cadence fires, archive aggressively (as many entries as needed to bring the file back under threshold) regardless of entry dates. The threshold is the secondary fire condition declared in `rules/auto-load-discipline.md`.
+- **Archive file pattern.** `decisions/decision-log-YYYY-Q*.md` (e.g. `decision-log-2026-Q2.md`). Lives at workspace root alongside the live file. Frontmatter: `class: archive, authority: derived, stability: stable, loaded_by_agent: no`. Classified `meta_layer` in `acw-state.yaml` (it's about this instance's history, not propagated to children).
+- **What archives: entries from "Decisions and Rationale" only.** Open Questions, Constraints and Gotchas, and Resolved Questions sections do not archive. They're active surfaces, not historical narrative — Open Questions track unresolved work, Constraints track active gotchas to remember, Resolved Questions are the operator's "we already checked" file. All three benefit from staying inline.
+- **Pointer line in the live file.** Replace the archived block with one italicized line: *"(Entries D-XXX through D-YYY, dated YYYY-MM-DD to YYYY-MM-DD, archived to `decisions/decision-log-YYYY-Q*.md` per the bi-weekly rolling-window discipline in `rules/decision-tracking.md`.)"*
+- **Append, don't replace.** When the bi-weekly cadence fires twice in the same quarter, the second run appends to the existing `decision-log-YYYY-Q*.md` (don't create `-Q2-second.md`). Quarter rolls over: new file `decision-log-YYYY-Q*.md` with the new quarter.
+
+Archival is operator-driven; `/acw-session end` may propose archive when the cadence or threshold fires, but the move is not automatic.
+
+This discipline mirrors the rolling-window pattern in `rules/task-tracking.md`. Decision-log and tasks-status share cadence (bi-weekly), archive shape (`<surface>-YYYY-Q*.md`, meta_layer, archive frontmatter), and trigger logic (cadence OR threshold). The two surfaces drift independently; one may need archive while the other doesn't.
+
 ---
 
 ## What this file does NOT do
