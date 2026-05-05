@@ -232,13 +232,15 @@ The same governance applies to any future cross-instance write surface (e.g., a 
 
 Some instances are pure-substrate workspaces (governance, decisions, captures only). Others ship real runtime code — a Next.js app, a server, an agent, a script suite. ACW canonical scaffolds every instance as if it were pure-substrate; instances shipping code make a structural choice canonical does not currently dictate.
 
-**Convention (earn-by-incident, observed once at this rev):** instances shipping runtime code locate it under a named subdirectory at instance root — `web/`, `server/`, `agents/`, `app/` — not at instance root itself. Substrate (`decisions/`, `rules/`, `sessions/`, `acw-state.yaml`, `CLAUDE.md`) stays at root.
+**Rule (normative, AGENTS.md directive 8):** instances shipping runtime code locate it under a named subdirectory at instance root — `web/`, `server/`, `agents/`, `app/`, or whatever name fits — not at instance root itself. Substrate (`decisions/`, `rules/`, `sessions/`, `acw-state.yaml`, `CLAUDE.md`, `AGENTS.md`) stays at root. Agents writing runtime code mid-session apply this without asking the operator.
 
 **Why:** substrate and runtime move on different clocks. Substrate is governance — slow-moving, decision-driven, audit-checked. Runtime is operational — fast-moving, build-driven, dependency-managed. Mixing them at one path level conflates the two clocks: build artifacts collide with substrate files in `git status`, package managers see substrate as project-root noise, deployment configs (Vercel, Docker) point at a path that also carries decisions/. Subdir separation gives each clock its own surface.
 
-**Status:** convention only. No schema field, no separate rule file, no audit enforcement. Earn-by-incident applies — if a second consumer instance hits the same friction or if an audit/skill needs to read the runtime path programmatically, the convention earns promotion to a structured field (`acw-state.yaml::runtime_code_location`) or a dedicated rule.
+**Status:** normative directive (AGENTS.md #8). No schema field in `acw-state.yaml::paths` yet — the directive is sufficient for agent behavior. A schema field earns its build only when a skill or audit needs to read the runtime path programmatically (e.g., a build-runner skill that needs to know where to `cd` before `npm run build`).
 
-**Source:** absorption candidate `_buffer/2026-05-04-cx-dashboard-saas-app-code-location-friction.md` from `cx-dashboard-saas` Phase 0 scaffold.
+**Migration:** if an existing instance already has runtime code at root and migrating is expensive, log an incident and propose a path forward — do not silently accept the conflation. The directive is forward-looking; it does not retroactively break existing layouts that pre-date it.
+
+**Source:** absorption candidate `_buffer/2026-05-04-cx-dashboard-saas-app-code-location-friction.md` from `cx-dashboard-saas` Phase 0 scaffold; promoted from convention to normative directive same session per D-ACW-040 (operator override on earn-by-incident framing — the activating incident is every code-shipping session, not "operator hits friction").
 
 ## What this rule does not yet specify
 

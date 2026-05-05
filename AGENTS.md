@@ -9,7 +9,7 @@ loaded_by_agent: yes
 
 This file is the entry point for any agent opening this workspace. It is deliberately named `AGENTS.md` rather than a vendor-specific file (`CLAUDE.md`, `GEMINI.md`, `GPT.md`) so the workspace is portable across frontier models. Any agent that honors this file can operate inside ACW; any agent that does not honor it cannot.
 
-## Seven directives
+## Eight directives
 
 1. **Read `rules/pipeline-roles.md` before declaring a role.** Every skill in this workspace declares exactly one role from the four-group normative enum. A skill that cannot cleanly declare a single role is not a skill and must be split. The sixteen-role appendix is informative, not normative.
 
@@ -23,7 +23,9 @@ This file is the entry point for any agent opening this workspace. It is deliber
 
 6. **If you disagree with a rule, read `research/` before editing it.** Every rule in this template traces to a documented research finding. Edit without reading the research and you are likely to re-introduce a problem the research already solved.
 
-7. **Auto-load every file listed in `acw-state.yaml::auto_load_at_session_start` at the start of any session in this workspace.** Each agent host implements this via its native mechanism (Claude Code: `@`-imports in `CLAUDE.md`; other hosts: their equivalent manifest or directive syntax; agents that read `acw-state.yaml` directly need no host-specific file). The list is maintained additively by `/acw-session end`; removal requires an explicit decision-log entry.
+7. **Auto-load every file listed in `acw-state.yaml::auto_load_at_session_start` at the start of any session in this workspace.** Each agent host implements this via its native mechanism (Claude Code: `@`-imports in `CLAUDE.md`; other hosts: their equivalent manifest or directive syntax; agents that read `acw-state.yaml` directly need no host-specific file). The list is maintained additively by `/acw-session end`; removal requires an explicit decision-log entry. Auto-load entries themselves earn their slot per `rules/auto-load-discipline.md` — every entry declares a structured claim.
+
+8. **When writing runtime code (a Next.js app, server, CLI tool, agent, etc.) inside an instance, locate it under a named subdirectory at instance root** — `web/`, `server/`, `agents/`, `app/`, `tools/<scoped-name>/`, or whatever name fits. Substrate (`decisions/`, `rules/`, `sessions/`, `acw-state.yaml`, `CLAUDE.md`, `AGENTS.md`) stays at root. Substrate is governance and moves on a slow, decision-driven clock; runtime is operational and moves on a fast, build-driven clock. Co-locating the two at instance root conflates the clocks: build artifacts collide with substrate in `git status`, package managers see substrate as project-root noise, deployment configs (Vercel, Docker) point at a path that also carries decisions/. If the workspace already has runtime code at root and migrating is expensive, log an incident and propose a path forward — do not silently accept the conflation. See `rules/multi-instance-topology.md` § "Runtime code in shipping instances."
 
 ## Operational commands
 
