@@ -3,7 +3,8 @@ from_project: cs-copilot
 from_session_capture: ~/projects/cs-copilot/decisions/decision-log.md::D-015
 date: 2026-05-01
 topic: source instance gsg-copilot renamed to cs-copilot
-read: false
+read: true
+absorbed_in: informational (sibling-instance rename FYI; no canonical promotion needed)
 ---
 
 # Notification — gsg-copilot renamed to cs-copilot 2026-05-01

@@ -3,7 +3,8 @@ from_project: gsg-copilot
 from_session_capture: ~/projects/gsg-copilot/research/sessions/2026-04-30--acw-substrate-scaffolding-and-bookend-skills.md
 date: 2026-04-30
 topic: v0.2 promotion proposal + 2 incidents logged + ACW canonical work ready for next session
-read: false
+read: true
+absorbed_in: D-001 (v0.2.0-rc1 absorbed C-01/C-02/C-03/C-06/C-09)
 ---
 
 # Notification — gsg-copilot 2026-04-30 session touched ACW

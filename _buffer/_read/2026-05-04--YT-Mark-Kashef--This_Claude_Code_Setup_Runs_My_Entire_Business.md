@@ -2,6 +2,8 @@
 title: This Claude Code Setup Runs My Entire Business
 url: https://www.youtube.com/watch?v=7aQbN543Mec
 publishedTime: undefined
+read: true
+absorbed_in: research/12-kashef-hive-mind-comparison.md
 ---
 
 I Replaced My Whole Stack With This Claude Code Setup

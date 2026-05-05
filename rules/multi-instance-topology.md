@@ -172,6 +172,23 @@ The note is **read-only after creation**. ACW operator reads, decides, and eithe
 - Promotes the pattern via the absorption arc (writes a `research/NN-*` note like `research/09`, then ships in next ACW version)
 - Rejects it (writes a decision-log entry explaining why; the workspace's file is then re-routed to adopt flow)
 
+### Buffer lifecycle (read flag + `_read/` archive)
+
+After the operator processes an absorption candidate, two metadata edits to the file are allowed (the read-only-after-creation rule above governs the body, not the frontmatter):
+
+1. Flip `read: false` → `read: true`.
+2. Add `absorbed_in: <decision-id-or-pointer>` naming where the absorption landed (a decision-log id like `D-ACW-039`, a research note path like `research/13-build-then-rip-pattern-watch.md`, or a free-text pointer like `informational (no canonical promotion)` for FYI-only notes).
+
+Then move the file to `_buffer/_read/`:
+
+```
+git mv _buffer/<filename>.md _buffer/_read/
+```
+
+`/acw-session start` reads the top level of `_buffer/` only; it does not descend into `_read/`. Moving processed files into the archive subdirectory keeps the top level legible and prevents already-handled notifications from re-surfacing as drift on every session-start. History is preserved via git; no file is ever deleted.
+
+The discipline applies retroactively — operator may flip and move historical notifications that pre-date this convention.
+
 ### Divergence markers
 
 Two structured blocks in `acw-state.yaml` track non-canonical substrate:
