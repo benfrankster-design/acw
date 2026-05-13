@@ -18,14 +18,14 @@
 # Edited only via a decision-log entry. Every edit bumps `version` or
 # `last_reconciled`.
 
-version: "0.9.3"
-last_reconciled: "2026-05-12"
+version: "0.9.4"
+last_reconciled: "2026-05-13"
 
 # Version this instance is synced to in the recommended-blocks registry
 # (rules/instance-current-manifest.md). Used by /acw-session start drift
 # check to compare against each entry's earned-in version. Bumped
 # automatically by /acw-instance upgrade after a successful reconciliation.
-last_reconciled_version: "0.9.3"
+last_reconciled_version: "0.9.4"
 
 # Declares whether this instance publishes canonical content downstream to
 # other instances. ACW itself sets this to true (it IS the upstream source for
@@ -75,6 +75,7 @@ template_layer:
   - rules/pipeline-roles.md
   - rules/promotion-ritual.md
   - rules/skill-format.md
+  - rules/substrate-boundary.md
   - rules/task-tracking.md
   - rules/vocabulary-lint.md
   - skills/example-skill/

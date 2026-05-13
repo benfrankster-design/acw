@@ -235,6 +235,110 @@ def write_glossary(root: Path, terms: list[tuple[str, str]]) -> None:
     (root / "glossary" / "INDEX.md").write_text("\n".join(lines), encoding="utf-8")
 
 
+FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---", re.DOTALL)
+
+
+def write_decisions_index_from_disk(root: Path, entries: list[Entry]) -> None:
+    """Render INDEX using on-disk filenames (stored in Entry.body during regen)."""
+    decisions = sorted([e for e in entries if e.kind == "decision"],
+                       key=lambda e: e.date_str, reverse=True)
+    open_qs = sorted([e for e in entries if e.kind == "open-question"],
+                     key=lambda e: e.date_str, reverse=True)
+    constraints = sorted([e for e in entries if e.kind == "constraint"],
+                         key=lambda e: e.id)
+    lines = [
+        "---", "class: operational", "authority: canonical",
+        "stability: experimental", "loaded_by_agent: yes", "---", "",
+        "# Decisions Index", "",
+        "Auto-loaded thin index. Bodies live in `entries/`, `open-questions/`, `constraints/`.",
+        "Regenerate with `python tools/migrate_to_wiki.py`.", "",
+        "Archived entries: see `decision-log-YYYY-Q*.md` files in this directory.", "",
+        "## Open Questions", "",
+    ]
+    if not open_qs:
+        lines.append("_(none)_")
+    for e in open_qs:
+        lines.append(f"- [{e.id}](open-questions/{e.body}) — {e.title} _(status: {e.status})_")
+    lines += ["", "## Decisions", ""]
+    for e in decisions:
+        lines.append(f"- [{e.id}](entries/{e.body}) — {e.title} _({e.date_str})_")
+    lines += ["", "## Constraints and Gotchas", ""]
+    if not constraints:
+        lines.append("_(none)_")
+    for e in constraints:
+        lines.append(f"- [{e.id}](constraints/{e.body}) — {e.title}")
+    lines.append("")
+    (root / "decisions" / "INDEX.md").write_text("\n".join(lines), encoding="utf-8")
+
+
+def read_frontmatter(path: Path) -> dict:
+    text = path.read_text(encoding="utf-8")
+    m = FRONTMATTER_RE.match(text)
+    if not m:
+        return {}
+    fm = {}
+    for line in m.group(1).splitlines():
+        if ":" not in line:
+            continue
+        k, _, v = line.partition(":")
+        fm[k.strip()] = v.strip().strip('"').strip("'")
+    return fm
+
+
+def regenerate_indices_from_entries(root: Path) -> None:
+    """Regenerate INDEX files from already-split entry files (idempotent path)."""
+    dec_dir = root / "decisions"
+    if (dec_dir / "entries").exists() or (dec_dir / "open-questions").exists():
+        entries: list[Entry] = []
+        for sub, kind in [("entries", "decision"),
+                          ("open-questions", "open-question"),
+                          ("constraints", "constraint")]:
+            d = dec_dir / sub
+            if not d.exists():
+                continue
+            for f in d.glob("*.md"):
+                fm = read_frontmatter(f)
+                entries.append(Entry(
+                    id=fm.get("id", f.stem.split("-")[0]),
+                    title=fm.get("title", f.stem),
+                    body=f.name,  # stash filename for index render
+                    kind=fm.get("kind", kind),
+                    status=fm.get("status", "accepted"),
+                    date_str=fm.get("date", "0000-00-00"),
+                ))
+        write_decisions_index_from_disk(root, entries)
+        print(f"decisions: regenerated INDEX from {len(entries)} existing entries")
+
+    glo_dir = root / "glossary" / "entries"
+    if glo_dir.exists():
+        terms = []
+        for f in glo_dir.glob("*.md"):
+            fm = read_frontmatter(f)
+            terms.append((fm.get("term", f.stem), ""))
+        # Rewrite INDEX only (don't rewrite entry bodies)
+        lines = [
+            "---",
+            "class: reference",
+            "authority: canonical",
+            "stability: experimental",
+            "loaded_by_agent: yes",
+            "---",
+            "",
+            "# Glossary Index",
+            "",
+            "Auto-loaded. Bodies live in `entries/`. Regenerate with `python tools/migrate_to_wiki.py`.",
+            "",
+            "## Terms",
+            "",
+        ]
+        for term, _ in sorted(terms, key=lambda t: t[0].lower()):
+            slug = slugify(term)
+            lines.append(f"- [{term}](entries/{slug}.md)")
+        lines.append("")
+        (root / "glossary" / "INDEX.md").write_text("\n".join(lines), encoding="utf-8")
+        print(f"glossary: regenerated INDEX from {len(terms)} existing entries")
+
+
 def main(argv: list[str]) -> int:
     root = Path(argv[1]).resolve() if len(argv) > 1 else Path.cwd()
     if not root.exists():
@@ -244,6 +348,8 @@ def main(argv: list[str]) -> int:
     decisions_src = root / "decisions" / "decision-log.md"
     glossary_src = root / "glossary.md"
 
+    did_initial_split = False
+
     if decisions_src.exists():
         text = decisions_src.read_text(encoding="utf-8")
         entries = parse_decision_log(text)
@@ -251,16 +357,18 @@ def main(argv: list[str]) -> int:
             write_entry(root, e)
         write_decisions_index(root, entries)
         print(f"decisions: {len(entries)} entries written; INDEX regenerated")
-    else:
-        print(f"skip: {decisions_src} not found")
+        did_initial_split = True
 
     if glossary_src.exists():
         text = glossary_src.read_text(encoding="utf-8")
         terms = parse_glossary(text)
         write_glossary(root, terms)
         print(f"glossary: {len(terms)} terms written; INDEX regenerated")
-    else:
-        print(f"skip: {glossary_src} not found")
+        did_initial_split = True
+
+    # If source files are gone but entries/ exist, regenerate INDEX from disk
+    if not did_initial_split:
+        regenerate_indices_from_entries(root)
 
     return 0
 

@@ -288,6 +288,14 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 - **How to add:** Run `/acw-instance upgrade`, which fetches the canonical content from GitHub and walks the operator through adoption. Or manually: copy `rules/auto-load-discipline.md` from ACW canonical into the instance's `rules/` directory. The rule is loaded by `/acw-instance audit` when it walks the workspace's `auto_load_at_session_start` block; not auto-loaded into chat context.
 - **Earned in:** `0.9.0`.
 
+## `rules/substrate-boundary.md`
+
+- **What:** A template_layer rule file declaring the in-scope / out-of-scope partition that `/acw-instance audit|upgrade` reads when identifying the substrate boundary. Owns the project-content exclusion list (build/dependency directories, package manifests, source file extensions) plus the substrate-shaped pattern signals. Authoritative source: extends authoritative state-file blocks (`template_layer`, `instance_layer`, `paths`, `empty_dirs`, `meta_layer`) with the language-/build-tool-specific exclusions those blocks don't capture.
+- **Why it helps:** Previously the project-content exclusion list lived inline in `skills/acw-instance/SKILL.md` prose. Adding a new ecosystem's build output or source extension required editing skill prose, which was easy to miss when canon evolved. Moving the list to its own rule makes the skill a pure consumer of canonical sources: when a new exclusion is added here, the skill picks it up on next canonical fetch.
+- **Required:** No. Workspaces that don't run `/acw-instance audit` don't consult the rule. The skill loads it on demand at boundary-identification time; not auto-loaded into chat context.
+- **How to add:** Run `/acw-instance upgrade`, which fetches the canonical content from GitHub and lands it under `rules/`. Or manually: copy `rules/substrate-boundary.md` from ACW canonical into the instance's `rules/` directory.
+- **Earned in:** `0.9.4`. Earned-by-incident: the audit of `skills/acw-instance/` for canon-vs-rules redundancy found the exclusion list as one of 10 sites where the skill carried inline content that belonged in an authoritative source. See `decisions/entries/D-ACW-044` (skill-redundancy refactor).
+
 ## `tasks-status-YYYY-Q*.md` archive (weekly rolling-window discipline)
 
 - **What:** Archive files for older `tasks-status.md::Done` session blocks. Format `tasks-status-YYYY-Q*.md` (e.g., `tasks-status-2026-Q2.md`). Live at workspace root. Classified `meta_layer` (about the instance's history; not propagated to children). Replace archived content in `tasks-status.md` with a one-line pointer.
