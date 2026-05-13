@@ -67,22 +67,19 @@ If context >70% AND verb is `start`, warn but continue (`start` is cheap). If ve
 
 ### Step 1 — Read configuration from `acw-state.yaml`
 
-Read once and resolve:
+Read once via `tools/manifest.py::load(state_file, "<block>")`. Block semantics live in `rules/instance-current-manifest.md`; the skill reads these blocks:
 
-- `paths` → substrate file locations. Read via `tools/manifest.py::load(state_file, "paths")` which merges file overrides with canonical defaults. **Two key sets supported:**
-  - **Single-file shape:** `decisions_log`, `glossary` keys present.
-  - **Wiki shape:** `decisions_index`, `decisions_entries_dir`, `decisions_open_questions_dir`, `decisions_constraints_dir`, `glossary_index`, `glossary_entries_dir` keys present.
-  - The keys present determine which substrate mode is active (cross-checked against `decision_tracking.mode` and `glossary.mode` for consistency; warn on mismatch).
-- `decision_tracking.mode` → `single-file` (default) or `wiki`. Drives Phase 2 + Phase 3 dispatch in `end`.
-- `glossary.mode` → same.
-- `auto_load_at_session_start` → already in context; never re-read.
-- `project.code` / `project.name` / `project.domain` → optional; for id prefixing and narrative output.
-- `synapse_log_path` → optional Phase 4 destination.
-- `cross_repo_writes` → list of paths outside the project repo this skill may write to.
-- `voice` → list of voice-reference files for transcript cleanup.
-- `template_layer` / `instance_layer` / `meta_layer` → if non-empty, three-layer manifest discipline applies.
-- `is_canonical_source` → boolean, default `false`. Gates canonical-edit detection in `end`.
-- `divergent_pending_review` / `instance_specific_substrate` → respected by drift check in `start` and substrate handling in `end`.
+- `paths` (substrate file locations; mode-dependent key set per `decision_tracking.mode`/`glossary.mode`)
+- `decision_tracking.mode` + `glossary.mode` (drives Phase 2/3 dispatch in `end`)
+- `auto_load_at_session_start` (already in context; never re-read)
+- `project.{code, name, domain}` (id prefixing + narrative)
+- `synapse_log_path` (Phase 4 destination)
+- `cross_repo_writes`, `voice`
+- `template_layer` / `instance_layer` / `meta_layer` (manifest-discipline gating)
+- `is_canonical_source` (canonical-edit detection in `end`)
+- `divergent_pending_review` / `instance_specific_substrate` (drift check + substrate handling)
+
+Mode consistency: cross-check the present `paths.*` key set against `decision_tracking.mode` and `glossary.mode`; warn on mismatch.
 
 ### Step 2 — Resolve substrate locations
 
@@ -111,7 +108,7 @@ Hand off to the verb's reference file. Verb consumes spine output (config, paths
 
 - Spine is read-only on substrate. All writes happen in verb-specific specialist work, gated per the verb's reference file.
 - Cross-repo writes refuse without `cross_repo_writes` declaration.
-- Append-only files (build-log, incidents, evolution, captures, tasks-status archive `tasks-status-YYYY-Q*.md`, wiki-mode decision entries past acceptance) are never edited past entries.
+- Append-only files (build-log, incidents, evolution, captures, tasks-status archives under `archives/tasks-status/YYYY-MM.md`, wiki-mode decision entries past acceptance) are never edited past entries.
 - The `end` verb's canonical-edit detection branches on `is_canonical_source` — publishers prompt for version bump and push; consumers warn that local edits won't propagate.
 - **Idempotency.** `end` uses the `.current-session` resume token to skip phases already completed in a hash-matching prior run. Re-running `end` after a crash resumes from the last completed phase.
 

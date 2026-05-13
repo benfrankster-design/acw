@@ -339,8 +339,47 @@ def regenerate_indices_from_entries(root: Path) -> None:
         print(f"glossary: regenerated INDEX from {len(terms)} existing entries")
 
 
+def parse_archive(text: str) -> list[Entry]:
+    """Parse a quarterly decision-log archive (flat ### entries, no ## sections)."""
+    chunks = re.split(r"^###\s+", text, flags=re.MULTILINE)
+    entries = []
+    for chunk in chunks[1:]:
+        first_line, _, rest = chunk.partition("\n")
+        m = re.match(r"(?P<id>\S+)\s*[—-]\s*(?P<title>.+?)\s*$", first_line)
+        if not m:
+            continue
+        eid = m.group("id").strip()
+        title = m.group("title").strip()
+        body_text = rest.strip()
+        body_text = re.sub(r"\n+---\s*$", "", body_text).rstrip()
+        date_str = extract_date(body_text) or "2026-04-30"
+        entries.append(Entry(id=eid, title=title, body=body_text,
+                             kind="decision", status="accepted",
+                             date_str=date_str))
+    return entries
+
+
 def main(argv: list[str]) -> int:
-    root = Path(argv[1]).resolve() if len(argv) > 1 else Path.cwd()
+    args = [a for a in argv[1:] if not a.startswith("--")]
+    flags = [a for a in argv[1:] if a.startswith("--")]
+
+    # --archive <path>: re-split a quarterly archive file into per-entry
+    # wiki files at decisions/entries/. For single->wiki migration when
+    # historical archives need to land in the wiki shape (v0.9.6+ doctrine).
+    for f in flags:
+        if f.startswith("--archive="):
+            arch = Path(f.split("=", 1)[1]).resolve()
+            root = arch.parent.parent if arch.parent.name == "decisions" else arch.parent
+            text = arch.read_text(encoding="utf-8")
+            entries = parse_archive(text)
+            for e in entries:
+                write_entry(root, e)
+            print(f"archive: {len(entries)} entries re-split from {arch.name}")
+            # Regenerate INDEX from disk (including new entries)
+            regenerate_indices_from_entries(root)
+            return 0
+
+    root = Path(args[0]).resolve() if args else Path.cwd()
     if not root.exists():
         print(f"workspace root not found: {root}", file=sys.stderr)
         return 2

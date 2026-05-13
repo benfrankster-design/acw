@@ -69,7 +69,7 @@ last_completed_phase: 1
 
 **Append-only subset** (quick + synapse-only + research-only):
 - New decisions → write per `distribution-rules.md::Decisions` for `dm`
-- Tasks completed → write dated session block to `tasks-status-YYYY-Q*.md` archive AND remove from Pending. Tasks newly started → append to Pending. New deferred-but-keep idea → write to `inbox/ideas/`, NOT to tasks-status. Per `distribution-rules.md::paths.tasks_status`.
+- Tasks completed → write dated session block to `archives/tasks-status/YYYY-MM.md` (current month) AND remove from Pending. Tasks newly started → append to Pending. New deferred-but-keep idea → write to `inbox/ideas/`, NOT to tasks-status. Per `distribution-rules.md::paths.tasks_status`.
 - New incidents → append JSONL lines to `paths.incidents`
 - Build-log entry → prepend to `paths.build_log`
 - New sources → append to `paths.sources` (only if file already exists)
@@ -87,7 +87,11 @@ Glossary writes per `distribution-rules.md::Glossary` for `gm`.
 
 **Auto-load list maintenance.** If Phase 2 creates a new top-level substrate file that meets the substrate-worthy test, append its path to `acw-state.yaml::auto_load_at_session_start` via `manifest.append`. Additive only.
 
-**Symmetric archive registration.** If Phase 2 (or an earlier session) created a new rolling-window archive file matching `decision_tracking.archive_pattern` (e.g., `decisions/decision-log-2026-Q2.md`) or the analogous tasks-status pattern, propose appending it to `acw-state.yaml::meta_layer`. Operator confirms before append.
+**Symmetric archive registration.** Detect new archive files and propose `acw-state.yaml::meta_layer` append. Scope is mode-aware:
+- **tasks-status archive** (`archives/tasks-status/YYYY-MM.md`) — applies always.
+- **decision-log archive** — applies only when `dm == 'single-file'` (file matching `decision_tracking.archive_pattern`). In wiki mode this is structurally moot (no rolling-window archive); skip silently.
+
+Operator confirms before append.
 
 **Manifest classification (conditional).** If three-layer manifest blocks present and non-empty, surface a classification prompt per new file at a tracked path. Default `instance_layer`. Skip silently if blocks absent.
 

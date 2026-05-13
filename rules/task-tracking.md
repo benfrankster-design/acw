@@ -63,15 +63,19 @@ Archive file convention (v0.9.5+):
 - Monthly rotation: new calendar month → new file. No size threshold; each month rolls cleanly.
 - Pre-v0.9.5 grandfathered shape: `tasks-status-YYYY-Q*.md` at workspace root (quarterly). Existing instances may carry both; new archives go into the monthly folder shape.
 
-Session-block format inside the archive:
+Session-block format inside the archive (canonical; consumed by `/acw-session end` Phase 2):
 
 ```markdown
-### YYYY-MM-DD — [topic phrase] (Session N)
+### YYYY-MM-DD — Session N — [topic phrase]
 
-- Built X (decisions/decision-log.md::D-NP-007 in single-file mode, or decisions/entries/D-NP-007-... in wiki mode)
-- Added HR-NP-002 forbidding writes to read-only/
-- Captured session: sessions/YYYY-MM-DD--topic-slug.md
+- <Decision id>: <one-line summary> — <file paths or refs>
+- `path/to/file.py` — <one-line description of change>
+- <Hard rule id added>: <short summary>
+- <Smoke test result | bug encountered + fix | blocker resolved>
+- Capture-and-metabolize ran: session capture at `<sessions_dir>/<file>.md`; <decisions appended>; <research-prompt artifact path if Phase 5 fired>.
 ```
+
+Bullets: one line each; cite IDs inline; forward-slash paths in backticks; last bullet notes capture-and-metabolize ran.
 
 **Why archive on completion (no interval):** the prior rolling-window-cadence pattern (`tasks-status.md::Done` accumulates for 7 days, then archives) was the wrong abstraction. Done is not a work-queue state; it's a write-once historical entry. Live file should never carry completed work. Archiving on completion is the simpler primitive and removes a category of "is this stale enough to archive yet" judgment from `/acw-session end`. Empirically: _Command hit "Prompt is too long" twice in a week (2026-05-11 and 2026-05-12) partly because Done sat in the live file even with weekly cadence.
 

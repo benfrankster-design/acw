@@ -18,7 +18,7 @@ These hold current-state narrative. Stale entries get auto-updated or proposed f
 
 | File / surface | What metabolizes | What does not |
 |---|---|---|
-| `paths.tasks_status` | Pending items completed → write dated session block to `tasks-status-YYYY-Q*.md` archive AND remove the item from Pending. Pending items superseded by decision → propose either removal (truly stale) or move to `inbox/ideas/` (deferred-but-keep). | Archive file's dated entries (history). Active Pending. |
+| `paths.tasks_status` | Pending items completed → write dated session block to `archives/tasks-status/YYYY-MM.md` (current month) AND remove the item from Pending. Pending items superseded by decision → propose either removal (truly stale) or move to `inbox/ideas/` (deferred-but-keep). | Archive file's dated entries (history). Active Pending. |
 | Decisions: open questions | Questions resolved this session → move to decisions surface. | Active open questions. |
 | Decisions: constraints | Constraints whose underlying cause was fixed → propose removal/resolution. | Active constraints. |
 | Glossary | Terms no longer referenced → propose deprecation marker (do not delete). | Active terms. External vocabulary canons governed elsewhere. |

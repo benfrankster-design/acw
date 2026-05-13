@@ -14,38 +14,35 @@ How session content lands in scaffolding files. Strict rules per file. Each file
 
 ## Decisions
 
+Format authority: `rules/decision-tracking.md` owns body fields, supersession marker, and id prefix convention (`D-{project.code}-NNN` or `D-NNN`). Wiki frontmatter authority: `acw-state.yaml::decision_tracking.entry_frontmatter_required / status_values / kind_values`. The skill performs the operations; format details come from the authoritative source.
+
 ### Mode: `single-file` (canonical default)
 
-Decisions, open questions, constraints, resolved questions live as sections inside one file at `paths.decisions_log`. Sections resolved via `section_conventions.<name>` per that file's frontmatter (defaults: `decisions`, `open_questions`, `constraints`, `resolved`).
+Substrate at `paths.decisions_log`; sections resolved via `section_conventions.{decisions, open_questions, constraints, resolved}`.
 
 **Always-safe writes:**
-- **Append a new decision** to `section_conventions.decisions` with the next id (`D-{project.code}-NNN` if `project.code` is set, else `D-NNN`). Scan existing entries to determine the next number. Required body fields: `**Date:**`, `**Decision:**`, `**Rationale:**`, `**Source:**`. The session capture file must reference the new decision id in its frontmatter.
-- **Move a resolved Open Question** from `section_conventions.open_questions` to `section_conventions.decisions`. Preserve OQ id as a `**Resolves:**` line on the new decision entry.
-- **Append a new constraint** to `section_conventions.constraints` with `C-{project.code}-NNN` id (or `C-NNN`).
-- **Append a new resolved question** to `section_conventions.resolved` when the session captured a fact-verification answer (not a decision).
+- Append a new decision to the decisions section (next id; auto-scan).
+- Move a resolved Open Question into the decisions section with a `**Resolves:**` line preserving the OQ id.
+- Append a new constraint (next `C-` id) or resolved question.
 
-**Operator-confirm writes:**
-- **Mark a decision as superseded.** Add `**Superseded by:** <new id> (YYYY-MM-DD)` to the prior entry; create the new entry. Propose with rationale.
-- **Remove a constraint** because the underlying issue was fixed. Propose with rationale; do not auto-delete.
+**Operator-confirm writes:** mark a decision superseded (add marker on prior, create new entry); remove a constraint (underlying issue fixed).
 
-**Never:** edit a prior decision's text in place. Auto-add an Open Question without operator phrasing.
+**Never:** edit a prior decision's text in place. Auto-add an OQ without operator phrasing.
 
 ### Mode: `wiki`
 
-Decisions are atomic per-entry files under `paths.decisions_entries_dir`, `paths.decisions_open_questions_dir`, `paths.decisions_constraints_dir`. A thin index at `paths.decisions_index` carries id + date + status + headline per entry.
+Substrate at `paths.{decisions_entries_dir, decisions_open_questions_dir, decisions_constraints_dir}`; thin INDEX at `paths.decisions_index`.
 
 **Always-safe writes:**
-- **Create a new decision file** at `<decisions_entries_dir>/<id>-<slug>.md` where `id = D-{project.code}-NNN` (next available — scan all entries dirs for highest id, increment) and `slug = slugify(title)[:60]`. Frontmatter per `decision_tracking.entry_frontmatter_required` (typically: `id`, `title`, `date`, `status: accepted`, `kind: decision`, `updated`). Body: `# <id> — <title>` then `**Date:**`, `**Decision:**`, `**Rationale:**`, `**Source:**`, optional `**Rejected alternatives:**`. The session capture file must reference the new decision id in its frontmatter.
-- **Resolve an Open Question:** move file from `decisions_open_questions_dir/<oq-id>-<slug>.md` to `decisions_entries_dir/<oq-id>-<slug>.md` (preserve the OQ id as the filename id — the resolved entry continues to carry its OQ id, not a new D id). Update frontmatter: `kind: decision`, `status: resolved`, add `resolves: <oq-id>` and `resolved_by_decision: <new D id if applicable>`. Update `updated:` to today.
-- **Create a new open question** at `<decisions_open_questions_dir>/<oq-id>-<slug>.md` with `kind: open-question`, `status: open`.
-- **Create a new constraint** at `<decisions_constraints_dir>/<cg-id>-<slug>.md` with `kind: constraint`, `status: accepted`.
-- **Regenerate INDEX** after any of the above by invoking `decision_tracking.regenerate_index_cmd` (typically `python tools/migrate_to_wiki.py`) if declared. If `regenerate_index_cmd` is absent, append one line to `paths.decisions_index` directly under the appropriate section (Open Questions / Recent Decisions / Constraints & Gotchas) following the format of existing lines.
+- New decision: file at `<decisions_entries_dir>/<id>-<slug>.md` where `slug = slugify(title)[:60]`; id auto-scanned; frontmatter per `decision_tracking.entry_frontmatter_required`.
+- Resolved OQ: move file from `decisions_open_questions_dir` → `decisions_entries_dir`, **preserving the OQ id as filename id**; update frontmatter `kind: decision`, `status: resolved`, add `resolves` + `resolved_by_decision`.
+- New OQ → `decisions_open_questions_dir` (`kind: open-question`, `status: open`).
+- New constraint → `decisions_constraints_dir` (`kind: constraint`, `status: accepted`).
+- Regenerate INDEX after any write via `decision_tracking.regenerate_index_cmd` (or append one line directly if unset).
 
-**Operator-confirm writes:**
-- **Mark a decision as superseded.** Edit the prior entry's frontmatter: `status: superseded`, `superseded_by: <new id>`, `updated: <today>`. Create the new entry. Regenerate INDEX. Never delete the prior file.
-- **Mark a constraint as resolved** (underlying issue fixed). Edit frontmatter: `status: resolved`, `updated: <today>`. Propose, don't auto-execute.
+**Operator-confirm writes:** mark a decision superseded (edit prior frontmatter + create new entry + regenerate INDEX); mark a constraint resolved.
 
-**Never:** edit a prior entry's body text in place. Past entries are append-only in spirit; corrections add a new entry that supersedes.
+**Never:** edit a prior entry's body text in place. Past entries are append-only in spirit.
 
 ---
 
@@ -81,13 +78,11 @@ Terms are atomic per-entry files at `glossary.entries_dir/<slug>.md` with frontm
 
 ## Instance hard-rules file (declared as instance_layer)
 
-Shape is mode-invariant — hard rules live as a single file regardless of decision/glossary mode.
+Format authority: `rules/instance-hard-rules.md` (template). Mode-invariant — hard rules are a single file regardless of decision/glossary mode. Id prefix follows the same convention as decisions (`HR-{project.code}-NNN` or `HR-NNN`).
 
-**Always-safe writes:** append a new rule at the bottom of the appropriate hard-rules section with rule text + rationale. Use `HR-{project.code}-NNN` if `project.code` is set, else `HR-NNN`.
+**Always-safe writes:** append a new rule at the bottom of the appropriate section with text + rationale.
 
-**Operator-confirm writes:**
-- **Modify an existing rule** when the session changed its scope or wording. Propose with diff. After approval, update `paths.evolution` to record the change.
-- **Mark a rule deprecated** with `**Deprecated YYYY-MM-DD:**`. Don't delete.
+**Operator-confirm writes:** modify an existing rule (propose with diff; record in `paths.evolution`); mark a rule deprecated.
 
 **Never:** auto-delete a hard rule.
 
@@ -105,34 +100,13 @@ Shape is mode-invariant.
 
 ## `paths.tasks_status`
 
-Tasks-status is a work-queue primitive, not knowledge-graph. **Pending-only** (v0.9.3+ canonical per `rules/task-tracking.md`). No Done section. No Parked section. Completed work archives on completion to `tasks-status-YYYY-Q*.md`. Deferred ideas route to `inbox/ideas/` or `decision-log`.
+Format authority: `rules/task-tracking.md` (Pending-only canonical since v0.9.3; archive shape `archives/tasks-status/YYYY-MM.md` since v0.9.5; session-block format).
 
-**Always-safe writes (live file):**
-- **Append a new pending task** to the Pending section when the session created new work.
-- **Remove a completed task from the Pending section** as part of writing the session block to the archive (next bullet). The completed task does not move to a Done section — Done lives in the archive file only.
+**Always-safe writes (live file):** append new Pending task; remove completed task as part of writing the session block to archive.
 
-**Always-safe writes (archive file `tasks-status-YYYY-Q*.md`):**
-- **Append a dated session block** at the bottom of the current quarter's archive file (or under a relevant date heading; newest content at file end is fine since archive is read on demand). Format below. Create the archive file if it doesn't exist (frontmatter per `rules/task-tracking.md`). Register the new archive in `acw-state.yaml::meta_layer` (Phase 2 symmetric archive-registration check).
+**Always-safe writes (archive `archives/tasks-status/YYYY-MM.md`):** append a dated session block to the current month's archive file (create file + folder if absent with archive frontmatter; register in `acw-state.yaml::meta_layer` on first write via Phase 2 symmetric archive-registration).
 
-### Session-block format (written to archive)
-
-```markdown
-### YYYY-MM-DD — Session N — <topic phrase>
-
-- <Decision id>: <one-line summary> — <file paths or refs>
-- `path/to/file.py` — <one-line description of change>
-- <Hard rule id added>: <short summary>
-- <Smoke test result | bug encountered + fix | blocker resolved>
-- Capture-and-metabolize ran: session capture at `<paths.session_captures_dir>/<file>.md`; <decisions appended>; <research-prompt artifact path if Phase 5 fired>.
-```
-
-Rules: bullets are one line each. Cite IDs inline. Forward-slash paths in backticks. Last bullet notes capture-and-metabolize ran.
-
-**Never:**
-- Write to a Done section in `tasks-status.md` (the section doesn't exist in v0.9.3+ shape).
-- Write to a Parked section in `tasks-status.md` (the section doesn't exist in v0.9.3+ shape; deferred ideas → `inbox/ideas/` instead).
-- Touch prior dated entries in the archive file. Archive is append-only.
-- Auto-delete from Pending without an explicit completion signal (artifact exists, functionality callable, etc.).
+**Never:** write to a Done or Parked section in the live file (sections don't exist in v0.9.3+); touch prior dated entries in archive; auto-delete from Pending without an explicit completion signal.
 
 ---
 

@@ -173,6 +173,23 @@ Append one summary line to the migration's decision-log entry: *Auto-load discip
 
 No-op if `auto_load_at_session_start` already matches the rule's canonical recommendations in structured form.
 
+## single-file → wiki mode migration (v0.9.6+ doctrine)
+
+When the workspace's `decision_tracking.mode` transitions from `single-file` to `wiki`, the upgrade verb performs a complete migration — no archive carve-outs.
+
+Steps under the same approval gate:
+
+1. Run `python tools/migrate_to_wiki.py` against the live `decisions/decision-log.md` to produce `decisions/entries/`, `decisions/open-questions/`, `decisions/constraints/`, and `decisions/INDEX.md`.
+2. **Re-split every pre-existing rolling-window archive** matching `decision_tracking.archive_pattern` (e.g., `decisions/decision-log-YYYY-Q*.md`) into per-entry wiki files via `python tools/migrate_to_wiki.py --archive=<path>`. All historical decisions land in `decisions/entries/`.
+3. Delete the live `decision-log.md` source and every quarterly archive file after content verification. Remove the archive entries from `acw-state.yaml::meta_layer`.
+4. Update `acw-state.yaml::decision_tracking.mode` to `wiki` plus the wiki-mode keys (`index`, `entries_dir`, `open_questions_dir`, `constraints_dir`, `archive_pattern`, `regenerate_index_cmd`, `entry_frontmatter_required`, `status_values`, `kind_values`).
+5. Update `acw-state.yaml::paths` from single-file keys to wiki keys (`decisions_index`, `decisions_entries_dir`, etc.).
+6. Update `acw-state.yaml::auto_load_at_session_start` to point at `decisions/INDEX.md` instead of `decisions/decision-log.md`.
+7. Mirror the auto-load change in `CLAUDE.md` (or other host entry files).
+8. The same migration applies symmetrically for glossary (single-file → wiki) using the same tool against `glossary.md`.
+
+Doctrine: in wiki mode, ALL decisions live in `decisions/entries/`. The "archives stay archived" expedient from D-ACW-043 was retired in v0.9.6 — see `rules/decision-tracking.md`.
+
 ## v0.5.0 migration: `_inbox/` → `_buffer/`
 
 Before bulk execution, detect the legacy directory name (this is automatic, no operator prompt needed beyond the plan-approval gate which already includes it):
