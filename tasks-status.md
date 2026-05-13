@@ -13,6 +13,7 @@ Pending-only (v0.9.3+ canonical shape). See `rules/task-tracking.md` for format.
 
 ## Pending
 
+- [ ] Dogfood `/acw-instance upgrade` against cs-copilot / gsg-copilot / _Command for v0.9.8 wiki-mode canonical-only migration (D-ACW-048). All three are still single-file; the upgrade should detect legacy shape and emit mandatory `reshape` plan rows that run `tools/migrate_to_wiki.py` against the live log + every quarterly archive, then update `acw-state.yaml` to wiki-shape blocks. Verify the SessionStart hook reads the new `auto_load_at_session_start` correctly after migration.
 - [ ] Resolve cs-copilot citation drift from v0.9.1 synapse trim — five files reference `~/.claude/rules/Procedures/{skill-format, capability-broker, decision-tracking}.md` paths that no longer exist post-trim. Doc-only citations, not load-bearing. Fix when cs-copilot is touched next.
 - [ ] Dogfood `/acw-instance upgrade` against cs-copilot/gsg-copilot/_Command for v0.9.3 doctrine propagation: weekly rolling window for decision-log (single-file mode), tasks-status Pending-only migration, wiki-mode opt-in support, bookend mode-portability. Audit verb should walk decision-log and propose archive splits when the weekly or threshold cutoff fires; should detect three-section tasks-status and propose Pending-only migration as a plan row.
 - [ ] Dogfood `/acw-instance audit` against cs-copilot using v0.7.0+ plan-based behavior (substrate-shaped, below organic threshold; should adopt cleanly with one-shot migration plan).

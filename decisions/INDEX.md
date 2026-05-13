@@ -18,6 +18,7 @@ Archived entries: see `decision-log-YYYY-Q*.md` files in this directory.
 
 ## Decisions
 
+- [D-ACW-048](entries/D-ACW-048-wiki-mode-canonical-only-and-contacts-opt-in.md) — v0.9.8: wiki mode canonical-only for decisions and glossary; context/contacts/ as earn-by-discipline opt-in _(2026-05-13)_
 - [D-ACW-047](entries/D-ACW-047-claude-md-thin-pointer-auto-load-via-sessionstart-hook.md) — v0.9.7: CLAUDE.md becomes thin pointer; auto-load moves to SessionStart hook _(2026-05-13)_
 - [D-ACW-044](entries/D-ACW-044-skill-redundancy-refactor-and-substrate-boundary-rule.md) — v0.9.4: skill-redundancy refactor for /acw-instance + new rules/substrate-boundary.md _(2026-05-13)_
 - [D-ACW-045](entries/D-ACW-045-wiki-migration-resplits-archives-and-acw-session-redundancy-refactor.md) — v0.9.6: wiki migration re-splits archives + /acw-session redundancy refactor _(2026-05-13)_

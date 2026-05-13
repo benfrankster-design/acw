@@ -9,6 +9,20 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-13 — v0.9.8 wiki mode canonical-only + context/contacts/ opt-in (Session 19)
+
+Doctrine simplification + new optional pattern.
+
+**v0.9.8 ship** (D-ACW-048): wiki mode is now the only sanctioned mode for `decisions/` and `glossary/`. Single-file mode is retired — not just deprecated, removed from canon. The v0.9.3 dual-mode opt-in framing (D-ACW-043) was always transitional; treating it as permanent forced rule, scaffolder, audit, and upgrade to carry parallel code paths. Scaffolder template (`tools/templates/acw-state.yaml.tmpl`) now ships wiki-mode `decision_tracking` block + new `glossary` block + wiki `paths` + INDEX-based `auto_load_at_session_start`. New templates: `decisions-INDEX.md.tmpl`, `glossary-INDEX.md.tmpl`. Main `acw-state.yaml` `instance_layer` rows for `glossary.md` / `decisions/decision-log.md` replaced with `glossary/INDEX.md` / `decisions/INDEX.md`; `empty_dirs` extended with `decisions/entries`, `decisions/open-questions`, `decisions/constraints`, `glossary/entries`. Dual-purpose NOTE comment removed.
+
+**`rules/decision-tracking.md`** — "The format" section rewritten: wiki shape only, atomic per-entry files, canonical frontmatter from `acw-state.yaml::decision_tracking.{entry_frontmatter_required, status_values, kind_values}`. Rolling-window discipline section trimmed from ~14 bullets to one paragraph (wiki uses INDEX sort order, no archive ceremony).
+
+**`skills/acw-instance/`** — SKILL.md Step 2 substance scan + Step 3 canonical fetch stripped of mode branching. `references/audit.md` "Mode-dependent substrates" branching replaced with mandatory legacy → wiki migration plan row (not `[?]`, not optional). `references/upgrade.md` single-file → wiki section reframed as mandatory v0.9.8 doctrine.
+
+**`context/contacts/` opt-in** — new canonical optional pattern. Wiki-shaped (`context/contacts/INDEX.md` + `entries/<slug>.md`). NOT propagated by the scaffolder; surfaced by audit as an opt-in plan row when absent; upgrade scaffolds it on operator acceptance. First instance of "earn-by-discipline scaffolder primitive" pattern. Template at `tools/templates/context-contacts-INDEX.md.tmpl`.
+
+Net: dual-mode complexity retired, one new canonical optional pattern, downstream instances (cs-copilot, gsg-copilot, _Command) queued for mandatory wiki migration on next `/acw-instance upgrade`.
+
 ## 2026-05-13 — v0.9.6 wiki migration + /acw-session model-pin fix (Session 17)
 
 Two coupled ships and one diagnostic landing.

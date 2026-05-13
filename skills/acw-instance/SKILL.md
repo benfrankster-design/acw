@@ -54,16 +54,16 @@ Routing rules: argument required. `/acw-instance` with no command prints the tab
 
 ### Step 2 — Substance scan (only when registration is missing)
 
-Authoritative source for canonical paths: the fetched canonical `acw-state.yaml` blocks `template_layer`, `instance_layer`, `paths`, `empty_dirs`, plus the `decision_tracking.*` and `glossary.*` mode keys. The skill does not carry its own copy.
+Authoritative source for canonical paths: the fetched canonical `acw-state.yaml` blocks `template_layer`, `instance_layer`, `paths`, `empty_dirs`, plus the `decision_tracking.*` and `glossary.*` blocks. The skill does not carry its own copy.
 
 Count substrate signals across two surfaces:
 
-1. **Canonical-shape signals.** Existence-check each path declared in canonical `instance_layer[].path` and `paths.*`. For `decisions/` and `glossary/`, accept the shape matching either `single-file` or `wiki` mode (canonical state-file mode keys define both). Threshold: ≥ 3 distinct canonical paths present.
-2. **Substrate-shaped patterns.** Root-level markdown files with `class/authority/stability/loaded_by_agent` frontmatter, dated capture files (`YYYY-MM-DD-*.md`), `.jsonl` logs, and any directory whose name matches a canonical `paths.*_dir` key but lives at a non-canonical location.
+1. **Canonical-shape signals.** Existence-check each path declared in canonical `instance_layer[].path` and `paths.*`. Wiki shape (`decisions/INDEX.md`, `decisions/entries/`, `glossary/INDEX.md`, `glossary/entries/`) is canonical (v0.9.8+, D-ACW-048). Threshold: ≥ 3 distinct canonical paths present.
+2. **Substrate-shaped patterns.** Root-level markdown files with `class/authority/stability/loaded_by_agent` frontmatter, dated capture files (`YYYY-MM-DD-*.md`), `.jsonl` logs, single-file legacy shapes (`decisions/decision-log.md`, `glossary.md`), and any directory whose name matches a canonical `paths.*_dir` key but lives at a non-canonical location.
 
 If both surfaces are empty → bail: *"not an ACW instance and no substrate detected. Run `tools/scaffold-instance.py` from ACW canonical to scaffold a new instance."*
 
-Either surface non-empty → proceed. Substrate mode (single-file vs wiki) is detected from which decisions/glossary shape is present and cross-checked against the workspace's local `acw-state.yaml::decision_tracking.mode` / `glossary.mode` when those exist.
+Either surface non-empty → proceed. Single-file legacy shape (pre-v0.9.8) is detected and routed for mandatory migration to wiki in the plan.
 
 ### Step 3 — Fetch canonical from GitHub
 
@@ -76,9 +76,9 @@ gh api -H "Accept: application/vnd.github.raw" \
 
 Fall back to `urllib.request` with `Authorization: Bearer $GITHUB_TOKEN` if `gh` is unavailable. Fail closed on neither path: *"cannot fetch canonical manifest from GitHub. Install `gh` and authenticate, or set `GITHUB_TOKEN`, then re-run."*
 
-Templates and rule files needed for shape comparison are named in canonical `acw-state.yaml` itself: `template_layer` (rule and tool paths), `instance_layer[].template` (per-substrate-file template), `recommended_blocks` registry (per `rules/instance-current-manifest.md`), and the mode keys `decision_tracking.regenerate_index_cmd` + `glossary.regenerate_index_cmd` for wiki-shape tooling.
+Templates and rule files needed for shape comparison are named in canonical `acw-state.yaml` itself: `template_layer` (rule and tool paths), `instance_layer[].template` (per-substrate-file template), `recommended_blocks` registry (per `rules/instance-current-manifest.md`), and `decision_tracking.regenerate_index_cmd` + `glossary.regenerate_index_cmd` for wiki-shape tooling.
 
-For decisions and glossary, branch on the workspace's `decision_tracking.mode` / `glossary.mode` and fetch the template referenced by that mode's `instance_layer` row. If a mode key is unset, default to `single-file` (canonical default for new instances).
+Wiki mode is the only mode (v0.9.8+, D-ACW-048). The `instance_layer` rows for `decisions/INDEX.md` and `glossary/INDEX.md` are the canonical templates; pre-v0.9.8 single-file shape detected in a workspace is routed for migration.
 
 Fetch on demand, cache in memory for the duration of the run.
 

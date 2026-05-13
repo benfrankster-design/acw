@@ -33,19 +33,36 @@ Any decision whose reversal would require work, coordination, or explanation.
 
 ## The format
 
-All decisions live in a single file at `decisions/decision-log.md`, organized into four top-level sections: Open Questions, Decisions and Rationale, Constraints and Gotchas, and Resolved Questions. The template ships this file scaffolded with the four section headings and no entries.
+**Wiki mode is canonical (v0.9.8+, D-ACW-048).** Every decision, open question, and constraint is its own file. Single-file mode is retired; ACW does not support it as a sanctioned shape.
 
-When the log grows too large to navigate as a single file, the operator splits it into four separate files (`open-questions.md`, `decisions-and-rationale.md`, `constraints-and-gotchas.md`, `resolved-questions.md`) via the promotion ritual in `rules/promotion-ritual.md`. The split is earned by operational friction, not scheduled.
+Layout:
 
-### Required entry frontmatter (within the log, per entry):
+```
+decisions/
+  INDEX.md                           # auto-loaded thin index
+  entries/D-<CODE>-NNN-<slug>.md     # one file per decision
+  open-questions/Q-NNN-<slug>.md     # one file per open question
+  constraints/C-NNN-<slug>.md        # one file per constraint
+```
+
+The scaffolder ships `decisions/INDEX.md` with empty sections plus the three empty subdirectories. Regenerate INDEX with `python tools/migrate_to_wiki.py`. The same shape applies to `glossary/` (INDEX + `entries/<slug>.md`).
+
+### Required entry frontmatter (per file):
 
 ```yaml
-id: YYYY-MM-DD-short-slug
+---
+id: D-<CODE>-NNN          # or Q-NNN, C-NNN
+title: <short title>
 date: YYYY-MM-DD
-status: proposed | accepted | superseded | deprecated
+status: proposed | accepted | superseded | deprecated | rejected | open | partial-resolved | resolved
+kind: decision | open-question | constraint
+updated: YYYY-MM-DD
 approval_authority: operator | <any declared authority in instance-hard-rules.md>
-superseded_by: (id of later decision, if applicable)
+superseded_by: D-<CODE>-NNN   # optional
+---
 ```
+
+Canonical enum values live in `acw-state.yaml::decision_tracking.status_values` and `kind_values`.
 
 ### Required body sections (per entry):
 
@@ -54,8 +71,6 @@ superseded_by: (id of later decision, if applicable)
 3. **Rationale** — why this choice over the alternatives that were considered.
 4. **Rejected alternatives** — brief description of other options considered and why they were not chosen.
 5. **Consequences** — what downstream work this enables, blocks, or forces.
-
-Entries are separated by horizontal rules (`---`) within the log file.
 
 ---
 
@@ -86,22 +101,13 @@ Decision records are append-only in spirit but not strictly immutable. A decisio
 
 Periodic review is the operator's job. A session where the operator reads through recent decisions is a cheap way to catch drift between intent and practice.
 
-## Rolling-window discipline
+## Auto-load surface
 
-`decisions/decision-log.md` is auto-loaded at session start (per `acw-state.yaml::auto_load_at_session_start` and `rules/auto-load-discipline.md`). Inline entries cost context every chat, every agent, every workspace where the file is loaded. To keep the file lean:
+Only `decisions/INDEX.md` is auto-loaded at session start (per `acw-state.yaml::auto_load_at_session_start` and `rules/auto-load-discipline.md`). The index is a thin pointer to entries; bodies in `entries/`, `open-questions/`, and `constraints/` load on demand.
 
-- **Cadence: weekly.** Entries dated more than 7 days old are candidates for archive on the next maintenance pass. The cadence is a maintenance schedule, not a strict freshness boundary — older entries don't auto-archive the moment they age out. Operator (or `/acw-session end`) makes the archive call when the schedule fires or when the threshold trigger fires, whichever comes first.
-- **Threshold trigger.** If the live file exceeds ~15k tokens before the weekly cadence fires, archive aggressively (as many entries as needed to bring the file back under threshold) regardless of entry dates. The threshold is the secondary fire condition declared in `rules/auto-load-discipline.md`.
-- **Archive file pattern.** `decisions/decision-log-YYYY-Q*.md` (e.g. `decision-log-2026-Q2.md`). Lives alongside the live file in `decisions/`. Frontmatter: `class: archive, authority: derived, stability: stable, loaded_by_agent: no`. Classified `meta_layer` in `acw-state.yaml` (about this instance's history, not propagated to children).
-- **What archives: entries from "Decisions and Rationale" only.** Open Questions, Constraints and Gotchas, and Resolved Questions sections do not archive. They're active surfaces, not historical narrative — Open Questions track unresolved work, Constraints track active gotchas to remember, Resolved Questions are the operator's "we already checked" file. All three benefit from staying inline.
-- **Pointer line in the live file.** Replace the archived block with one italicized line: *"(Entries D-XXX through D-YYY, dated YYYY-MM-DD to YYYY-MM-DD, archived to `decisions/decision-log-YYYY-Q*.md` per the weekly rolling-window discipline in `rules/decision-tracking.md`.)"*
-- **Append, don't replace within quarter.** Multiple weekly archive runs in the same quarter append to the same `decision-log-YYYY-Q*.md`. New quarter → new file.
-- **Wiki mode (`decision_tracking.mode: wiki`) does NOT use rolling-window archives.** Each entry is already its own file in `decisions/entries/`; auto-load surface is `decisions/INDEX.md` (a thin index, not the bodies). The rolling-window discipline applies only to single-file mode.
-- **Single-file → wiki migration re-splits historical archives.** When an instance migrates from single-file to wiki mode, every pre-existing quarterly archive (`decisions/decision-log-YYYY-Q*.md`) is split into per-entry wiki files in `decisions/entries/`, and the archive file is deleted. The migration tool `tools/migrate_to_wiki.py --archive=<path>` performs this. Doctrine: in wiki mode, ALL decisions live in `decisions/entries/` with no exceptions. The auto-load surface (INDEX) sorts by date descending; cold pre-migration entries naturally fall to the bottom — they don't clutter, they're at the end of a sorted list. Earned-by-incident: the prior "archives stay archived" doctrine (D-ACW-043 expedient) made the wiki promise conditional and required readers to learn an exception. Retired in v0.9.6.
+Wiki mode does not use rolling-window archives. Each entry is already its own file. INDEX sorts entries by date descending; cold entries naturally fall to the bottom of a sorted list. No archive shuffling required.
 
-Archival is operator-driven; `/acw-session end` may propose archive when the cadence or threshold fires, but the move is not automatic.
-
-This discipline mirrors the rolling-window pattern in `rules/task-tracking.md` for single-file mode (weekly cadence + threshold). Tasks-status archive shape diverges in v0.9.5+ (`archives/tasks-status/YYYY-MM.md`, monthly file) because tasks-status carries no equivalent of wiki-mode-per-entry-file relief.
+Historical archives from pre-v0.9.6 single-file instances (`decisions/decision-log-YYYY-Q*.md`) are migrated to per-entry wiki files via `python tools/migrate_to_wiki.py --archive=<path>` when an instance adopts wiki mode through `/acw-instance upgrade`. After migration, no archive files remain.
 
 ---
 

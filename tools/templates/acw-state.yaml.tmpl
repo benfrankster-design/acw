@@ -41,9 +41,9 @@ canonical_runtime_files:
   - rules/skill-format.md
   - rules/task-tracking.md
   - rules/incident-tracking.md
-  - decisions/decision-log.md
+  - decisions/INDEX.md
   - DEFERRED.md
-  - glossary.md
+  - glossary/INDEX.md
   - threat-model.md
   - incidents.jsonl
   - tasks-status.md
@@ -61,8 +61,8 @@ canonical_runtime_files:
 # drop requires a decision-log entry). Bare-path entries are accepted but
 # flagged as legacy-pending-review by /acw-instance audit.
 auto_load_at_session_start:
-  - path: decisions/decision-log.md
-    claim: "Recently decided history must be visible to agents at session start; without it agents re-litigate settled choices."
+  - path: decisions/INDEX.md
+    claim: "Recently decided history must be visible to agents at session start; without it agents re-litigate settled choices. INDEX is the thin auto-loaded surface; bodies in entries/ load on demand."
     earned_by: structural
   - path: rules/instance-hard-rules.md
     claim: "Stop-work rules must be visible to every agent at session start; loading them on demand is too late."
@@ -70,8 +70,8 @@ auto_load_at_session_start:
   - path: tasks-status.md
     claim: "Pending work surface must be visible at session start; without it agents propose duplicate work and lose continuity."
     earned_by: structural
-  - path: glossary.md
-    claim: "Vocabulary canon prevents drift to colloquial English in agent output."
+  - path: glossary/INDEX.md
+    claim: "Vocabulary canon prevents drift to colloquial English in agent output. INDEX is the thin auto-loaded surface; bodies in entries/ load on demand."
     earned_by: structural
 
 # Cross-repo write surfaces explicitly allowed. Empty list means project
@@ -123,14 +123,47 @@ canon_authority:
   schema_type: string
 
 decision_tracking:
-  mode: single-file
-  file: decisions/decision-log.md
-  sections:
-    - "Open Questions"
-    - "Decisions and Rationale"
-    - "Constraints and Gotchas"
-    - "Resolved Questions"
-  split_threshold: "earned by promotion ritual when file is too large to navigate"
+  mode: wiki
+  index: decisions/INDEX.md
+  entries_dir: decisions/entries
+  open_questions_dir: decisions/open-questions
+  constraints_dir: decisions/constraints
+  archive_pattern: "decisions/decision-log-YYYY-Q*.md"
+  regenerate_index_cmd: "python tools/migrate_to_wiki.py"
+  entry_frontmatter_required: [id, title, date, status, kind, updated]
+  status_values: [proposed, accepted, superseded, deprecated, rejected, open, partial-resolved, resolved]
+  kind_values: [decision, open-question, constraint]
+
+glossary:
+  mode: wiki
+  index: glossary/INDEX.md
+  entries_dir: glossary/entries
+  regenerate_index_cmd: "python tools/migrate_to_wiki.py"
+  entry_frontmatter_required: [term, status]
+  status_values: [active, deprecated]
+
+# Substrate file paths. Wiki mode is canonical (v0.9.8+). The bookend skills
+# read from this block; instances may override any path.
+paths:
+  decisions_index: decisions/INDEX.md
+  decisions_entries_dir: decisions/entries
+  decisions_open_questions_dir: decisions/open-questions
+  decisions_constraints_dir: decisions/constraints
+  tasks_status: tasks-status.md
+  build_log: build-log.md
+  glossary_index: glossary/INDEX.md
+  glossary_entries_dir: glossary/entries
+  threat_model: threat-model.md
+  incidents: incidents.jsonl
+  evolution: research/evolution.md
+  sources: research/sources.md
+  research_state: research/research-state.yaml
+  problem_framing: research/01-problem-framing.md
+  session_captures_dir: sessions
+  research_queries_dir: research/queries
+  research_queries_consumed_dir: research/queries/_consumed
+  buffer_dir: _buffer
+  plans_dir: plans
 
 release_gates:
   - "tools/lint-vocab.py exits 0 on this instance's content"

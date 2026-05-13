@@ -173,22 +173,33 @@ Append one summary line to the migration's decision-log entry: *Auto-load discip
 
 No-op if `auto_load_at_session_start` already matches the rule's canonical recommendations in structured form.
 
-## single-file → wiki mode migration (v0.9.6+ doctrine)
+## Single-file → wiki migration (mandatory, v0.9.8+ doctrine)
 
-When the workspace's `decision_tracking.mode` transitions from `single-file` to `wiki`, the upgrade verb performs a complete migration — no archive carve-outs.
+Wiki mode is canonical (D-ACW-048). When the workspace presents single-file legacy shape (`decisions/decision-log.md` or `glossary.md`), the upgrade verb performs a complete migration. Not optional, not gated by a workspace mode key — wiki is the only mode.
 
-Steps under the same approval gate:
+Steps under the standard plan-approval gate:
 
 1. Run `python tools/migrate_to_wiki.py` against the live `decisions/decision-log.md` to produce `decisions/entries/`, `decisions/open-questions/`, `decisions/constraints/`, and `decisions/INDEX.md`.
-2. **Re-split every pre-existing rolling-window archive** matching `decision_tracking.archive_pattern` (e.g., `decisions/decision-log-YYYY-Q*.md`) into per-entry wiki files via `python tools/migrate_to_wiki.py --archive=<path>`. All historical decisions land in `decisions/entries/`.
+2. **Re-split every pre-existing rolling-window archive** matching `decisions/decision-log-YYYY-Q*.md` into per-entry wiki files via `python tools/migrate_to_wiki.py --archive=<path>`. All historical decisions land in `decisions/entries/`.
 3. Delete the live `decision-log.md` source and every quarterly archive file after content verification. Remove the archive entries from `acw-state.yaml::meta_layer`.
-4. Update `acw-state.yaml::decision_tracking.mode` to `wiki` plus the wiki-mode keys (`index`, `entries_dir`, `open_questions_dir`, `constraints_dir`, `archive_pattern`, `regenerate_index_cmd`, `entry_frontmatter_required`, `status_values`, `kind_values`).
+4. Update `acw-state.yaml::decision_tracking` to wiki shape (`mode: wiki`, plus `index`, `entries_dir`, `open_questions_dir`, `constraints_dir`, `archive_pattern`, `regenerate_index_cmd`, `entry_frontmatter_required`, `status_values`, `kind_values`).
 5. Update `acw-state.yaml::paths` from single-file keys to wiki keys (`decisions_index`, `decisions_entries_dir`, etc.).
-6. Update `acw-state.yaml::auto_load_at_session_start` to point at `decisions/INDEX.md` instead of `decisions/decision-log.md`.
-7. Mirror the auto-load change in `CLAUDE.md` (or other host entry files).
-8. The same migration applies symmetrically for glossary (single-file → wiki) using the same tool against `glossary.md`.
+6. Update `acw-state.yaml::auto_load_at_session_start` to point at `decisions/INDEX.md` (and `glossary/INDEX.md`) instead of the single-file paths.
+7. The SessionStart hook (`.claude/hooks/load-context.py`) reads `auto_load_at_session_start` at runtime, so no host entry file edits are required beyond the state-file change.
+8. The same migration applies symmetrically for glossary using the same tool against `glossary.md`.
 
-Doctrine: in wiki mode, ALL decisions live in `decisions/entries/`. The "archives stay archived" expedient from D-ACW-043 was retired in v0.9.6 — see `rules/decision-tracking.md`.
+Doctrine: in wiki mode, ALL decisions live in `decisions/entries/`. Single-file mode is retired.
+
+## Optional patterns (earn-by-discipline) — context/contacts/
+
+If the audit emitted an `opt-in (context/contacts/)` row and the operator accepted at plan-review time, execute:
+
+1. Write `context/contacts/INDEX.md` from `tools/templates/context-contacts-INDEX.md.tmpl` (substitute `{{PROJECT_NAME}}` from `acw-state.yaml::project.name`).
+2. Create `context/contacts/entries/` with a `.gitkeep`.
+3. Append the path to `acw-state.yaml::instance_specific_substrate` with rationale `opt-in: context/contacts/ wiki pattern adopted via /acw-instance upgrade`.
+4. Log a decision-log entry in wiki shape: title `Adopted context/contacts/ wiki pattern`, kind `decision`, rationale supplied by operator (or default: "operator opted in during /acw-instance upgrade plan review").
+
+If declined → no write; the opt-in re-surfaces on the next audit until accepted or the operator explicitly declares it `instance-specific-declined` via decision-log entry.
 
 ## v0.5.0 migration: `_inbox/` → `_buffer/`
 
@@ -330,7 +341,7 @@ The verb does NOT auto-commit the migration. Operator commits manually after rev
 
 ## Adopt-mode (unregistered workspace)
 
-When Step 2 of the spine flagged the workspace as unregistered, the same plan-approval flow applies. The plan's `write-canonical` rows are derived from canonical `acw-state.yaml::template_layer + instance_layer + empty_dirs + recommended_blocks` — every declared path that doesn't exist in the workspace becomes a write-canonical row. Mode-dependent rows (decisions, glossary) follow the workspace's `decision_tracking.mode` / `glossary.mode` (defaulting to `single-file` when unset).
+When Step 2 of the spine flagged the workspace as unregistered, the same plan-approval flow applies. The plan's `write-canonical` rows are derived from canonical `acw-state.yaml::template_layer + instance_layer + empty_dirs + recommended_blocks` — every declared path that doesn't exist in the workspace becomes a write-canonical row. Decisions and glossary always scaffold in wiki shape (v0.9.8+, D-ACW-048): `decisions/INDEX.md`, `decisions/entries/`, `decisions/open-questions/`, `decisions/constraints/`, `glossary/INDEX.md`, `glossary/entries/`.
 
 The hard-stop threshold from D-ACW-022 (`adopt_mode_organic_threshold`, default 5) is no longer enforced. The plan-approval gate is the safety net: operator sees every proposed routing in one coherent view before any write fires. The field stays in `acw-state.yaml` for backward compatibility; decision-log entry recommended on first upgrade post-v0.7.0 to formally retire.
 

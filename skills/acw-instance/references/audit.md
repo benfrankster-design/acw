@@ -32,7 +32,7 @@ The verb is opinionated. After v0.6.0 absorbed the cockpit cluster, well-formed 
 
 ## Canonical comparison reference
 
-Authoritative source: canonical `acw-state.yaml::instance_layer` (each row names its template), `template_layer` (each path names the canonical rule or tool), and the mode keys `decision_tracking.*` / `glossary.*` (frontmatter required, status/kind enums, archive pattern). The skill does not redeclare per-type shape inline.
+Authoritative source: canonical `acw-state.yaml::instance_layer` (each row names its template), `template_layer` (each path names the canonical rule or tool), and the `decision_tracking.*` / `glossary.*` blocks (frontmatter required, status/kind enums). The skill does not redeclare per-type shape inline.
 
 For each in-scope path, fetch the canonical source named by its row and compare. The comparison is mechanical:
 
@@ -41,7 +41,7 @@ For each in-scope path, fetch the canonical source named by its row and compare.
 - File missing entirely → `write-canonical` (render from the template named in `instance_layer`).
 - File at wrong location → `move`.
 
-Mode-dependent substrates (decisions, glossary) branch on the workspace's declared mode: if file shape doesn't match the declared mode → `[?]` plan row, candidate routings include reshape-to-declared-mode and switch-mode-to-match-shape.
+**Wiki mode is canonical (v0.9.8+, D-ACW-048).** If `decisions/decision-log.md` or `glossary.md` (single-file legacy shape) is detected, emit a mandatory `reshape` plan row that migrates the file to wiki shape via `tools/migrate_to_wiki.py`. Not an `[?]` ambiguous row — the migration is required, not optional. The audit also emits `write-canonical` rows for `decisions/INDEX.md` and `glossary/INDEX.md` if they don't yet exist alongside the legacy single-file source.
 
 Rule files that govern specific substrate shapes (consumed by this verb when classifying):
 
@@ -165,6 +165,30 @@ Host entry file (Claude Code) — v0.9.7 migration:
 ```
 
 The pass is mechanical; no `[?]` rows expected. If the operator has manually customized `.claude/settings.json` with additional hooks (commit hooks, statusline, etc.), the canonical reshape preserves them — only the SessionStart array is rewritten.
+
+## Optional patterns (earn-by-discipline)
+
+Some canonical patterns are NOT scaffolded by default — they ship to instances that earn them through operator discipline. The audit verb surfaces these as opt-in proposals; operator accepts or declines during plan review.
+
+### context/contacts/ — wiki-shaped CRM
+
+When `<workspace>/context/contacts/` is absent, emit one optional plan row:
+
+```
+opt-in (context/contacts/):
+  - context/contacts/INDEX.md  — wiki-shaped contacts surface (template: tools/templates/context-contacts-INDEX.md.tmpl)
+    rationale: per-contact CRM file with merge/dedupe discipline. Wiki shape: INDEX + entries/<slug>.md per contact.
+    accept? [y/N]
+```
+
+If the operator accepts at plan-review time, upgrade writes:
+
+- `context/contacts/INDEX.md` from `tools/templates/context-contacts-INDEX.md.tmpl`
+- `context/contacts/entries/.gitkeep`
+
+If declined → no write; no plan row carries forward. The opt-in re-surfaces on the next audit run until accepted or explicitly declared `instance-specific` (operator-declined in `acw-state.yaml`).
+
+If `<workspace>/context/contacts/` already exists in wiki shape → `leave-untouched`, no opt-in emitted. If it exists in some other shape → standard `reshape` plan row applies.
 
 ## Meta-layer staleness (conditional)
 
