@@ -39,7 +39,7 @@ Bulleted list of files created, modified, or deleted with one-line each. Cross-r
 
 ### 5. Open questions left — structured
 
-Anything raised but not resolved. If they were promoted to `paths.decisions_log` `section_conventions.open_questions` in Phase 2, note OQ ids. **Phase 5 (research-prompt builder) reads this section as Track A input** — write it with that consumer in mind.
+Anything raised but not resolved. If they were promoted to the open-questions surface in Phase 2 (a section in single-file mode, a file in wiki mode), note OQ ids. **Phase 5 (research-prompt builder) reads this section as Track A input** — write it with that consumer in mind.
 
 Each unresolved design question gets a structured block (not just a bullet). Format:
 
@@ -63,8 +63,8 @@ Examples of what counts as a Phase-5-actionable design question:
 
 What does NOT belong here:
 - Tasks (those go to `paths.tasks_status` `section_conventions.pending`).
-- Decisions already made (those go to `paths.decisions_log` `section_conventions.decisions`).
-- Personal preferences pending operator call (those go to `section_conventions.open_questions` with an OQ id and a short prose paragraph, not the structured block).
+- Decisions already made (those go to the decisions surface per `decision_tracking.mode`: section in single-file mode, file under entries/ in wiki mode).
+- Personal preferences pending operator call (those go to open-questions surface with an OQ id — section in single-file mode, file under open-questions/ in wiki mode — and a short prose paragraph, not the structured block).
 
 A session may end with zero unresolved design questions. In that case write `*(None — session closed cleanly.)*` and Phase 5 will know not to build a Track A.
 

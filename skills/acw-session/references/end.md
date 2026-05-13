@@ -1,188 +1,220 @@
+---
+scope: end
+---
+
 # end
 
-Session-end verb. Five-phase pass: capture, distribute, metabolize, optional synapse log, optional research prompt. Edits substrate per discipline rules. Bulk of specialist-work logic lives in the sub-references in this directory.
+Session-end verb. Up to five phases: capture, distribute, metabolize, optional synapse log, optional research prompt. Mode-portable across `decision_tracking.mode` and `glossary.mode`.
 
 ## After the spine
 
-The orchestrator's spine has resolved configuration, paths, buffer state, and recent capture paths. The end verb dispatches on mode:
+The orchestrator's spine has resolved configuration, paths, buffer state, recent capture paths, and run the **pre-flight context-budget check** (Step 0). The end verb dispatches on profile.
 
-- **Quick mode (default)** — Phase 1 capture + Phase 2 append-only subset + Phase 3 auto-update sweep. Phase 4 and Phase 5 skipped unless their flag is present.
-- **Full mode** (`/acw-session end full`) — All five phases as previously documented. Phase 4 conditional on `synapse_log_path` set; Phase 5 conditional on operator confirmation.
+## Profile dispatch (replaces flag soup)
 
-## Mode dispatch
+Five named profiles. The first positional argument selects the profile. Unknown profile → error with the table.
 
-Parse the verb argument (after the spine has loaded). Argument variants:
-
-| Invocation | Mode | Phase 4 | Phase 5 |
-|---|---|---|---|
-| `/acw-session end` | quick | skip | skip |
-| `/acw-session end quick` | quick | skip | skip |
-| `/acw-session end quick --synapse` | quick | run if `synapse_log_path` set | skip |
-| `/acw-session end quick --research` | quick | skip | run (no operator confirmation prompt) |
-| `/acw-session end quick --synapse --research` | quick | run if `synapse_log_path` set | run |
-| `/acw-session end full` | full | run if `synapse_log_path` set | ask operator |
-| `/acw-session end full --no-synapse` | full | skip | ask operator |
-| `/acw-session end full --no-research` | full | run if `synapse_log_path` set | skip |
-
-Unknown argument errors with the table.
-
-## Quick mode behavior
-
-Quick mode collapses the bookend to its append-only essentials. It runs:
-
-- **Phase 1** in full (always — the capture file is the load-bearing artifact for the next session's `start`).
-- **Phase 2 — append-only subset only:**
-  - new decisions → `paths.decisions_log`
-  - tasks completed/added/parked → `paths.tasks_status` session block
-  - new incidents → `paths.incidents` (one JSONL line each)
-  - build-log entry → `paths.build_log`
-  - new sources → `paths.sources` (only if file already exists; do not scaffold in quick mode)
-  - new conceptual shifts → `paths.evolution` (only if file already exists)
-  - hard-rule changes → `rules/instance-hard-rules.md` (only if changes are unambiguous)
-  - **Skip:** glossary edits, manifest classification prompt, host-entry-file maintenance, canonical-edit detection branch, meta-layer trigger walk, cross-repo writes, cross-project notifications, research-state updates.
-- **Phase 3 — auto-update sweep only.** Move completed tasks `Pending` → today's `Done` block. Skip operator-confirm proposals. Skip consumed-prompt sweep.
-- **Phase 4 / Phase 5** — only if their flag is present.
-
-Quick-skipped operator-interactive work accumulates until the next `/acw-session end full` runs them. This is intentional. The audit verb catches structural gaps; operator picks the heavy session at logical boundaries.
-
-## Full mode behavior
-
-Full mode is the previously documented five-phase pass — every phase runs as written below.
-
-## Phase 1 — Capture
-
-**Runs in both quick mode and full mode.** Resolve the active capture file via `<sessions_dir>/.current-session`. If the tracker exists and points to a real file (started by `/acw-session start` or self-bootstrapped by `/acw-session update`), use that file. Phase 1 may RENAME it from `untitled` to the topic-from-this-step. If the tracker is absent or empty, write a fresh capture at the path computed from today's date and topic-from-this-step (no rename needed).
-
-1. Identify the topic of the session: 3–7 word noun phrase.
-2. Identify decisions made (→ `paths.decisions_log` candidates).
-3. Identify conceptual shifts (→ `paths.evolution` candidates).
-4. Identify terms that entered or shifted meaning (→ `paths.glossary` candidates).
-5. Identify tasks completed, started, or parked (→ `paths.tasks_status` candidates).
-6. Identify hard-rule changes (→ instance hard-rules file candidates, prefix `HR-{project.code}-NNN` if `project.code` is set).
-7. Identify external sources cited (→ `paths.sources` candidates).
-8. **Identify incidents.** Each becomes one JSONL line in `paths.incidents`. Schema and detection rules in `references/incidents-format.md`.
-9. **Surface unresolved design questions.** Section §5 of the capture file gets one structured block per unresolved question. See `references/session-capture-format.md` §5.
-10. Write the session capture to `paths.session_captures_dir / YYYY-MM-DD--<topic-slug>.md` per `references/session-capture-format.md`. Use today's actual date.
-11. Clean transcript noise per `references/transcript-cleaning-rules.md`. If `voice` is non-empty, apply voice references; otherwise skip voice cleanup.
-
-## Phase 2 — Distribute
-
-**Mode-gated.** Quick mode runs the append-only subset listed in "Quick mode behavior" above. Full mode runs everything documented below. The shared Distribution scope rule applies to both modes.
-
-**Distribution scope rule (load-bearing).** Distribute only project-specific findings into this project's substrate. A finding qualifies as project-specific when it shapes how *this* project will be built, decided, or used going forward. Findings about another project, a cross-cutting framework, or operator-personal infrastructure do NOT enter this project's substrate.
-
-For each project-specific candidate from Phase 1, edit the appropriate scaffolding file. Strict rules in `references/distribution-rules.md`. Summary:
-
-- New decisions → append to `paths.decisions_log` under `section_conventions.decisions` with next `D-{project.code}-NNN` id (or `D-NNN` if absent).
-- Resolved open questions → move from `section_conventions.open_questions` to `section_conventions.decisions` with resolution note.
-- New constraints → append to `section_conventions.constraints`.
-- Conceptual shifts → prepend new entry to `paths.evolution`.
-- Term additions / redefinitions → edit `paths.glossary`.
-- New hard rules → append to instance hard-rules file with `HR-{project.code}-NNN` id (or `HR-NNN` if absent).
-- **`paths.tasks_status` — full session block** under `section_conventions.done` per `rules/task-tracking.md`. Format in `references/distribution-rules.md`.
-- New tasks → append to `section_conventions.pending`.
-- Newly parked → move to `section_conventions.parked` with reason.
-- New sources → append to `paths.sources`.
-- **New incidents → append one JSONL line per incident to `paths.incidents`.** Append-only; never edit past lines. See `rules/incident-tracking.md` and `references/incidents-format.md`.
-- Build progress narrative → append entry (newest first) to `paths.build_log`.
-
-`paths.research_state` updates only when a Phase 1 finding actually changes the conception (architectural shift, scope change, abstraction-layer change, tool-surface change). Routine work does NOT update research-state.
-
-**Auto-load list maintenance.** If Phase 2 creates a new top-level substrate file that meets the substrate-worthy test in `references/distribution-rules.md`, append its path to `acw-state.yaml::auto_load_at_session_start` via `manifest.append`. Additive only; removal requires a decision-log entry.
-
-**Manifest classification (conditional).** If this instance uses the three-layer manifest (template_layer / instance_layer / meta_layer non-empty), surface a classification prompt for every new file Phase 2 creates at a tracked path: **"template_layer / instance_layer / meta_layer?"** Default to `instance_layer` (asymmetry rationale in `rules/manifest-discipline.md`). Operator answer appends via `manifest.append`. Additive only. If blocks absent or empty, skip silently.
-
-**Host entry file maintenance.** If host-specific entry files exist (declared via `host:` in `acw-state.yaml::instance_layer`, or conventionally named per a host's mechanism), surface a proposed edit when substrate shifts that the entry file should reflect: a file entered or left `auto_load_at_session_start`, a hard-rule principle was added or retired, a manifest layer for a class of files changed, the bookend skill names changed, or the project's "where things live" map shifted. Operator approves before the edit lands. Skip silently if no host entry files.
-
-**Canonical-edit detection.** Compute the intersection of `auto_load_at_session_start` and `template_layer`. Files in this intersection are **canonical** — they propagate downstream from a publishing instance, or came from upstream and are read-only locally.
-
-For each canonical file edited this session (detect via `git diff --name-only HEAD` against the file's path, scoped to this session's commit window), branch on `is_canonical_source`:
-
-- **`is_canonical_source: true`** (publishing instance, e.g., ACW itself): surface *"Canonical file `<path>` was edited this session. Confirm: should `acw-state.yaml::version` bump? After version bump, push to GitHub before session end so downstream instances pick up the change on their next /acw-instance upgrade run."* On confirmation, append the version bump to the Phase 2 change set; otherwise leave version unchanged. Note in metabolize report whether a push is pending.
-- **`is_canonical_source: false` or absent** (downstream consumer): warn *"You edited canonical file `<path>` locally. This file is template_layer content from upstream ACW; local edits won't propagate and may be overwritten on next /acw-instance upgrade. If you intended a substrate-level change, raise it upstream in ACW. If you intended an instance-specific override, place it in a sibling file (e.g., `rules/instance-extra-<name>.md`) instead."*
-
-The skill does not block the edit. The warning surfaces the consequence.
-
-If no canonical files were edited, skip silently.
-
-**Meta-layer maintenance (conditional).** If `acw-state.yaml::meta_layer` is present and non-empty, walk a small triggers table to detect when meta-layer files need updates. For each trigger that fires, surface a proposed edit; operator confirms before write. If the block is absent or empty, skip silently — most consumer instances don't have meta-layer narrative files.
-
-| Meta file | Trigger detector | Proposed edit |
+| Invocation | Profile | Phases that run |
 |---|---|---|
-| `README.md` | Any of: `acw-state.yaml::template_layer` changed (file added/removed); new top-level skill command shipped; `acw-state.yaml::version` changed | Surface diff candidates: directory map needs new entry, four-load-bearing-files list shifted, version reference outdated |
-| `CHANGELOG.md` | `acw-state.yaml::version` changed | Surface a `## [<new-version>] — <date>` entry stub with sections derived from the current session capture's "What was decided" + "What was built / changed" |
-| `LINEAGE.md` | New file shipped in `rules/` template_layer or new file in `tools/` (heuristic: detect via this session's git diff) | Surface a primitive-trace stub: "<new primitive> — derived from <research/N entry or operator-confirmed source>" |
-| `ORCHESTRATION.md` | New methodology pattern earned (heuristic: this session's capture documents a pattern in its "What changed in the conception" section that's reusable) | Surface a candidate addition with operator confirmation |
-| `SKEPTIC.md` | New incident logged this session with severity at-or-above med | Surface "should this incident earn a new warning? [y/N]" with proposed warning text drawn from the incident's `symptom` field |
+| `/acw-session end` | `quick` (default) | 1 + 2-append-only + 3-auto-sweep |
+| `/acw-session end full` | `full` | 1 + 2-full + 3-full + 4 (if `synapse_log_path` set) + 5 (if non-empty) |
+| `/acw-session end log-only` | `log-only` | 1 only — capture file, no distribution, no metabolize |
+| `/acw-session end synapse-only` | `synapse-only` | 1 + 2-append-only + 3-auto-sweep + 4 |
+| `/acw-session end research-only` | `research-only` | 1 + 2-append-only + 3-auto-sweep + 5 (gated on non-empty) |
 
-The harness gates on `meta_layer` block presence (not on `is_canonical_source`) — any workspace with declared meta-layer files inherits the maintenance discipline. Triggers themselves are sensible defaults; if a workspace's meta-layer needs different update conditions, that's an earn-by-incident moment.
+**Run banner.** First line of skill output: `[acw-session end | profile=<name> | mode=<decision_tracking.mode>/<glossary.mode>]`. Final line of output: `[summary] phases=ran:N skipped:M failed:0 artifacts=<count>` followed by per-phase status (`RAN | SKIPPED(reason) | FAILED(error)`).
 
-**Cross-repo writes.** If a finding implies a write to a path outside the project repo, the path MUST be in `acw-state.yaml::cross_repo_writes`. If not, refuse and surface the path.
+## Mode-portability gate
 
-**Cross-project notifications.** If the session touched another project, drop a notification at the other project's `paths.buffer_dir / YYYY-MM-DD-<source-project>-<topic-slug>.md`. Frontmatter: `from_project`, `from_session_capture`, `date`, `topic`, `read: false`. Body: 5–15 lines summarizing what the receiving project should know. Append-only; never edit once written.
+Before Phase 2, resolve substrate mode:
+- `dm = acw-state.yaml::decision_tracking.mode` (default `single-file`)
+- `gm = acw-state.yaml::glossary.mode` (default `single-file`)
 
-## Phase 3 — Metabolize
+All Phase 2 + Phase 3 writes branch on these. The skill is portable across both shapes — see `references/distribution-rules.md` and `references/metabolize-rules.md` for per-mode dispatch.
 
-**Mode-gated.** Quick mode runs only the auto-update sweep (Pending → Done movements; mark resolved Open Questions). Full mode runs auto-update + operator-confirm proposals + consumed-prompt sweep + metabolize-report write.
+## Phase 1 — Capture (runs in every profile)
 
-**Sonnet escalation (full mode only).** Operator-confirm proposals require judgment about what's stale. Use Sonnet for that step; Haiku for everything else in this phase.
+Resolve the active capture file via `<sessions_dir>/.current-session`. If the tracker exists with a `file:` field pointing to a real file (started by `/acw-session start` or self-bootstrapped by `update`), use it (Phase 1 may RENAME from `untitled` to topic-from-this-step). If tracker absent or empty, write fresh capture at the path computed from today's date + topic.
 
-Read live state of the project. Compare against scaffolding. Find stale items per `references/metabolize-rules.md`. Categories:
+Steps:
+1. Identify topic: 3–7 word noun phrase.
+2. Identify decisions made (→ Phase 2 decisions candidates).
+3. Identify conceptual shifts (→ `paths.evolution` candidates).
+4. Identify terms that entered or shifted meaning (→ Phase 2 glossary candidates).
+5. Identify tasks completed or newly started (→ `paths.tasks_status` candidates per v0.9.3+ Pending-only shape; completed → archive + remove from Pending; new → append to Pending). Deferred-but-keep ideas route to `inbox/ideas/`, not back into tasks-status.
+6. Identify hard-rule changes (→ instance hard-rules file candidates, prefix `HR-{project.code}-NNN` if `project.code` set).
+7. Identify external sources cited (→ `paths.sources` candidates).
+8. Identify incidents. Each becomes one JSONL line in `paths.incidents`. Schema in `references/incidents-format.md` (read **only if** incidents identified — progressive disclosure).
+9. Surface unresolved design questions (§5 of capture file).
+10. Write the session capture per `references/session-capture-format.md`.
+11. Clean transcript noise per `references/transcript-cleaning-rules.md`. Apply `voice` references if non-empty; else skip.
 
-- **Auto-update** (always safe): move completed tasks from `section_conventions.pending` → the session's `section_conventions.done` block; mark resolved Open Questions as resolved when their decision is now in `section_conventions.decisions`.
-- **Operator-confirm** (propose, do not execute): items that look stale but might be load-bearing — Parked items, glossary terms no longer referenced, hard rules whose context has shifted.
-- **Never edit past entries**: append-only history — `paths.build_log` past entries, `paths.incidents` past lines, `paths.evolution` past entries, captures already written, Done blocks.
+**Emit:** `[phase1] RAN — capture at <path>; <N> decisions, <M> incidents, <K> shifts, <T> task moves`.
 
-**Consumed-prompt sweep.** For each file at the top level of `paths.research_queries_dir`, check whether deep-research has appended findings (`## Findings` or `## Key Findings` heading present). If yes, move to `paths.research_queries_consumed_dir`. Create the consumed directory if it doesn't exist.
+**Resume token.** After Phase 1 completes, update `<sessions_dir>/.current-session`:
+```yaml
+file: <capture filename>
+session_hash: <sha256 of capture contents>
+last_completed_phase: 1
+```
 
-Output the metabolize report appended to `paths.build_log` under the new session's entry. Format in `references/metabolize-report-format.md`.
+## Phase 2 — Distribute (profile-gated)
 
-## Phase 4 — Synapse session log (conditional)
+| Profile | Phase 2 scope |
+|---|---|
+| `quick` (default) | Append-only subset (see below) |
+| `full` | All distribution operations per `distribution-rules.md` |
+| `log-only` | **Skip Phase 2 entirely.** Emit `[phase2] SKIPPED(profile=log-only)`. |
+| `synapse-only` / `research-only` | Append-only subset |
 
-**Quick mode:** runs only if `--synapse` flag is present AND `synapse_log_path` is set. Without the flag, skip.
+**Append-only subset** (quick + synapse-only + research-only):
+- New decisions → write per `distribution-rules.md::Decisions` for `dm`
+- Tasks completed → write dated session block to `tasks-status-YYYY-Q*.md` archive AND remove from Pending. Tasks newly started → append to Pending. New deferred-but-keep idea → write to `inbox/ideas/`, NOT to tasks-status. Per `distribution-rules.md::paths.tasks_status`.
+- New incidents → append JSONL lines to `paths.incidents`
+- Build-log entry → prepend to `paths.build_log`
+- New sources → append to `paths.sources` (only if file already exists)
+- New conceptual shifts → prepend to `paths.evolution` (only if file already exists)
+- Hard-rule changes → append to instance hard-rules file (only if changes are unambiguous)
+- **Skip in append-only subset:** glossary edits, manifest classification prompt, host-entry-file maintenance, canonical-edit detection branch, meta-layer trigger walk, cross-repo writes, cross-project notifications, research-state updates.
 
-**Full mode:** runs if `synapse_log_path` is set. With `--no-synapse` flag, skip.
+**Full profile additionally runs:**
 
-When fired: append a session block to `<synapse_log_path>/YYYY-MM-DD.md`. Format in `references/synapse-log-format.md`. If `synapse_log_path` is null/absent in either mode, skip silently — no warning.
+Glossary writes per `distribution-rules.md::Glossary` for `gm`.
 
-## Phase 5 — Research-prompt builder (conditional)
+**Distribution scope rule (always applies).** Distribute only project-specific findings into this project's substrate. Findings about another project, cross-cutting framework, or operator-personal infrastructure do NOT enter this project's substrate.
 
-**Quick mode:** runs only if `--research` flag is present. No confirmation prompt — flag is the confirmation. Without the flag, skip.
+`paths.research_state` updates only when a Phase 1 finding actually changes conception (architectural shift, scope change, abstraction-layer change, tool-surface change). Routine work does NOT update research-state.
 
-**Full mode:** ask operator: **"Build research prompt now? [y/N]"**
+**Auto-load list maintenance.** If Phase 2 creates a new top-level substrate file that meets the substrate-worthy test, append its path to `acw-state.yaml::auto_load_at_session_start` via `manifest.append`. Additive only.
 
-- **`n` (or no answer):** exit cleanly with summary of artifacts written.
-- **`y`:** continue.
+**Symmetric archive registration.** If Phase 2 (or an earlier session) created a new rolling-window archive file matching `decision_tracking.archive_pattern` (e.g., `decisions/decision-log-2026-Q2.md`) or the analogous tasks-status pattern, propose appending it to `acw-state.yaml::meta_layer`. Operator confirms before append.
 
-**Sonnet escalation.** Research-prompt construction synthesizes Track A/B/C content; Haiku is too thin for this step. Use Sonnet.
+**Manifest classification (conditional).** If three-layer manifest blocks present and non-empty, surface a classification prompt per new file at a tracked path. Default `instance_layer`. Skip silently if blocks absent.
+
+**Host entry file maintenance.** Surface proposed edits to host entry files when substrate shifts that the entry file should reflect. Operator approves before the edit lands. Skip silently if no host entry files.
+
+**Canonical-edit detection.** Compute intersection of `auto_load_at_session_start` and `template_layer`. For each canonical file edited this session (detect via `git diff --name-only HEAD` against the file's path), branch on `is_canonical_source`:
+- **true:** surface version-bump prompt with push reminder
+- **false/absent:** warn that local edits won't propagate
+
+Skip silently if no canonical files edited.
+
+**Meta-layer maintenance (conditional).** If `meta_layer` present and non-empty, walk triggers table per the canonical `instance-current-manifest.md` rules. Surface proposed edits; operator confirms.
+
+**Cross-repo writes.** Path MUST be in `cross_repo_writes`. If not, refuse and surface the path.
+
+**Cross-project notifications.** Drop notification at the other project's `paths.buffer_dir / YYYY-MM-DD-<source-project>-<topic-slug>.md` with `read: false`. Append-only.
+
+**Idempotency.** Every Phase 2 write checks `<sessions_dir>/.current-session::session_hash`. If the hash matches a recent run AND `last_completed_phase >= 2`, skip writes already applied. Use content-hash dedup per substrate file (don't double-append the same decision id).
+
+**Emit:** `[phase2] RAN — N decisions, M glossary edits, K archive registrations` or `[phase2] SKIPPED(<reason>)`.
+
+After completion, update `.current-session::last_completed_phase: 2`.
+
+## Phase 3 — Metabolize (profile-gated)
+
+| Profile | Phase 3 scope |
+|---|---|
+| `quick`, `synapse-only`, `research-only` | Auto-update sweep only |
+| `full` | Auto-update + operator-confirm proposals + consumed-prompt sweep + metabolize-report write |
+| `log-only` | Skip |
+
+**Auto-update sweep (always safe):**
+- Move completed tasks `Pending` → today's `Done` block
+- Mark resolved Open Questions per `metabolize-rules.md::open questions` for `dm` mode
+- Consumed-prompt sweep: for each file at top level of `paths.research_queries_dir`, check for `## Findings` / `## Key Findings` heading; if present, move to `paths.research_queries_consumed_dir`
+
+**Operator-confirm proposals (full profile only).** Collect ALL proposals into a single batch shown once at end of phase 3 — never N inline prompts:
+
+```
+[phase3] Operator review — N proposals collected:
+  1. Mark idea X in inbox/ideas/ as superseded (now covered by D-CMD-NNN)
+  2. Mark glossary term "Y" deprecated (no project references in 90d)
+  3. Mark constraint C-003 resolved (underlying bug fixed in commit abc123)
+Approve all / Approve specific (comma list) / Reject all / Edit each: ___
+```
+
+**Sonnet escalation for judgment.** Phase 3 operator-confirm proposal generation requires judgment about what's stale. The parent skill is bound to Haiku at frontmatter level; per-step model switching is not available in Claude Code. Dispatch this step to a Sonnet subagent via Task tool:
+
+```
+Agent({
+  subagent_type: "session-end-judgment",
+  prompt: "<bounded proposal input: list of candidates with surrounding context>. Return at most 800 tokens. Format: numbered list of proposals each with: candidate id, recommended action, rationale, confidence (high/med/low)."
+})
+```
+
+Subagent definition lives at `.claude/agents/session-end-judgment.md` (`model: sonnet`). Returns bounded summary; parent renders the operator-batch.
+
+Write the metabolize report to `paths.build_log` under the new entry per `metabolize-report-format.md`.
+
+**Emit:** `[phase3] RAN — auto-moves: N; proposals: M (X approved); consumed prompts: K` or `[phase3] SKIPPED(profile=<name>)`.
+
+Update `.current-session::last_completed_phase: 3`.
+
+## Phase 4 & Phase 5 — Parallel (when both fire)
+
+Phases 4 and 5 are DAG-parallelizable: neither depends on the other's output. When both fire (full profile, or `synapse-only`+`research-only` combination via two separate runs), invoke them in parallel via two Task tool calls in one message:
+
+```
+[Agent(synapse-log), Agent(research-prompt-builder)]  # parallel dispatch
+```
+
+If only one fires, run it directly.
+
+### Phase 4 — Synapse session log (conditional)
+
+| Profile | Phase 4 |
+|---|---|
+| `full` | Runs if `synapse_log_path` set; with `--no-synapse` flag, skip |
+| `synapse-only` | Runs if `synapse_log_path` set |
+| Others | Skip |
+
+Append a session block to `<synapse_log_path>/YYYY-MM-DD.md` per `references/synapse-log-format.md`. Read that reference **only if Phase 4 actually fires** (progressive disclosure).
+
+If `synapse_log_path` is null/absent, skip silently. **Emit:** `[phase4] RAN — appended to <path>` or `[phase4] SKIPPED(<reason>)`.
+
+### Phase 5 — Research-prompt builder (conditional)
+
+| Profile | Phase 5 |
+|---|---|
+| `full` | Asks operator: "Build research prompt now? [y/N]" — only if Track A or Track B non-empty |
+| `research-only` | Runs without confirmation if Track A or Track B non-empty |
+| Others | Skip |
+
+**Emptiness gate (F-3 fix).** Before any prompt or write: check Phase 1 §5 (unresolved questions) and Phase 2-3 gap detection. If both Track A AND Track B are empty (Track C alone doesn't justify firing), emit `[phase5] SKIPPED(empty-tracks)` and exit. Do not surface the operator prompt.
+
+**Sonnet escalation for synthesis.** Research-prompt synthesis is judgment-heavy. Dispatch to subagent:
+
+```
+Agent({
+  subagent_type: "session-end-judgment",
+  prompt: "<Track A inputs from Phase 1 §5> + <Track B inputs from substrate gaps>. Synthesize into a research prompt per references/research-prompt-format.md. Return at most 1500 tokens — just the artifact body with frontmatter; parent will write to file."
+})
+```
 
 When fired:
+1. Verify recent-session context (read last 2-3 captures if not already in context).
+2. Build the artifact at `paths.research_queries_dir / YYYY-MM-DD-<topic-slug>.md`. Read `research-prompt-format.md` **only if Phase 5 fires**.
+3. Pin fire-task at top of `paths.tasks_status` `section_conventions.pending` with `🔬 [FIRE AT NEXT SESSION START]`.
+4. Append one-line entry to `paths.build_log` under the current session's metabolize report.
 
-1. **Verify recent-session context.** If the last 2–3 capture files in `paths.session_captures_dir` are not in context, read them. Don't re-read substrate already auto-loaded.
-2. **Build the artifact** at `paths.research_queries_dir / YYYY-MM-DD-<topic-slug>.md` per `references/research-prompt-format.md`. Frontmatter MUST include `append_findings_to_self: true`. Three tracks:
-   - **Track A** — session-specific design questions (from Phase 1 §5 unresolved questions)
-   - **Track B** — project-wide improvement opportunities (from cross-substrate gaps in Phases 2–3)
-   - **Track C** — standing substrate and scaffolding evolution (always present, never primary driver)
-3. **Pin the fire-task** at the top of `paths.tasks_status` `section_conventions.pending` with `🔬 [FIRE AT NEXT SESSION START]`.
-4. **Append a one-line entry to `paths.build_log`** under the current session's metabolize report.
+**Emit:** `[phase5] RAN — artifact at <path>` or `[phase5] SKIPPED(<reason>)`.
 
-If both Track A and Track B are empty, skip writing the artifact and pinning the fire-task. Track C alone never justifies firing.
+## Tracker cleanup (always, all profiles)
 
-## Tracker cleanup (always)
-
-Both modes clear `<sessions_dir>/.current-session` at the end of the verb. Write empty content; preserve the file as a marker that no session is currently active. `/acw-session start` will repopulate it next time.
+At the end of the verb, clear `<sessions_dir>/.current-session`. Write empty content; preserve the file as marker that no session is currently active. `/acw-session start` repopulates it next time.
 
 ## Output
 
 Up to five artifacts per invocation:
 
-1. **Session capture** — file at `paths.session_captures_dir / YYYY-MM-DD--<topic-slug>.md`
-2. **Scaffolding edits** — targeted updates to substrate files per Phase 2 rules
+1. **Session capture** — `paths.session_captures_dir / YYYY-MM-DD--<topic-slug>.md`
+2. **Scaffolding edits** — targeted updates per Phase 2 rules (mode-portable)
 3. **Metabolize report** — section appended to `paths.build_log`
-4. **Synapse session log** *(conditional on `synapse_log_path`)*
-5. **Research-prompt artifact** *(conditional on Phase 5 confirmation)*
+4. **Synapse session log** *(conditional)*
+5. **Research-prompt artifact** *(conditional)*
 
-Chat reply summarizes all artifacts in <300 words.
+Chat reply: run banner (first line) + per-phase status lines + artifact summary in <300 words.
 
 ## When NOT to fire (verb-specific)
 

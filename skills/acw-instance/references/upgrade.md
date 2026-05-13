@@ -212,7 +212,9 @@ Use `tools/manifest.py append` (key/value upsert) or direct edit. Preserve all o
 
 ## Log decision-log entry
 
-Append to `paths.decisions_log` `section_conventions.decisions`:
+Mode-portable. Read `acw-state.yaml::decision_tracking.mode` (default `single-file`) and dispatch:
+
+**Single-file mode** — append to `paths.decisions_log` under `section_conventions.decisions`:
 
 ```markdown
 ### D-<CODE>-NNN — Instance migrated to ACW <version>
@@ -234,7 +236,32 @@ Append to `paths.decisions_log` `section_conventions.decisions`:
 **Migration commit:** <to be created after this entry lands>.
 ```
 
-For each `instance-specific` row, additionally append a per-file rationale entry to `decisions/decision-log.md`:
+**Wiki mode** — create file at `<decisions_entries_dir>/D-<CODE>-NNN-instance-migrated-to-acw-<version>.md`:
+
+```markdown
+---
+id: D-<CODE>-NNN
+title: "Instance migrated to ACW <version>"
+date: YYYY-MM-DD
+status: accepted
+kind: decision
+tags: [acw-migration, infrastructure]
+updated: YYYY-MM-DD
+---
+
+# D-<CODE>-NNN — Instance migrated to ACW <version>
+
+**Date:** YYYY-MM-DD
+**Decision:** [same body as single-file mode]
+**Rationale:** ...
+**Source:** ...
+```
+
+After write, invoke `decision_tracking.regenerate_index_cmd` if declared (typically `python tools/migrate_to_wiki.py`), else append one line to `decisions/INDEX.md::## Recent Decisions` manually.
+
+For each `instance-specific` row, additionally write a per-file rationale entry. Mode-portable:
+
+**Single-file mode:**
 
 ```markdown
 ### D-<CODE>-NNN — <path> declared instance-specific substrate
@@ -244,6 +271,8 @@ For each `instance-specific` row, additionally append a per-file rationale entry
 **Rationale:** <operator-supplied rationale during upgrade>.
 **Source:** /acw-instance upgrade run on <date>.
 ```
+
+**Wiki mode:** same body content, written as a new file at `<decisions_entries_dir>/D-<CODE>-NNN-<slug>.md` with the standard frontmatter. Regenerate INDEX after.
 
 If this run was an unregistered-workspace adoption, prepend an additional entry recording the adoption itself (workspace registered, canonical manifest cached, initial `acw-state.yaml` written).
 
@@ -289,7 +318,7 @@ The verb does NOT auto-commit the migration. Operator commits manually after rev
 
 When Step 2 of the spine flagged the workspace as unregistered (canonical signals at-or-above 3 OR substrate-shaped patterns present), the same plan-approval flow applies. The plan will include:
 
-- `write-canonical` rows for the missing canonical files (`acw-state.yaml`, `rules/instance-current-manifest.md`, `decisions/decision-log.md` if absent, `tasks-status.md` if absent, `glossary.md` if absent, etc.).
+- `write-canonical` rows for the missing canonical files (`acw-state.yaml`, `rules/instance-current-manifest.md`, `tasks-status.md` if absent, and — per `decision_tracking.mode` and `glossary.mode` — either the monolithic file or the INDEX + entries-dir scaffold).
 - `move` and `reshape` rows for the substrate-shaped patterns the workspace already has.
 - `instance-specific` declarations for substrate the operator wants kept as-is.
 - `absorption-candidate` rows for net-new patterns that should flow upstream to ACW.

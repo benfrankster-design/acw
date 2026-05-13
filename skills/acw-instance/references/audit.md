@@ -38,9 +38,14 @@ For each canonical substrate type the workspace touches, compare the workspace's
 - **`AGENTS.md`** — directives present, host-agnostic posture per ACW canonical.
 - **`tasks-status.md`** — three-section structure (Pending / Done / Parked); Done entries dated `YYYY-MM-DD —` heading per `rules/task-tracking.md`.
 - **`build-log.md`** — chronological narrative entries with date stamps per `tools/templates/build-log.md.tmpl`.
-- **`decisions/decision-log.md`** — four sections (Open Questions / Decisions and Rationale / Constraints and Gotchas / Resolved Questions); ids prefixed `D-{CODE}-NNN` per `rules/decision-tracking.md`.
+- **Decisions** — shape depends on `acw-state.yaml::decision_tracking.mode`:
+  - **`single-file` mode (default):** `decisions/decision-log.md` — four sections (Open Questions / Decisions and Rationale / Constraints and Gotchas / Resolved Questions); ids prefixed `D-{CODE}-NNN` per `rules/decision-tracking.md`.
+  - **`wiki` mode:** `decisions/INDEX.md` (auto-loaded thin index) + `decisions/entries/<id>-<slug>.md` (atomic per-decision files with frontmatter `id, title, date, status, kind, updated`) + `decisions/open-questions/` + `decisions/constraints/` subdirs. INDEX regenerates from entries.
+  - Mode-mismatch (e.g., file shape doesn't match declared mode) → `[?]` plan row.
 - **`incidents.jsonl`** — one event per line; schema per `rules/incident-tracking.md`.
-- **`glossary.md`** — operator's domain vocabulary per `tools/templates/glossary.md.tmpl`.
+- **Glossary** — shape depends on `acw-state.yaml::glossary.mode`:
+  - **`single-file` mode (default):** `glossary.md` — `## <term>` sections per `tools/templates/glossary.md.tmpl`.
+  - **`wiki` mode:** `glossary/INDEX.md` + `glossary/entries/<slug>.md` (frontmatter `term, status`).
 - **`research/`** — `01-problem-framing.md`, `evolution.md`, `sources.md`, `research-state.yaml`, `sessions/`, `queries/`, `queries/_consumed/`.
 - **`context/`** — `goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`.
 - **`integrations/README.md`** — present per `tools/templates/integrations-README.md.tmpl`.
@@ -85,7 +90,7 @@ Skill-shape findings become plan rows under the skill's path; default action is 
 
 Walk the workspace's `acw-state.yaml::auto_load_at_session_start` block per `rules/auto-load-discipline.md`. The rule defines:
 
-- **Canonical recommendations** — the four files ACW recommends with stated claims (`decisions/decision-log.md`, `rules/instance-hard-rules.md`, `tasks-status.md`, `glossary.md`).
+- **Canonical recommendations** — the four files ACW recommends with stated claims. Mode-portable: decisions surface is `decisions/decision-log.md` in single-file mode, `decisions/INDEX.md` in wiki mode. Glossary surface is `glossary.md` in single-file mode, `glossary/INDEX.md` in wiki mode. Plus `rules/instance-hard-rules.md` and `tasks-status.md` (mode-invariant).
 - **Declared demotion candidates** — paths that fail the gate (consumer-skill loads them directly, single-operator-doesn't-need-it, only-audit-reads-it). Currently named in the rule: `rules/manifest-discipline.md`, `rules/instance-current-manifest.md`, `rules/multi-instance-topology.md`, `incidents.jsonl`.
 
 For each entry in the workspace's `auto_load_at_session_start`, classify and add to the migration plan:

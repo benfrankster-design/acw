@@ -1,8 +1,12 @@
+---
+scope: end
+---
+
 # Metabolize Report Format
 
 Appended to the new session's `paths.build_log` entry under a `### Metabolize report` subheading.
 
-> **Path resolution.** `paths.X` and `section_conventions.X` resolve at runtime per the SKILL.md preamble.
+> **Path resolution.** `paths.X` and `section_conventions.X` resolve at runtime per the SKILL.md preamble. In wiki mode, references to `paths.decisions_log::section_conventions.X` become per-subdir operations (entries/, open-questions/, constraints/) — the report line still names the logical operation; the literal location string reflects the active substrate mode.
 
 ## Three subsections, always present
 
@@ -25,20 +29,34 @@ If a subsection has no entries, write `(none)` underneath the heading. Do not om
 
 ### Auto-updated entries
 
+Single-file mode example:
 ```
 **Auto-updated** (executed):
-- paths.tasks_status::section_conventions.pending — moved "Build pipeline/copilot.py" to the new Done block — file exists at the named path and is referenced from the README
+- paths.tasks_status::Pending — removed "Build pipeline/copilot.py"; dated session block written to tasks-status-YYYY-Q*.md archive (file exists at the named path; completion signal: artifact callable + referenced from README)
 - paths.decisions_log::section_conventions.open_questions — OQ-001 resolved by new D-003; moved to Decisions section
-- paths.decisions_log::section_conventions.open_questions — OQ-002 resolved by new D-004; moved to Decisions section
+```
+
+Wiki mode example:
+```
+**Auto-updated** (executed):
+- paths.tasks_status::Pending — removed "Build pipeline/copilot.py"; dated session block written to tasks-status-YYYY-Q*.md archive
+- decisions/open-questions/OQ-001-*.md → decisions/entries/OQ-001-*.md — resolved by new D-003; status: resolved; INDEX regenerated
 ```
 
 ### Proposed for operator review
 
+Single-file mode example:
 ```
 **Proposed for operator review** (not executed):
-- paths.glossary — propose deprecation of "<legacy term>" (no longer load-bearing) — recommend hold (term still relevant for understanding legacy code)
+- paths.glossary — propose deprecation of "<legacy term>" — recommend hold (term still relevant for understanding legacy code)
 - paths.decisions_log::section_conventions.constraints — propose removing C-002 — recommend hold (constraint still active)
-- runbooks/<file>.md — references legacy terminology — recommend approve (update to current terms)
+```
+
+Wiki mode example:
+```
+**Proposed for operator review** (not executed):
+- glossary/entries/<legacy-term>.md — propose status: deprecated — recommend hold (term still relevant)
+- decisions/constraints/CG-002-*.md — propose status: resolved — recommend hold (constraint still active)
 ```
 
 ### Skipped
@@ -48,7 +66,7 @@ If a subsection has no entries, write `(none)` underneath the heading. Do not om
 - paths.build_log past entries — append-only history
 - paths.session_captures_dir/* — frozen once written
 - project source directories — out of scope (own governance)
-- paths.decisions_log::section_conventions.decisions past entries — past decisions never edited
+- decisions past entries (regardless of mode) — never edited; supersession by new entry only
 ```
 
 ## When everything was clean

@@ -56,7 +56,7 @@ Routing rules: argument required. `/acw-instance` with no command prints the tab
 
 Count substrate signals across two surfaces:
 
-1. **Canonical-shape signals** (workspace already looks ACW-shaped, just unregistered): `decisions/decision-log.md`, `rules/` (any `.md`), `incidents.jsonl`, `glossary.md`, `research/` (any `.md`), bookend skills under `skills/`. Threshold: 3 of 6.
+1. **Canonical-shape signals** (workspace already looks ACW-shaped, just unregistered): any decisions surface (`decisions/decision-log.md` OR `decisions/INDEX.md` OR `decisions/entries/`), `rules/` (any `.md`), `incidents.jsonl`, any glossary surface (`glossary.md` OR `glossary/INDEX.md` OR `glossary/entries/`), `research/` (any `.md`), bookend skills under `skills/`. Threshold: 3 of 6. **Substrate mode is detected from which decisions/glossary shape is present and cross-checked against `acw-state.yaml::decision_tracking.mode` and `glossary.mode` if those exist.**
 2. **Substrate-shaped patterns** (workspace has persistent-memory content not in canonical paths): root-level markdown files with frontmatter, dated capture files (`YYYY-MM-DD-*.md`), structured directories that look substrate-like (`briefings/`, `runbooks/`, `notes/`, `journal/`, `context/`, `inbox/`, `integrations/`, etc.), `.jsonl` logs.
 
 Both surfaces matter:
@@ -77,7 +77,12 @@ gh api -H "Accept: application/vnd.github.raw" \
 
 Fall back to `urllib.request` with `Authorization: Bearer $GITHUB_TOKEN` if `gh` is unavailable. Fail closed on neither path: *"cannot fetch canonical manifest from GitHub. Install `gh` and authenticate, or set `GITHUB_TOKEN`, then re-run."*
 
-Both verbs also fetch canonical rule files and templates needed for shape comparison (e.g., `rules/decision-tracking.md`, `rules/manifest-discipline.md`, `tools/templates/decision-log.md.tmpl`, `tools/templates/CLAUDE.md.tmpl`, `tools/templates/build-log.md.tmpl`, `tools/templates/tasks-status.md.tmpl`). Fetch on demand, cache in memory for the duration of the run.
+Both verbs also fetch canonical rule files and templates needed for shape comparison (e.g., `rules/decision-tracking.md`, `rules/manifest-discipline.md`, `tools/templates/CLAUDE.md.tmpl`, `tools/templates/build-log.md.tmpl`, `tools/templates/tasks-status.md.tmpl`). For decisions and glossary, fetch the template matching the workspace's declared mode (`decision_tracking.mode`, `glossary.mode`):
+- **single-file mode:** `tools/templates/decision-log.md.tmpl`, `tools/templates/glossary.md.tmpl`
+- **wiki mode:** `tools/templates/decisions/INDEX.md.tmpl`, `tools/templates/glossary/INDEX.md.tmpl`, plus entry templates
+- If mode is unset, default to `single-file` (canonical default for new instances).
+
+Fetch on demand, cache in memory for the duration of the run.
 
 ### Step 4 — Identify the substrate boundary
 

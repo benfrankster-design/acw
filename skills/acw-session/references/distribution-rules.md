@@ -1,169 +1,182 @@
+---
+scope: end
+---
+
 # Distribution Rules — Phase 2
 
 How session content lands in scaffolding files. Strict rules per file. Each file has an "always-safe" pattern (Phase 2 may execute) and an "operator-confirm" pattern (Phase 2 must propose, not execute).
 
-> **Path resolution.** Throughout this document, file references use the `paths.X` shorthand (resolves from `acw-state.yaml::paths::X` per `rules/manifest-discipline.md`) and `section_conventions.X` shorthand (resolves from the target file's frontmatter). The skill never hardcodes a path.
+> **Path resolution.** `paths.X` resolves from `acw-state.yaml::paths::X`. `section_conventions.X` resolves from the target file's frontmatter. The skill never hardcodes a path.
+
+> **Substrate-shape portability.** Operations on decisions and glossary branch on `acw-state.yaml::decision_tracking.mode` and `acw-state.yaml::glossary.mode`. Each mode dispatches to its own write pattern below. The skill is portable across both shapes — never assume one shape; read the mode field.
 
 ---
 
-## `paths.decisions_log`
+## Decisions
 
-### Always-safe writes
+### Mode: `single-file` (canonical default)
 
-- **Append a new decision** to `section_conventions.decisions` with the next id (`D-{project.code}-NNN` if `project.code` is set, else `D-NNN`). Look at existing entries to determine the next number. Required fields per existing entries: `**Date:**`, `**Decision:**`, `**Rationale:**`, `**Source:**`. The session capture file must reference the new decision id in its frontmatter.
-- **Move a resolved Open Question** from `section_conventions.open_questions` to `section_conventions.decisions`. The OQ id is preserved as a `**Resolves:**` line on the new decision entry.
-- **Append a new constraint** to `section_conventions.constraints` with C-NNN id.
-- **Append a new resolved question** to `section_conventions.resolved` when the session captured a fact-verification answer (not a decision — facts about how the project actually works).
+Decisions, open questions, constraints, resolved questions live as sections inside one file at `paths.decisions_log`. Sections resolved via `section_conventions.<name>` per that file's frontmatter (defaults: `decisions`, `open_questions`, `constraints`, `resolved`).
 
-### Operator-confirm writes
+**Always-safe writes:**
+- **Append a new decision** to `section_conventions.decisions` with the next id (`D-{project.code}-NNN` if `project.code` is set, else `D-NNN`). Scan existing entries to determine the next number. Required body fields: `**Date:**`, `**Decision:**`, `**Rationale:**`, `**Source:**`. The session capture file must reference the new decision id in its frontmatter.
+- **Move a resolved Open Question** from `section_conventions.open_questions` to `section_conventions.decisions`. Preserve OQ id as a `**Resolves:**` line on the new decision entry.
+- **Append a new constraint** to `section_conventions.constraints` with `C-{project.code}-NNN` id (or `C-NNN`).
+- **Append a new resolved question** to `section_conventions.resolved` when the session captured a fact-verification answer (not a decision).
 
-- **Mark a decision as superseded.** Don't delete; add `**Superseded by:** <new id> (YYYY-MM-DD)` to the prior entry and create the new entry. Propose this for operator review with the rationale.
+**Operator-confirm writes:**
+- **Mark a decision as superseded.** Add `**Superseded by:** <new id> (YYYY-MM-DD)` to the prior entry; create the new entry. Propose with rationale.
 - **Remove a constraint** because the underlying issue was fixed. Propose with rationale; do not auto-delete.
 
-### Never
+**Never:** edit a prior decision's text in place. Auto-add an Open Question without operator phrasing.
 
-- Edit a prior decision's text in place. Decisions are append-only in spirit.
-- Auto-add an Open Question without operator phrasing. Open Questions are operator-surfaced, not skill-surfaced.
+### Mode: `wiki`
+
+Decisions are atomic per-entry files under `paths.decisions_entries_dir`, `paths.decisions_open_questions_dir`, `paths.decisions_constraints_dir`. A thin index at `paths.decisions_index` carries id + date + status + headline per entry.
+
+**Always-safe writes:**
+- **Create a new decision file** at `<decisions_entries_dir>/<id>-<slug>.md` where `id = D-{project.code}-NNN` (next available — scan all entries dirs for highest id, increment) and `slug = slugify(title)[:60]`. Frontmatter per `decision_tracking.entry_frontmatter_required` (typically: `id`, `title`, `date`, `status: accepted`, `kind: decision`, `updated`). Body: `# <id> — <title>` then `**Date:**`, `**Decision:**`, `**Rationale:**`, `**Source:**`, optional `**Rejected alternatives:**`. The session capture file must reference the new decision id in its frontmatter.
+- **Resolve an Open Question:** move file from `decisions_open_questions_dir/<oq-id>-<slug>.md` to `decisions_entries_dir/<oq-id>-<slug>.md` (preserve the OQ id as the filename id — the resolved entry continues to carry its OQ id, not a new D id). Update frontmatter: `kind: decision`, `status: resolved`, add `resolves: <oq-id>` and `resolved_by_decision: <new D id if applicable>`. Update `updated:` to today.
+- **Create a new open question** at `<decisions_open_questions_dir>/<oq-id>-<slug>.md` with `kind: open-question`, `status: open`.
+- **Create a new constraint** at `<decisions_constraints_dir>/<cg-id>-<slug>.md` with `kind: constraint`, `status: accepted`.
+- **Regenerate INDEX** after any of the above by invoking `decision_tracking.regenerate_index_cmd` (typically `python tools/migrate_to_wiki.py`) if declared. If `regenerate_index_cmd` is absent, append one line to `paths.decisions_index` directly under the appropriate section (Open Questions / Recent Decisions / Constraints & Gotchas) following the format of existing lines.
+
+**Operator-confirm writes:**
+- **Mark a decision as superseded.** Edit the prior entry's frontmatter: `status: superseded`, `superseded_by: <new id>`, `updated: <today>`. Create the new entry. Regenerate INDEX. Never delete the prior file.
+- **Mark a constraint as resolved** (underlying issue fixed). Edit frontmatter: `status: resolved`, `updated: <today>`. Propose, don't auto-execute.
+
+**Never:** edit a prior entry's body text in place. Past entries are append-only in spirit; corrections add a new entry that supersedes.
 
 ---
 
-## `paths.evolution`
+## Glossary
 
-### Always-safe writes
+### Mode: `single-file` (canonical default)
 
-- **Prepend a new entry** at the top of the file (newest first), using the format documented in the file's own header: `### YYYY-MM-DD — <Title>` with `**Changed:**`, `**Replaced:**`, `**Justified by:**`, optionally `**Stale in template:**`.
+Terms live as `## <term>` sections inside `paths.glossary`.
 
-### Never
+**Always-safe writes:** append a new term at the bottom (or alphabetically — match existing file convention).
 
-- Edit any prior entry. Each is a moment in time.
-- Skip the entry if the conception didn't shift but a build session happened — that goes to `paths.build_log`, not evolution.
+**Operator-confirm writes:**
+- **Redefine a term:** preserve prior definition; add `**Redefined YYYY-MM-DD:**` inline.
+- **Mark deprecated:** add `**Deprecated YYYY-MM-DD:**` inline. Do not delete.
 
----
+**Never:** touch external vocabulary canons (e.g., customer-voice canon).
 
-## `paths.glossary`
+### Mode: `wiki`
 
-### Always-safe writes
+Terms are atomic per-entry files at `glossary.entries_dir/<slug>.md` with frontmatter `term`, `status`. A thin index at `glossary.index` lists term + link per entry.
 
-- **Append a new term** under the file's terms section in alphabetical-ish order or at the bottom with related terms.
+**Always-safe writes:**
+- **Create a new term file** at `<entries_dir>/<slug>.md` where `slug = slugify(term)`. Frontmatter: `term: "<term>"`, `status: active`. Body: `# <term>` then definition prose.
+- **Regenerate INDEX** after the write by invoking `glossary.regenerate_index_cmd` if declared, else append one line to `glossary.index` directly.
 
-### Operator-confirm writes
+**Operator-confirm writes:**
+- **Redefine a term:** edit the entry's body (this is the one place body-edit is allowed for glossary; terms are living definitions, not append-only history). Add a one-line `**Redefined YYYY-MM-DD:**` note at the top of the body. Propose.
+- **Mark deprecated:** edit frontmatter `status: deprecated`. Do not delete the file.
 
-- **Redefine a term**: do not delete prior definition. Add inline note `**Redefined YYYY-MM-DD:**` followed by the new wording. Propose for review.
-- **Mark a term deprecated** when no longer in use anywhere. Add `**Deprecated YYYY-MM-DD:**` inline. Don't delete; propose for review.
-
-### Never
-
-- Touch any external vocabulary canon (e.g., a customer-voice canon governed by separate rules). The project glossary at `paths.glossary` is project-internal.
+**Never:** touch external vocabulary canons.
 
 ---
 
 ## Instance hard-rules file (declared as instance_layer)
 
-### Always-safe writes
+Shape is mode-invariant — hard rules live as a single file regardless of decision/glossary mode.
 
-- **Append a new rule** at the bottom of the appropriate hard-rules section with rule text + rationale. Use `HR-{project.code}-NNN` if `project.code` is set, else `HR-NNN`.
+**Always-safe writes:** append a new rule at the bottom of the appropriate hard-rules section with rule text + rationale. Use `HR-{project.code}-NNN` if `project.code` is set, else `HR-NNN`.
 
-### Operator-confirm writes
-
-- **Modify an existing rule** when the session changed its scope or wording. Propose with the diff for operator review. After approval, update `paths.evolution` to record the change.
+**Operator-confirm writes:**
+- **Modify an existing rule** when the session changed its scope or wording. Propose with diff. After approval, update `paths.evolution` to record the change.
 - **Mark a rule deprecated** with `**Deprecated YYYY-MM-DD:**`. Don't delete.
 
-### Never
+**Never:** auto-delete a hard rule.
 
-- Auto-delete a hard rule. Hard rules are stop-work-if-violated; deletion requires explicit operator confirm.
+---
+
+## `paths.evolution`
+
+Shape is mode-invariant.
+
+**Always-safe writes:** prepend a new entry at the top (newest first), format: `### YYYY-MM-DD — <Title>` with `**Changed:**`, `**Replaced:**`, `**Justified by:**`, optionally `**Stale in template:**`.
+
+**Never:** edit any prior entry. Skip the entry if the conception didn't shift but a build session happened — that goes to `paths.build_log`.
 
 ---
 
 ## `paths.tasks_status`
 
-### Always-safe writes
+Tasks-status is a work-queue primitive, not knowledge-graph. **Pending-only** (v0.9.3+ canonical per `rules/task-tracking.md`). No Done section. No Parked section. Completed work archives on completion to `tasks-status-YYYY-Q*.md`. Deferred ideas route to `inbox/ideas/` or `decision-log`.
 
-- **Write a full session block at the top of `section_conventions.done`.** This is the load-bearing tasks-status update. Format below. Append the new block above prior session blocks (newest first within the Done section).
-- **Move a task from `section_conventions.pending` to the new Done block** as part of writing the session block. Individual line items move into the session block rather than being listed separately.
-- **Append a new pending task** to `section_conventions.pending` when the session created new work.
-- **Append a new parked item** to `section_conventions.parked` when the session deferred something with reason.
-- **Move a Pending item to Parked** if the session explicitly deferred it.
+**Always-safe writes (live file):**
+- **Append a new pending task** to the Pending section when the session created new work.
+- **Remove a completed task from the Pending section** as part of writing the session block to the archive (next bullet). The completed task does not move to a Done section — Done lives in the archive file only.
 
-### Session-block format
+**Always-safe writes (archive file `tasks-status-YYYY-Q*.md`):**
+- **Append a dated session block** at the bottom of the current quarter's archive file (or under a relevant date heading; newest content at file end is fine since archive is read on demand). Format below. Create the archive file if it doesn't exist (frontmatter per `rules/task-tracking.md`). Register the new archive in `acw-state.yaml::meta_layer` (Phase 2 symmetric archive-registration check).
 
-The session block written to the Done section matches the existing pattern used by prior session blocks in the project. Specifically:
+### Session-block format (written to archive)
 
 ```markdown
-### YYYY-MM-DD — Session N — <topic phrase from session capture frontmatter>
+### YYYY-MM-DD — Session N — <topic phrase>
 
-- <Decision id appended to log>: <one-line summary> — <file paths or refs>
+- <Decision id>: <one-line summary> — <file paths or refs>
 - `path/to/file.py` — <one-line description of change>
 - <Hard rule id added>: <short summary>
-- <Smoke test result | bug encountered + fix | blocker resolved | other narrative bullet>
-- Capture-and-metabolize ran end-of-session: session capture written to `<paths.session_captures_dir>/<file>.md`; <decisions appended>; <evolution updated>; <research-prompt artifact path if Phase 5 fired>.
+- <Smoke test result | bug encountered + fix | blocker resolved>
+- Capture-and-metabolize ran: session capture at `<paths.session_captures_dir>/<file>.md`; <decisions appended>; <research-prompt artifact path if Phase 5 fired>.
 ```
 
-Rules for the session block:
-- The first line is `### YYYY-MM-DD — Session N — <topic>`. `N` is determined by counting prior session blocks in Done (the next block is N+1).
-- Every bullet is one line, scannable. No multi-paragraph prose.
-- Cite decision IDs, hard rule IDs, constraint IDs, open-question IDs inline so the operator can cross-reference without leaving the file.
-- File paths use forward slashes and are written as backticked code spans.
-- Last bullet always notes that capture-and-metabolize ran, with paths to the session capture file and any research-prompt artifact.
+Rules: bullets are one line each. Cite IDs inline. Forward-slash paths in backticks. Last bullet notes capture-and-metabolize ran.
 
-### Operator-confirm writes
-
-- **Remove a Parked item** as no longer relevant. Propose with rationale; do not auto-delete.
-- **Move a Parked item to Pending** when the session brings it back into scope.
-
-### Never
-
-- Touch the Done section's prior dated entries. They are history.
-- Auto-delete from Pending without confirming the task is done or moved.
+**Never:**
+- Write to a Done section in `tasks-status.md` (the section doesn't exist in v0.9.3+ shape).
+- Write to a Parked section in `tasks-status.md` (the section doesn't exist in v0.9.3+ shape; deferred ideas → `inbox/ideas/` instead).
+- Touch prior dated entries in the archive file. Archive is append-only.
+- Auto-delete from Pending without an explicit completion signal (artifact exists, functionality callable, etc.).
 
 ---
 
 ## `paths.build_log`
 
-### Always-safe writes
+Append-only narrative. Shape is mode-invariant.
 
-- **Prepend a new entry** at the top (newest first). Format: `## YYYY-MM-DD — <Title>` with a paragraph describing what was built, paths touched, and any new decisions/runbooks/etc.
-- **Append the metabolize report** to the bottom of the new entry. Format defined in `metabolize-report-format.md`.
+**Always-safe writes:** prepend a new entry at the top. Format: `## YYYY-MM-DD — <Title>` paragraph describing what was built, paths touched, decisions/runbooks. Append the metabolize report to the bottom of the new entry per `metabolize-report-format.md`.
 
-### Never
-
-- Edit prior entries.
+**Never:** edit prior entries.
 
 ---
 
 ## `paths.research_state`
 
-### Always-safe writes
+Always-safe: update conception fields only when the session explicitly changed them. Bump architecture version on major revision.
 
-- **Update conception fields** (scope, application, exclusions) only when the session explicitly changed them.
-- **Update architecture or tool-surface fields** when tools are added, removed, or repurposed.
-- **Bump architecture version** when a major revision is finalized.
-- **Update dependencies** when blockers shift.
+Operator-confirm: move legacy items to a new `legacy_v_X` block when superseding architecture.
 
-### Operator-confirm writes
-
-- **Move legacy items to a new `legacy_v_X` block** when superseding architecture.
-
-### Never
-
-- Edit research-state for build sessions that didn't shift conception. Build narrative goes to `paths.build_log`.
+Never: edit for build sessions that didn't shift conception.
 
 ---
 
 ## `paths.sources`
 
-### Always-safe writes
+Always-safe: append under the appropriate section.
 
-- **Append a new source** under the appropriate section.
+Never: remove a prior source.
 
-### Never
+---
 
-- Remove a prior source even if it became less relevant. Sources are history.
+## `paths.incidents`
+
+Append-only JSONL. One line per incident. Schema in `incidents-format.md`.
+
+**Never:** edit past lines.
 
 ---
 
 ## Cross-file consistency rules
 
-- If a new decision in `paths.decisions_log` introduces a new term, the term must also land in `paths.glossary`.
+These hold across both modes — read in terms of the operations above:
+
+- If a new decision introduces a new term, the term must also land in glossary (per the active glossary mode).
 - If a new decision creates new pending work, the work must also appear in `paths.tasks_status` `section_conventions.pending`.
-- If `paths.evolution` gets a new entry, the corresponding decision-log entry should reference it via `**Recorded in:**` (or equivalent).
+- If `paths.evolution` gets a new entry, the corresponding decision should reference it via `**Recorded in:**` (single-file mode body field, or wiki-mode frontmatter `recorded_in:`).
 - If `paths.research_state` updates its conception, `paths.evolution` must have a new entry justifying the update.

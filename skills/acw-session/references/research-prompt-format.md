@@ -111,7 +111,7 @@ Findings appended to this same file (per `append_findings_to_self: true`) under 
 
 After findings are appended:
 1. Append a one-line entry to `paths.sources` pointing at this file.
-2. Update any related OQ entry in `paths.decisions_log::section_conventions.open_questions` with a `**Research artifact:**` line linking to this file.
+2. Update any related OQ entry with a research-artifact pointer linking to this file. Mode-portable: **single-file mode** — append `**Research artifact:** <link>` to the OQ entry inside `paths.decisions_log::section_conventions.open_questions`. **Wiki mode** — edit the OQ file at `decisions_open_questions_dir/<oq-id>-*.md`: add `research_artifact: <path>` to frontmatter; regenerate INDEX.
 3. Open a discussion in chat to walk the operator through the recommendations — Track A first, then Track B, then Track C as a quick "anything caught my eye" pass.
 ```
 
