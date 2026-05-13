@@ -12,6 +12,29 @@ All notable changes to ACW (Agentic Contract Workspace) will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.7] — 2026-05-13
+
+CLAUDE.md becomes a thin pointer. Auto-load moves to a Claude Code SessionStart hook. Drift surface eliminated.
+
+### Changed
+
+- `tools/scaffold-instance.py` — Claude Code host branch now writes `CLAUDE.md` as a one-line pointer (`See AGENTS.md.\n`) instead of hardcoded `@`-imports. Additionally writes `.claude/settings.json` and `.claude/hooks/load-context.py` to register the SessionStart hook. Hook reads `acw-state.yaml::auto_load_at_session_start` at runtime, eliminating drift between CLAUDE.md and the manifest.
+- `AGENTS.md` — directive 7 rewritten to point at the SessionStart hook as the Claude Code implementation. Added **Auto-load (Resource / When / Why)** table and **What NOT to Load** section, both adopted from JEVanClief's Interpreted Context Methodology.
+- `rules/auto-load-discipline.md` — added "Implementation: SessionStart hook (Claude Code host)" subsection naming the hook path, runtime contract, and rationale.
+
+### Added
+
+- `tools/templates/load-context.py.tmpl` — stdlib-only Python SessionStart hook. Emits `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "<contents>"}}` JSON to stdout. Reads manifest at runtime.
+- `tools/templates/settings.json.tmpl` — Claude Code settings.json with SessionStart hook registered for matchers `startup|resume|clear`.
+
+### Decisions
+
+- D-ACW-047 — full rationale. Drift incident earned by `cs-ops-spec` scaffold producing nine unearned `@`-imports against four earned manifest entries.
+
+### Migration
+
+Pre-v0.9.7 instances: `/acw-instance upgrade` proposes the migration (CLAUDE.md trim + hook write + AGENTS.md update). Manual path documented in D-ACW-047.
+
 ## [0.6.1] — 2026-05-03
 
 Meta-layer backfill — the v0.6.0 maintenance harness's first run surfaced four staleness proposals on its first walk. Operator accepted all four. v0.6.1 ships the meta-file updates that close the v0.2.0+ backfill gap.

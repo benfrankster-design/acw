@@ -265,21 +265,28 @@ def main() -> int:
     for d in state["empty_dirs"]:
         write_text(target / d / ".gitkeep", "", args.dry_run)
 
-    # Host-specific entry file (not in manifest because it's host-conditional)
+    # Host-specific entry file (not in manifest because it's host-conditional).
+    # Per D-ACW-047 (v0.9.7): CLAUDE.md is a thin pointer; auto-load runs via
+    # SessionStart hook at .claude/hooks/load-context.py. The hook reads
+    # acw-state.yaml::auto_load_at_session_start at runtime, so the manifest
+    # is the single source of truth and CLAUDE.md never drifts.
     if args.host == "claude-code":
-        host_content = "See AGENTS.md.\n\n## Project substrate (auto-loaded every session)\n\n"
-        host_content += (
-            "@research/01-problem-framing.md\n"
-            "@decisions/decision-log.md\n"
-            "@rules/instance-hard-rules.md\n"
-            "@tasks-status.md\n"
-            "@glossary.md\n"
-            "@research/evolution.md\n"
-            "@research/sources.md\n"
-            "@research/research-state.yaml\n"
-            "@incidents.jsonl\n"
-        )
-        write_text(target / "CLAUDE.md", host_content, args.dry_run)
+        write_text(target / "CLAUDE.md", "See AGENTS.md.\n", args.dry_run)
+        # SessionStart hook + settings.json. Templates live in tools/templates/.
+        hook_src = ACW_ROOT / "tools" / "templates" / "load-context.py.tmpl"
+        settings_src = ACW_ROOT / "tools" / "templates" / "settings.json.tmpl"
+        if hook_src.exists():
+            write_text(
+                target / ".claude" / "hooks" / "load-context.py",
+                hook_src.read_text(encoding="utf-8"),
+                args.dry_run,
+            )
+        if settings_src.exists():
+            write_text(
+                target / ".claude" / "settings.json",
+                settings_src.read_text(encoding="utf-8"),
+                args.dry_run,
+            )
 
     print()
     print(f"Scaffolded ACW instance at {target}:")

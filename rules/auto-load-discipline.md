@@ -111,6 +111,24 @@ An instance may add entries not on the canonical recommendations list, or drop e
 
 The audit verb respects structured entries with declared claims even when they don't match canonical recommendations. The claim is the contract.
 
+## Implementation: SessionStart hook (Claude Code host)
+
+Per D-ACW-047 (v0.9.7), Claude Code instances implement directive 7 via a SessionStart hook, not via `@`-imports in `CLAUDE.md`. The shape:
+
+- `CLAUDE.md` = literal `See AGENTS.md.\n` (one line). No `@`-imports.
+- `.claude/settings.json` = registers the SessionStart hook for matchers `startup|resume|clear`.
+- `.claude/hooks/load-context.py` = stdlib-only Python script that reads `acw-state.yaml::auto_load_at_session_start`, concatenates the named files, and emits `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "<concatenated content>"}}` to stdout. Claude Code injects `additionalContext` into context as a user message.
+
+Why this shape:
+
+1. **Single source of truth.** The hook reads `acw-state.yaml` at runtime, so the manifest is the only place the auto-load list lives. CLAUDE.md cannot drift from the manifest because CLAUDE.md no longer carries the list.
+2. **Vendor neutrality.** Other agent hosts (Codex, Gemini, etc.) implement equivalent SessionStart behavior pointing at the same yaml. Agents that read `acw-state.yaml` directly need no host-specific hook.
+3. **Discipline preserved.** The claim + `earned_by` requirement is enforced at audit time, not at load-mechanism time. The audit verb walks the manifest regardless of host.
+
+Earned by drift incident on cs-ops-spec scaffold (2026-05-13): the pre-v0.9.7 scaffolder hardcoded nine `@`-imports into `CLAUDE.md` independent of the four entries earned in `acw-state.yaml`. The scaffolder shape was producing structurally non-compliant instances by default.
+
+Design influence: JEVanClief (Jake Van Clief) "Interpreted Context Methodology" — the **Resource | When | Why** entry-file table and the **What NOT to Load** named section are adopted from his pattern. Both surface at the AGENTS.md level per directive 7.
+
 ## Discipline application
 
 `/acw-instance audit` reads the workspace's `auto_load_at_session_start` block and produces a report:

@@ -313,6 +313,17 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 - **Does NOT apply in wiki mode.** Wiki-mode instances (`decision_tracking.mode: wiki`) have per-entry files already; the auto-load surface is `decisions/INDEX.md` (a thin index, not bodies), so the rolling-window archive is structurally unnecessary. Pre-existing quarterly archives from a single-file→wiki migration are kept as frozen historical artifacts.
 - **Earned in:** `0.9.1`. Wiki-mode exemption clarified in `0.9.5`.
 
+## Host entry file shape (Claude Code) — v0.9.7
+
+- **What:** Three coupled artifacts at workspace root and `.claude/`:
+  1. `CLAUDE.md` body = literal `See AGENTS.md.\n` (one line). No `@`-imports.
+  2. `.claude/settings.json` registering the SessionStart hook for matchers `startup|resume|clear`, invoking `python .claude/hooks/load-context.py`.
+  3. `.claude/hooks/load-context.py` — stdlib-only Python; reads `acw-state.yaml::auto_load_at_session_start`; emits `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "<concatenated content>"}}` JSON to stdout. Canonical source: `tools/templates/load-context.py.tmpl`.
+- **Why it helps:** Eliminates the drift surface between `CLAUDE.md` `@`-imports and `acw-state.yaml::auto_load_at_session_start`. The manifest becomes the single source of truth; the hook reads it at runtime so the host entry file cannot diverge. Also keeps `CLAUDE.md` trivially one-line, restoring vendor neutrality at the entry-file layer (per AGENTS.md). Pre-v0.9.7 scaffolder hardcoded nine `@`-imports against four earned manifest entries — every fresh instance shipped structurally non-compliant by default.
+- **Required:** No. Pre-v0.9.7 instances continue to function — `@`-imports in `CLAUDE.md` still load. Migration is recommended for drift elimination and host-portability.
+- **How to add:** Run `/acw-instance upgrade`. The verb detects pre-v0.9.7 shape, proposes the three-file migration under the standard plan-approval gate, and executes (CLAUDE.md trim + `.claude/settings.json` write + `.claude/hooks/load-context.py` copy from canonical template + AGENTS.md directive 7 update + addition of "Auto-load (Resource / When / Why)" and "What NOT to Load" sections). Manual path: copy `tools/templates/load-context.py.tmpl` to `.claude/hooks/load-context.py`, copy `tools/templates/settings.json.tmpl` to `.claude/settings.json`, replace `CLAUDE.md` body with `See AGENTS.md.\n`, update AGENTS.md from canonical.
+- **Earned in:** `0.9.7`. Earned-by-incident: scaffold drift on `cs-ops-spec` instance (2026-05-13) produced nine unearned `@`-imports against four earned manifest entries. See `decisions/entries/D-ACW-047`.
+
 ## `adopt_mode_organic_threshold`
 
 - **What:** A scalar integer in `acw-state.yaml` setting the threshold above which `/acw-instance upgrade` adopt-mode bails (with pointer to `/acw-instance audit`) instead of offering automatic adoption. Counts markdown files in `decisions/` and `rules/` excluding canonical files copied from ACW.

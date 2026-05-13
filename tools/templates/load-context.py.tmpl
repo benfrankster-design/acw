@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+# ---
+# class: operational
+# authority: canonical
+# stability: stable
+# loaded_by_agent: no
+# ---
+"""
+load-context.py — SessionStart hook for ACW instances.
+
+Reads acw-state.yaml::auto_load_at_session_start, concatenates the named
+files, emits Claude Code SessionStart additionalContext JSON to stdout.
+
+Implements AGENTS.md directive 7 (Claude Code host). Per `rules/auto-load-
+discipline.md`, the manifest in acw-state.yaml is the single source of
+truth — this script reads it at runtime; never duplicate the list elsewhere.
+
+Stdlib only. Fast — single yaml read + N file reads. Designed to add well
+under 1 second to session start.
+
+Exit codes:
+    0 — success (additionalContext emitted, possibly empty)
+    Any non-zero exit is shown as a hook error but does not block the session.
+"""
+
+import json
+import sys
+from pathlib import Path
+
+# .claude/hooks/load-context.py -> .claude -> instance root
+ROOT = Path(__file__).resolve().parents[2]
+STATE = ROOT / "acw-state.yaml"
+
+
+def parse_auto_load(text: str) -> list[str]:
+    """Minimal YAML parse: extract `path` values under auto_load_at_session_start.
+
+    Accepts both structured form (`- path: <value>` with claim/earned_by siblings)
+    and bare-path legacy form (`- <value>`). Stdlib only — does not depend on
+    PyYAML.
+    """
+    paths: list[str] = []
+    in_block = False
+    for raw in text.splitlines():
+        if not raw.strip() or raw.strip().startswith("#"):
+            continue
+        # Detect block start
+        if raw.startswith("auto_load_at_session_start:"):
+            in_block = True
+            continue
+        if not in_block:
+            continue
+        # End block on a new top-level key (no leading whitespace, ends with :)
+        if not raw.startswith(" ") and raw.endswith(":"):
+            break
+        stripped = raw.strip()
+        # Structured form: "- path: <value>" or sibling field "  path: <value>"
+        if "path:" in stripped and (stripped.startswith("- path:") or stripped.startswith("path:")):
+            _, val = stripped.split("path:", 1)
+            val = val.strip().strip('"').strip("'")
+            if val:
+                paths.append(val)
+            continue
+        # Bare-path legacy form: "- <value>" (no colon in value)
+        if stripped.startswith("- ") and ":" not in stripped[2:]:
+            val = stripped[2:].strip().strip('"').strip("'")
+            if val:
+                paths.append(val)
+    return paths
+
+
+def main() -> int:
+    if not STATE.exists():
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": ""}}))
+        return 0
+
+    try:
+        paths = parse_auto_load(STATE.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": f"<!-- acw load-context: parse error: {e} -->"}}))
+        return 0
+
+    parts: list[str] = []
+    for p in paths:
+        f = ROOT / p
+        if not f.exists():
+            parts.append(f"<!-- auto-load: {p} (missing) -->")
+            continue
+        try:
+            content = f.read_text(encoding="utf-8", errors="replace")
+        except Exception as e:
+            parts.append(f"<!-- auto-load: {p} (read error: {e}) -->")
+            continue
+        parts.append(f"<!-- auto-load: {p} -->\n{content}")
+
+    additional = "\n\n".join(parts) if parts else ""
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": additional}}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

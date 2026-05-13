@@ -23,9 +23,33 @@ This file is the entry point for any agent opening this workspace. It is deliber
 
 6. **If you disagree with a rule, read `research/` before editing it.** Every rule in this template traces to a documented research finding. Edit without reading the research and you are likely to re-introduce a problem the research already solved.
 
-7. **Auto-load every file listed in `acw-state.yaml::auto_load_at_session_start` at the start of any session in this workspace.** Each agent host implements this via its native mechanism (Claude Code: `@`-imports in `CLAUDE.md`; other hosts: their equivalent manifest or directive syntax; agents that read `acw-state.yaml` directly need no host-specific file). The list is maintained additively by `/acw-session end`; removal requires an explicit decision-log entry. Auto-load entries themselves earn their slot per `rules/auto-load-discipline.md` — every entry declares a structured claim.
+7. **Auto-load every file listed in `acw-state.yaml::auto_load_at_session_start` at the start of any session in this workspace.** Each agent host implements via its native mechanism. Claude Code uses the SessionStart hook at `.claude/hooks/load-context.py`, registered in `.claude/settings.json`; the hook reads `acw-state.yaml` at runtime and injects file contents as `additionalContext`. `CLAUDE.md` is a thin pointer (`See AGENTS.md.`) and carries no `@`-imports. Other hosts (Codex, Gemini, etc.) implement equivalent SessionStart behavior pointing at the same yaml; agents that read `acw-state.yaml` directly need no host-specific hook. The list is maintained additively by `/acw-session end`; removal requires an explicit decision-log entry. Auto-load entries themselves earn their slot per `rules/auto-load-discipline.md` — every entry declares a structured claim. See the **Auto-load (Resource / When / Why)** and **What NOT to Load** sections below.
 
 8. **When writing runtime code (a Next.js app, server, CLI tool, agent, etc.) inside an instance, locate it under a named subdirectory at instance root** — `web/`, `server/`, `agents/`, `app/`, `tools/<scoped-name>/`, or whatever name fits. Substrate (`decisions/`, `rules/`, `sessions/`, `acw-state.yaml`, `CLAUDE.md`, `AGENTS.md`) stays at root. Substrate is governance and moves on a slow, decision-driven clock; runtime is operational and moves on a fast, build-driven clock. Co-locating the two at instance root conflates the clocks: build artifacts collide with substrate in `git status`, package managers see substrate as project-root noise, deployment configs (Vercel, Docker) point at a path that also carries decisions/. If the workspace already has runtime code at root and migrating is expensive, log an incident and propose a path forward — do not silently accept the conflation. See `rules/multi-instance-topology.md` § "Runtime code in shipping instances."
+
+## Auto-load (Resource / When / Why)
+
+Canonical recommendations from `rules/auto-load-discipline.md`. Instances override (drop a canonical entry, add an instance-specific entry) per the discipline gate; each override carries its own structured claim in `acw-state.yaml::auto_load_at_session_start`.
+
+| Resource | When | Why |
+|---|---|---|
+| `decisions/decision-log.md` (single-file mode) or `decisions/INDEX.md` (wiki mode) | session-start | Recently decided history must be visible at session start; without it agents re-litigate settled choices. |
+| `rules/instance-hard-rules.md` | session-start | Stop-work rules must be visible at every session start; loading them on-demand is too late. |
+| `tasks-status.md` | session-start | Pending work surface must be visible at session start; without it agents propose duplicate work. |
+| `glossary.md` (single-file mode) or `glossary/INDEX.md` (wiki mode) | session-start | Vocabulary canon prevents drift to colloquial English in agent output. |
+
+## What NOT to Load
+
+Files that look load-bearing but aren't. Auto-loading them costs context without shaping session behavior; consumers load them on demand. `/acw-instance audit` flags these as DEMOTE if it finds them in an instance's auto-load list.
+
+| Resource | Why not |
+|---|---|
+| `rules/manifest-discipline.md` | Consumed only by skills doing manifest classification; they load it themselves. |
+| `rules/instance-current-manifest.md` | Consumed only by `/acw-session start` drift check and `/acw-instance audit\|upgrade`. |
+| `rules/multi-instance-topology.md` | Applies only to multi-domain workspaces; single-instance loads waste context. |
+| `incidents.jsonl` | Forensic record. Consumed by audit + promotion-ritual. On-demand only. |
+| Empty or near-empty research scaffolds (`evolution.md`, `sources.md`, `research-state.yaml` before they carry content) | Nothing earned — no incident, no consumer, no shaped behavior. |
+| `research/01-problem-framing.md` | One-time orientation read; not session-recurring. Read on demand when entering the workspace fresh. |
 
 ## Operational commands
 

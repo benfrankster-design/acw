@@ -197,6 +197,55 @@ Before bulk execution, detect the legacy directory name (this is automatic, no o
 - If `<workspace>/_inbox/` exists AND `<workspace>/_buffer/` does not exist → execute as part of the plan: `git mv _inbox _buffer` (or filesystem move). Update `acw-state.yaml::paths::buffer_dir` and `acw-state.yaml::empty_dirs`.
 - If both exist → halt with: ambiguous state, manual cleanup required. Bail before any other writes.
 
+## Host entry file migration (Claude Code) — v0.9.7
+
+Authoritative source: `rules/instance-current-manifest.md` § "Host entry file shape (Claude Code) — v0.9.7" + the v0.9.7 canonical templates fetched from `tools/templates/load-context.py.tmpl` and `tools/templates/settings.json.tmpl`.
+
+Execute only when `CLAUDE.md` exists at workspace root (mirror of the audit pass trigger). Instances without a Claude Code entry file skip this pass. The audit verb emits up to four plan rows for this migration; execute under the standard plan-approval gate:
+
+### CLAUDE.md trim
+
+If plan row present: overwrite `CLAUDE.md` with the literal string `See AGENTS.md.\n` (one line, trailing newline). The pre-migration content is preserved in the safety commit; no separate backup is written. Print: `[reshape] CLAUDE.md (trimmed to thin pointer) ✓`.
+
+### `.claude/settings.json` write
+
+If `WRITE-CANONICAL`: write the fetched `tools/templates/settings.json.tmpl` content verbatim to `.claude/settings.json`. Create `.claude/` directory if absent.
+
+If `RESHAPE`: read existing `.claude/settings.json`, parse as JSON. Replace `hooks.SessionStart` with the canonical block (preserve `hooks.<other-event>` entries the operator has added). Write back as indented JSON (2-space indent). Print: `[reshape] .claude/settings.json (SessionStart hook updated) ✓`.
+
+### `.claude/hooks/load-context.py` write
+
+If `WRITE-CANONICAL` or `RESHAPE`: write the fetched `tools/templates/load-context.py.tmpl` content verbatim to `.claude/hooks/load-context.py`. Create `.claude/hooks/` directory if absent. The script is canonical; instance-specific customization happens via `acw-state.yaml::auto_load_at_session_start`, not by editing the hook. Print: `[reshape] .claude/hooks/load-context.py (canonical template applied) ✓`.
+
+### AGENTS.md edits
+
+If plan row present:
+
+1. Replace the entirety of directive 7's bullet with the canonical v0.9.7 wording (SessionStart hook implementation pointer). Fetch the canonical AGENTS.md from GitHub, extract directive 7 verbatim, apply.
+2. After the directives list, insert the `## Auto-load (Resource / When / Why)` section if absent. Content from canonical AGENTS.md.
+3. After Auto-load section, insert `## What NOT to Load` section if absent. Content from canonical AGENTS.md.
+4. All other AGENTS.md content (other directives, "Operational commands", "Why AGENTS.md and not CLAUDE.md", "Not a content file", operator additions) preserved.
+
+Print: `[reshape] AGENTS.md (directive 7 + Auto-load + What NOT to Load sections updated) ✓`.
+
+### Post-migration smoke test
+
+After the four writes complete, smoke-test the hook:
+
+```bash
+python .claude/hooks/load-context.py
+```
+
+Expected: exits 0, stdout is JSON with `hookSpecificOutput.additionalContext` field containing the four canonical auto-load files (or whatever the workspace's `acw-state.yaml::auto_load_at_session_start` declares).
+
+On smoke-test failure: print `[error] Host entry file migration smoke test failed: <stderr>`. Surface as a halted-execution error; do not bump `last_reconciled_version`. Operator triages.
+
+On smoke-test success: print `Host entry file (Claude Code) v0.9.7 shape applied. Hook smoke test passed.`
+
+### Skip conditions
+
+Skip the entire pass if the audit pass produced no plan rows for this migration (instance already at v0.9.7 shape).
+
 ## Resolve existing `divergent_pending_review` entries
 
 After bulk execution, for each existing `divergent_pending_review` entry with `status: pending`:
