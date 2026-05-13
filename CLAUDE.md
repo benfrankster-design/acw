@@ -10,10 +10,10 @@ The canonical list lives in `acw-state.yaml::auto_load_at_session_start`. Treat 
 
 Each entry earns its slot per `rules/auto-load-discipline.md` — every entry declares a claim ("what fails if not loaded every session?"). Anything that doesn't earn its slot lives outside the auto-load list and is read on demand.
 
-@decisions/decision-log.md
+@decisions/INDEX.md
 @rules/instance-hard-rules.md
 @tasks-status.md
-@glossary.md
+@glossary/INDEX.md
 
 Other substrate is read on demand:
 - `rules/manifest-discipline.md`, `rules/instance-current-manifest.md`, `rules/multi-instance-topology.md` — consumed by `/acw-session start` (drift check), `/acw-instance audit|upgrade`, and the bookend's manifest-classification step. Loaded directly by those skills.

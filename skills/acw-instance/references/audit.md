@@ -36,7 +36,7 @@ For each canonical substrate type the workspace touches, compare the workspace's
 
 - **`CLAUDE.md`** — frontmatter, auto-load imports, hard-rule pointers, structure per `tools/templates/CLAUDE.md.tmpl`.
 - **`AGENTS.md`** — directives present, host-agnostic posture per ACW canonical.
-- **`tasks-status.md`** — three-section structure (Pending / Done / Parked); Done entries dated `YYYY-MM-DD —` heading per `rules/task-tracking.md`.
+- **`tasks-status.md`** — Pending-only (v0.9.3+ canonical shape) per `rules/task-tracking.md`; completed work archives on completion to `tasks-status-YYYY-Q*.md`; Parked retired (deferred-but-keep routes to `inbox/ideas/`). Three-section shape on a workspace is drift — propose `reshape` plan row to migrate to Pending-only.
 - **`build-log.md`** — chronological narrative entries with date stamps per `tools/templates/build-log.md.tmpl`.
 - **Decisions** — shape depends on `acw-state.yaml::decision_tracking.mode`:
   - **`single-file` mode (default):** `decisions/decision-log.md` — four sections (Open Questions / Decisions and Rationale / Constraints and Gotchas / Resolved Questions); ids prefixed `D-{CODE}-NNN` per `rules/decision-tracking.md`.

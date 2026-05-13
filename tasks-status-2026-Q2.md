@@ -140,3 +140,56 @@ This file is not auto-loaded. Read on demand when historical context is needed.
 - Added directive 7 to `AGENTS.md`.
 - Ported `capture-and-metabolize` and `resume-session` from gsg-copilot.
 - Bumped `acw-state.yaml::version` to `0.2.0-rc1`.
+
+---
+
+## Done blocks moved from live file 2026-05-13 (v0.9.3 Pending-only migration)
+
+### 2026-05-05 — v0.9.1: bi-weekly rolling-window discipline for decision-log + global synapse trim (Session 15)
+
+- D-ACW-042 records the bundle. Doctrine-completion patch on v0.9.0; closes the decision-log mechanism gap that v0.9.0 left under-specified.
+- `rules/decision-tracking.md` gains "Rolling-window discipline" section: bi-weekly cadence + ~15k threshold trigger; archive shape `decisions/decision-log-YYYY-Q*.md` (meta_layer, archive frontmatter); Open Questions/Constraints/Resolved sections do not archive.
+- `rules/task-tracking.md` rolling-window cadence aligned to bi-weekly.
+- `rules/auto-load-discipline.md` caveats updated for both `decisions/decision-log.md` and `tasks-status.md` to reference bi-weekly cadence + threshold trigger.
+- `rules/instance-current-manifest.md` gains earned-in-0.9.1 entry for `decision-log-YYYY-Q*.md` archive shape.
+- ACW substrate split applied: D-ACW-034 down through D-004 moved to `decisions/decision-log-2026-Q2.md`. Live decision-log retains D-ACW-035 onward.
+- Companion global-layer trim: moved six ACW-canonical duplicates from `~/synapse/Rules/` to `~/synapse/Reference/acw-canonical/`. ~85k off global memory load.
+- Bumped ACW version 0.9.0 -> 0.9.1.
+
+### 2026-05-04 — v0.9.0: auto-load discipline + tasks-status archive (Session 14)
+
+- D-ACW-038 records the bundle. Auto-load bloat incident logged.
+- `rules/auto-load-discipline.md` (new template_layer rule): codifies earn-by-incident applied to auto-load.
+- `tools/manifest.py` extended with STRUCTURED_LISTS; 8 new unit tests; 54 tests pass.
+- `acw-state.yaml::auto_load_at_session_start` migrated to structured form with 4 demotions.
+- `tools/templates/acw-state.yaml.tmpl` updated.
+- `CLAUDE.md` updated: `@`-imports synced to lean 4 entries.
+- `/acw-instance audit` + upgrade references gained auto-load discipline sections.
+- `tasks-status.md` Done section trimmed: Sessions 1-11 archived; `rules/task-tracking.md` updated.
+- Auto-load context savings ~30k.
+- Bumped ACW version 0.8.0 -> 0.9.0.
+
+### 2026-05-04 — v0.8.0: bookend efficiency cluster (Session 13)
+
+- D-ACW-037 records the bundle. Cost-friction incident logged.
+- Bookend efficiency: skills/acw-session/SKILL.md declares Haiku model; `/acw-session end` defaults to quick mode; full/synapse/research flags.
+- New verb `/acw-session update`.
+- `.current-session` tracker.
+- Sessions move to root.
+- Superseded skill cleanup: deleted 4 retired skill dirs from disk.
+- Three new earned-in-0.8.0 manifest entries.
+- Bumped ACW version 0.7.0 -> 0.8.0.
+
+### 2026-05-03 — v0.7.0: /acw-instance adopt-and-migrate rewrite + integrations scope (Session 12)
+
+- D-ACW-036 records the bundle.
+- Workstream B rewrote skills/acw-instance/SKILL.md + references/audit.md + references/upgrade.md to adopt-and-migrate model.
+- integrations/<system>/ scope refined to cover docs + integration-specific tooling.
+- Bumped ACW version 0.6.1 -> 0.7.0.
+
+## Parked section retired 2026-05-13 (v0.9.3); content below frozen for historical reference
+
+- C-04 synthesis-cycle: single cycle of evidence is too thin. Defer to DEFERRED.md or wait.
+- C-05 runbooks layer: operator-preference-flavored. Document as recommended, not normative.
+- C-07 vault-boundary as hard rule: include as suggested starting rule in instance-hard-rules template, not normative globally.
+- C-08 backlog triple-tag: recommended convention only, not normative.
