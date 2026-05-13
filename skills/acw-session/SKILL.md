@@ -6,7 +6,6 @@ description: >
   Mode-portable across single-file and wiki substrate. Operator-invoked only.
 role: orchestrator
 capabilities: []
-model: claude-sonnet-4-6
 ---
 
 | Domain | 6C Primary | Governance |
