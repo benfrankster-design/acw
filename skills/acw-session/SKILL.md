@@ -12,7 +12,7 @@ description: >
   (update), or up to five artifacts (end).
 role: orchestrator
 capabilities: []
-model: claude-haiku-4-5
+model: claude-sonnet-4-6
 ---
 
 | Domain | 6C Primary | Governance |
@@ -28,7 +28,7 @@ Object-centered orchestrator. Object: this ACW instance's session lifecycle. Ver
 | Command | What it does | Reference |
 |---|---|---|
 | `start` | Loads context, initializes active capture file + tracker, runs drift check, surfaces buffer. | `references/start.md` |
-| `update` | Mid-session checkpoint. Reads `.current-session` (self-bootstraps if missing); appends a timestamped note. Haiku-grade, no metabolize. | `references/update.md` |
+| `update` | Mid-session checkpoint. Reads `.current-session` (self-bootstraps if missing); appends a timestamped note. Lightweight, no metabolize. | `references/update.md` |
 | `end` | Profile-dispatched: `quick` (default) / `full` / `log-only` / `synapse-only` / `research-only`. Always clears `.current-session` on completion. | `references/end.md` |
 
 Routing rules: argument required. `/acw-session` with no command prints the table. Unknown command errors with the table.

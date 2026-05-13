@@ -1,6 +1,6 @@
 # update
 
-Mid-session checkpoint verb. Reads `<sessions_dir>/.current-session`; appends a timestamped note to the active capture file under `## Updates`. No metabolize, no distribute, no Phase 2-5 work. Cheap by design — Haiku-grade end-to-end, runs in seconds.
+Mid-session checkpoint verb. Reads `<sessions_dir>/.current-session`; appends a timestamped note to the active capture file under `## Updates`. No metabolize, no distribute, no Phase 2-5 work. Cheap by design — runs in seconds.
 
 Closes the gap between session-start and session-end: lets the operator log progress mid-flow without paying full session-end cost. Models on the [Ian Nuttall claude-sessions](https://github.com/iannuttall/claude-sessions) `session-update` precedent.
 
@@ -68,4 +68,4 @@ No other artifacts. No substrate writes. No Phase 2-5 work.
 
 ## Cost shape
 
-This verb exists specifically to be cheap. Haiku-default (per skill frontmatter) handles every step. Total token cost should be a small fraction of `/acw-session end quick` and a tiny fraction of `/acw-session end full`. If `update` ever feels expensive, that's a signal it's doing too much; cut scope.
+This verb exists specifically to be cheap. Total token cost should be a small fraction of `/acw-session end quick` and a tiny fraction of `/acw-session end full`. If `update` ever feels expensive, that's a signal it's doing too much; cut scope.

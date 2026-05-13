@@ -138,7 +138,7 @@ After completion, update `.current-session::last_completed_phase: 2`.
 Approve all / Approve specific (comma list) / Reject all / Edit each: ___
 ```
 
-**Sonnet escalation for judgment.** Phase 3 operator-confirm proposal generation requires judgment about what's stale. The parent skill is bound to Haiku at frontmatter level; per-step model switching is not available in Claude Code. Dispatch this step to a Sonnet subagent via Task tool:
+**Subagent dispatch for judgment (context isolation).** Phase 3 operator-confirm proposal generation requires judgment about what's stale. Parent skill runs Sonnet directly; subagent dispatch is retained for context isolation (bounded return contract keeps Phase 3 outputs from polluting parent context). Dispatch via Task tool:
 
 ```
 Agent({
