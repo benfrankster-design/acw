@@ -18,14 +18,14 @@
 # Edited only via a decision-log entry. Every edit bumps `version` or
 # `last_reconciled`.
 
-version: "0.9.4"
+version: "0.9.5"
 last_reconciled: "2026-05-13"
 
 # Version this instance is synced to in the recommended-blocks registry
 # (rules/instance-current-manifest.md). Used by /acw-session start drift
 # check to compare against each entry's earned-in version. Bumped
 # automatically by /acw-instance upgrade after a successful reconciliation.
-last_reconciled_version: "0.9.4"
+last_reconciled_version: "0.9.5"
 
 # Declares whether this instance publishes canonical content downstream to
 # other instances. ACW itself sets this to true (it IS the upstream source for
@@ -85,11 +85,20 @@ template_layer:
   - tools/lint-vocab.py
   - tools/log-incident.py
   - tools/manifest.py
+  - tools/migrate_to_wiki.py
   - tools/scaffold-instance.py
   - tools/templates/
 
 instance_layer:
   # ACW's own content lives here; instances get the templated initial form.
+  #
+  # NOTE on dual purpose: these rows describe scaffolder-rendered initial
+  # state for new instances (default single-file mode). When ACW itself or
+  # any instance dogfoods an opt-in mode (e.g., wiki-shape decisions +
+  # glossary per D-ACW-043), the on-disk shape diverges from the rows
+  # below. The state-file mode keys (decision_tracking.mode and
+  # glossary.mode) are authoritative for the instance's actual on-disk
+  # shape; these rows remain the scaffolder defaults.
   - path: acw-state.yaml
     template: tools/templates/acw-state.yaml.tmpl
   - path: glossary.md
@@ -154,10 +163,26 @@ meta_layer:
   - research/09-gsg-copilot-instance-extensions.md
   - research/10-multi-instance-topology.md
   - research/11-session-continuity-prior-art.md
-  # Tasks-status quarterly archives — ACW's history; not propagated.
-  - tasks-status-2026-Q2.md
-  # Decision-log quarterly archives — ACW's history; not propagated. Added v0.9.1 per D-ACW-042.
+  # Tasks-status archives — ACW's history; not propagated. v0.9.5+ shape:
+  # archives/tasks-status/YYYY-MM.md (monthly, in dedicated folder).
+  # Pre-v0.9.5 quarterly archive grandfathered at archives/tasks-status/2026-Q2.md.
+  - archives/tasks-status/2026-Q2.md
+  # Decision-log quarterly archives (single-file-mode era; frozen since
+  # ACW migrated to wiki mode in v0.9.3). Added v0.9.1 per D-ACW-042.
   - decisions/decision-log-2026-Q2.md
+  # Research notes about ACW's own design phase — not propagated.
+  - research/02-literature-survey.md
+  - research/03-synthesis.md
+  - research/04-proposal.md
+  - research/05-ship-decision.md
+  - research/06-completeness-audit.md
+  - research/07-instance-types.md
+  - research/12-kashef-hive-mind-comparison.md
+  - research/13-build-then-rip-pattern-watch.md
+  - research/paper.md
+  - research/README.md
+  # Operator-facing runbook for ACW's own v0.9.0 migration.
+  - runbooks/v0.9.0-auto-load-migration.md
   # Four superseded skills (capture-session, capture-and-metabolize, resume-session, upgrade-instance)
   # were deleted from disk in v0.8.0 per D-ACW-037, closing the v0.4.0 manual-delete pending item.
 

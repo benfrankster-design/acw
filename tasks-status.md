@@ -9,7 +9,7 @@ section_conventions:
 
 # Tasks Status — ACW
 
-Pending-only (v0.9.3+ canonical shape). See `rules/task-tracking.md` for format. Completed work archives on completion to `tasks-status-2026-Q2.md`; deferred-but-keep ideas route to `inbox/ideas/` (wiki-shaped) or earn a decision-log entry.
+Pending-only (v0.9.3+ canonical shape). See `rules/task-tracking.md` for format. Completed work archives on completion to `archives/tasks-status/YYYY-MM.md` (v0.9.5+ shape; pre-v0.9.5 archive grandfathered at `archives/tasks-status/2026-Q2.md`). Deferred-but-keep ideas route to `inbox/ideas/` (wiki-shaped) or earn a decision-log entry.
 
 ## Pending
 

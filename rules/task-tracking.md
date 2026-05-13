@@ -53,14 +53,15 @@ The pinned-marker convention cues the next session what to fire first. `/acw-ses
 When a task is completed:
 
 1. **Move it out of `tasks-status.md` immediately** as part of the session that completed it. The completed task does not sit in `tasks-status.md` waiting for a weekly archive sweep.
-2. **Land it in `tasks-status-YYYY-Q*.md`** under that session's dated block. Append-only; never edit past entries.
+2. **Land it in `archives/tasks-status/YYYY-MM.md`** (current month) under that session's dated block. Append-only; never edit past entries.
 3. **`/acw-session end` Phase 2** writes the session block to the archive file, not to a Done section in the live file.
 
-Archive file convention:
-- Path: `tasks-status-YYYY-Q*.md` at workspace root.
+Archive file convention (v0.9.5+):
+- Path: `archives/tasks-status/YYYY-MM.md` — dedicated folder; one file per calendar month.
 - Frontmatter: `class: archive, authority: derived, stability: stable, loaded_by_agent: no`.
 - Registered in `acw-state.yaml::meta_layer`.
-- Quarterly rotation when the current archive exceeds ~5000 lines (Q1, Q2, Q3, Q4 of the year).
+- Monthly rotation: new calendar month → new file. No size threshold; each month rolls cleanly.
+- Pre-v0.9.5 grandfathered shape: `tasks-status-YYYY-Q*.md` at workspace root (quarterly). Existing instances may carry both; new archives go into the monthly folder shape.
 
 Session-block format inside the archive:
 
@@ -98,7 +99,7 @@ Decisions answer *what was chosen*. Tasks answer *what is being worked on*. A de
 
 ## Relation to `/acw-session end`
 
-Phase 2 writes the dated archive block to `tasks-status-YYYY-Q*.md` (current quarter archive). Phase 2 also removes completed items from `tasks-status.md::Pending`. The skill never edits past archive blocks.
+Phase 2 writes the dated archive block to `archives/tasks-status/YYYY-MM.md` (current month). Phase 2 also removes completed items from `tasks-status.md::Pending`. The skill never edits past archive blocks. Pre-v0.9.5 grandfathered files (`tasks-status-YYYY-Q*.md` at workspace root) remain valid for read; new writes land in the monthly shape.
 
 ## Relation to `inbox/` (operator capture surface)
 
@@ -115,10 +116,19 @@ Triage is operator-driven (or triage-skill-driven where applicable). `tasks-stat
 
 Instances on the three-section shape (Pending / Done / Parked) migrate as follows:
 
-1. Move existing Done content to `tasks-status-YYYY-Q*.md` archive (typical rolling-window archive already does this).
-2. Move existing Parked content to the archive's final Parked-frozen block. Cherry-pick anything still active into `inbox/ideas/` (with `type: idea, status: parked, date:` frontmatter) or `decisions/decision-log.md` (if architectural).
+1. Move existing Done content to `archives/tasks-status/YYYY-MM.md` archive files (split by month if the source spans multiple).
+2. Move existing Parked content to the relevant month's archive as a final Parked-frozen block. Cherry-pick anything still active into `inbox/ideas/` (with `type: idea, status: parked, date:` frontmatter) or the decision-log (if architectural).
 3. Rewrite `tasks-status.md` to Pending-only.
 4. Update local rules mirror if the instance carries one.
-5. Log the migration in `decisions/decision-log.md` (D-CMD-NNN pattern).
+5. Log the migration in the decision-log.
 
 `_Command` migrated 2026-05-12 (D-CMD-030).
+
+## v0.9.5+ archive-folder migration
+
+Pre-v0.9.5 instances on the root-level quarterly shape (`tasks-status-YYYY-Q*.md` at workspace root) migrate as follows:
+
+1. `mkdir -p archives/tasks-status/`.
+2. Split each quarterly archive into per-month files (`archives/tasks-status/YYYY-MM.md`) by entry date. If the operator prefers, the existing quarterly file may be grandfathered as `archives/tasks-status/YYYY-Q*.md` (kept whole, moved into the folder); only new writes go into the monthly shape.
+3. Remove the root-level archive files; update `acw-state.yaml::meta_layer` to point at the new paths.
+4. Update any pointer line in the live `tasks-status.md` preamble.
