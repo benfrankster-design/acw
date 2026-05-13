@@ -9,6 +9,16 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-13 — v0.9.6 wiki migration + /acw-session model-pin fix (Session 17)
+
+Two coupled ships and one diagnostic landing.
+
+**v0.9.6 ship** (D-ACW-045): wiki migration doctrine flipped — ALL decisions live in `decisions/entries/` in wiki mode, including pre-migration history. Retired the "archives stay archived" expedient from D-ACW-043. ACW's own Q2 archive (34 entries: D-001..D-005, D-ACW-006..D-ACW-034) re-split into per-entry wiki files; `decisions/decision-log-2026-Q2.md` deleted; `acw-state.yaml::meta_layer` reference removed; INDEX regenerated (now 49 entries date-descending). `tools/migrate_to_wiki.py` gained `--archive=<path>` flag for flat-`###` archive parsing. `/acw-instance upgrade` reference extended with v0.9.6 single-file → wiki migration section (8 steps under one approval gate). `/acw-session` redundancy refactor: 7 sites collapsed to rule + state-file pointers, mirroring D-ACW-044's `/acw-instance` work.
+
+**Model-pin fix** (D-ACW-046): post-ship, `/acw-session` failed "Prompt is too long" on the same Opus 1M session at ~300k context. Diagnosis: SKILL.md frontmatter pinned `model: claude-sonnet-4-6`, which capped inherited context to Sonnet's 200k window. `/compact` confirmed the diagnosis by restoring functionality. Root fix: drop `model:` from orchestrator SKILL.md — inherit parent session model. Sonnet escalation for Phase 3/5 judgment subagent retained (those run with bounded context). New rule (deferred until second incident): orchestrator skills that run inline MUST NOT pin `model:`.
+
+Net: 49 decision entries (was 48), one new earned-by-incident structural fix, `/acw-session` usable on long Opus sessions again.
+
 ## 2026-05-05 — v0.9.1: bi-weekly rolling-window for decision-log + global synapse trim (Session 15)
 
 Operator opened with a screenshot of context-usage: 128k / 1M with Memory files at 79.2k. The bloat traced to two structural sources: (a) `~/synapse/Rules/instance-current-manifest.md` (35.8k) plus five other ACW-canonical duplicates auto-loading globally via the `~/.claude/rules` → `~/synapse/Rules/` junction, and (b) ACW's own `decisions/decision-log.md` at 24k, past the v0.9.0 ~15k canonical-recommendation threshold without a documented archive mechanism.

@@ -20,6 +20,7 @@ Archived entries: see `decision-log-YYYY-Q*.md` files in this directory.
 
 - [D-ACW-044](entries/D-ACW-044-skill-redundancy-refactor-and-substrate-boundary-rule.md) — v0.9.4: skill-redundancy refactor for /acw-instance + new rules/substrate-boundary.md _(2026-05-13)_
 - [D-ACW-045](entries/D-ACW-045-wiki-migration-resplits-archives-and-acw-session-redundancy-refactor.md) — v0.9.6: wiki migration re-splits archives + /acw-session redundancy refactor _(2026-05-13)_
+- [D-ACW-046](entries/D-ACW-046-skill-orchestrator-model-pin-traps-parent-context.md) — Skill orchestrator model pin traps parent context — drop from /acw-session _(2026-05-13)_
 - [D-ACW-043](entries/D-ACW-043-v0-9-3-weekly-cadence-wiki-shape-as-sanctioned-mode-bookend.md) — v0.9.3: weekly cadence + wiki-shape as sanctioned mode + bookend mode-portability + bookend arch improvements + tasks-status Pending-only _(2026-05-12)_
 - [D-ACW-041](entries/D-ACW-041-buffer-lifecycle-read-flag-buffer-read-archive-subdirectory.md) — Buffer lifecycle: `read:` flag + `_buffer/_read/` archive subdirectory _(2026-05-05)_
 - [D-ACW-042](entries/D-ACW-042-v0-9-1-bi-weekly-rolling-window-discipline-for-decision-log.md) — v0.9.1: bi-weekly rolling-window discipline for decision-log; doctrine completion + global synapse trim _(2026-05-05)_
