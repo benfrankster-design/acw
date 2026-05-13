@@ -157,30 +157,21 @@ For each `absorption-candidate` row:
 3. **Record divergence locally:** append to `acw-state.yaml::divergent_pending_review` with `path`, `absorption_candidate` (path to the `_buffer/` note), `sent_date: <today>`, `status: pending`.
 4. The source file stays in place pending ACW's absorption review. Do NOT delete or reshape it.
 
-## v0.9.0 migration: auto-load discipline
+## Auto-load discipline application
 
-If the workspace's `acw-state.yaml::auto_load_at_session_start` block uses legacy bare-path form, OR contains entries declared as demotion candidates in `rules/auto-load-discipline.md`, the upgrade applies the audit's verdicts as part of the bulk execution:
+Authoritative source: `rules/auto-load-discipline.md` (canonical claims, demotion list) + audit-emitted verdict table per `references/audit.md`.
 
-1. **Convert bare-path entries to structured form** — for each `KEEP` or `KEEP (migrate-to-structured)` entry, write the structured `path / claim / earned_by` triple. Use the canonical claim from `rules/auto-load-discipline.md` for canonical-recommendation paths; prompt the operator for `claim` text on `KEEP (instance-specific)` entries that lack one.
-2. **Remove demotion entries** — for each `DEMOTE` entry, remove from `auto_load_at_session_start`. The file itself stays in the workspace; only the auto-load reference is dropped. Print: `[demote] auto_load_at_session_start: removed <path> — <reason>` per row.
-3. **Resolve REVIEW entries interactively** — for each `[?]` REVIEW plan row, prompt with options:
-   ```
-   Auto-load entry: <path>
-   Form: bare-path (legacy)
-   Not on canonical recommendations; no declared claim.
+For each auto-load plan row from the audit, execute under the same approval gate:
 
-   Choose:
-     k) KEEP — declare a claim for this instance-specific override
-     d) DEMOTE — remove from auto_load_at_session_start (file stays in workspace)
-     s) skip — leave as-is (entry stays as legacy-pending-review; surfaces again on next audit)
-   ```
-4. **Update host entry files** — when `CLAUDE.md` (or other host-specific entry files) carry mirror `@`-imports of the auto-load list, propose a corresponding edit to keep them in sync. Operator confirms.
-5. **Decision-log entry** — append a row to the migration's decision-log entry naming the auto-load changes:
-   ```
-   - Auto-load discipline applied: kept <K> entries, migrated <M> to structured form, demoted <D> entries.
-   ```
+- `KEEP` / `KEEP (migrate-to-structured)` — write structured `path / claim / earned_by` triple. Canonical claims come from the rule; operator supplies claims for `KEEP (instance-specific)` rows that lack one.
+- `DEMOTE` — remove the entry from `auto_load_at_session_start`. File stays in workspace; only the auto-load reference drops. Print: `[demote] auto_load_at_session_start: removed <path> — <reason>`.
+- `REVIEW` — prompt operator: `k`eep (declare claim), `d`emote, or `s`kip (stays as legacy-pending-review).
 
-This step is performed only when the audit's plan includes auto-load rows. If `auto_load_at_session_start` is already fully canonical (4 structured entries matching the recommendations) the step is a no-op.
+When `CLAUDE.md` or other host entry files carry mirror `@`-imports of the auto-load list, propose a corresponding edit to keep them in sync (operator confirms).
+
+Append one summary line to the migration's decision-log entry: *Auto-load discipline applied: kept K entries, migrated M to structured form, demoted D entries.*
+
+No-op if `auto_load_at_session_start` already matches the rule's canonical recommendations in structured form.
 
 ## v0.5.0 migration: `_inbox/` → `_buffer/`
 
@@ -212,67 +203,24 @@ Use `tools/manifest.py append` (key/value upsert) or direct edit. Preserve all o
 
 ## Log decision-log entry
 
-Mode-portable. Read `acw-state.yaml::decision_tracking.mode` (default `single-file`) and dispatch:
+Format authority: `rules/decision-tracking.md` owns the single-file section format; `acw-state.yaml::decision_tracking.entry_frontmatter_required + status_values + kind_values` owns wiki-mode frontmatter. The skill writes the body content; format comes from those sources.
 
-**Single-file mode** — append to `paths.decisions_log` under `section_conventions.decisions`:
+Mode-portable dispatch (read `acw-state.yaml::decision_tracking.mode`, default `single-file`):
 
-```markdown
-### D-<CODE>-NNN — Instance migrated to ACW <version>
+- **single-file** → append a new entry under the configured decisions section in the file referenced by `paths.decisions_log` (or canonical default `decisions/decision-log.md`).
+- **wiki** → write a new file at `<decisions_entries_dir>/D-<CODE>-NNN-<slug>.md` using the canonical frontmatter shape; then invoke `decision_tracking.regenerate_index_cmd` if declared, else append a one-line link to `<decisions_index>::## Recent Decisions`.
 
-**Date:** YYYY-MM-DD
-**Decision:** Migrated this instance to ACW canonical shape as of version <version>.
-  Moved <N> files into canonical destinations.
-  Reshaped <M> files to canonical format.
-  Merged <P> files into existing canonical destinations.
-  Wrote <Q> new canonical files.
-  Deleted <R> source files post-migration.
-  Declared <S> instance-specific substrate entries (see decision-log entries for rationale).
-  Sent <T> absorption candidates to ACW _buffer/.
-  Reconciled <V> recommended-blocks gaps in acw-state.yaml.
-  Canonical manifest fetched from GitHub and cached locally.
-**Rationale:** Adopt-and-migrate per /acw-instance upgrade. Workspace now structurally identical to ACW canonical; operational history preserved in canonical files.
-**Source:** /acw-instance upgrade run on <date>.
-**Pre-migration safety commit:** <commit hash, if created>.
-**Migration commit:** <to be created after this entry lands>.
-```
+Body content the skill supplies (both modes):
 
-**Wiki mode** — create file at `<decisions_entries_dir>/D-<CODE>-NNN-instance-migrated-to-acw-<version>.md`:
+- **Title:** `Instance migrated to ACW <version>`.
+- **Date:** today (UTC).
+- **Decision:** one-line summary + per-action counts (moves, reshapes, merges, write-canonical, deletes, instance-specific declarations, absorption candidates, recommended-blocks gaps reconciled, canonical manifest fetched).
+- **Rationale:** adopt-and-migrate per `/acw-instance upgrade`; workspace now structurally identical to ACW canonical.
+- **Source:** `/acw-instance upgrade` run on `<date>`.
+- **Pre-migration safety commit:** `<hash>` (if created).
+- **Migration commit:** placeholder ("to be created after this entry lands").
 
-```markdown
----
-id: D-<CODE>-NNN
-title: "Instance migrated to ACW <version>"
-date: YYYY-MM-DD
-status: accepted
-kind: decision
-tags: [acw-migration, infrastructure]
-updated: YYYY-MM-DD
----
-
-# D-<CODE>-NNN — Instance migrated to ACW <version>
-
-**Date:** YYYY-MM-DD
-**Decision:** [same body as single-file mode]
-**Rationale:** ...
-**Source:** ...
-```
-
-After write, invoke `decision_tracking.regenerate_index_cmd` if declared (typically `python tools/migrate_to_wiki.py`), else append one line to `decisions/INDEX.md::## Recent Decisions` manually.
-
-For each `instance-specific` row, additionally write a per-file rationale entry. Mode-portable:
-
-**Single-file mode:**
-
-```markdown
-### D-<CODE>-NNN — <path> declared instance-specific substrate
-
-**Date:** YYYY-MM-DD
-**Decision:** Substrate at `<path>` declared instance-specific; will not be promoted to ACW canonical.
-**Rationale:** <operator-supplied rationale during upgrade>.
-**Source:** /acw-instance upgrade run on <date>.
-```
-
-**Wiki mode:** same body content, written as a new file at `<decisions_entries_dir>/D-<CODE>-NNN-<slug>.md` with the standard frontmatter. Regenerate INDEX after.
+For each `instance-specific` row, write an additional rationale entry (same mode dispatch) with body: title `<path> declared instance-specific substrate`, decision naming the path, rationale supplied by operator during upgrade.
 
 If this run was an unregistered-workspace adoption, prepend an additional entry recording the adoption itself (workspace registered, canonical manifest cached, initial `acw-state.yaml` written).
 
@@ -316,33 +264,19 @@ The verb does NOT auto-commit the migration. Operator commits manually after rev
 
 ## Adopt-mode (unregistered workspace)
 
-When Step 2 of the spine flagged the workspace as unregistered (canonical signals at-or-above 3 OR substrate-shaped patterns present), the same plan-approval flow applies. The plan will include:
+When Step 2 of the spine flagged the workspace as unregistered, the same plan-approval flow applies. The plan's `write-canonical` rows are derived from canonical `acw-state.yaml::template_layer + instance_layer + empty_dirs + recommended_blocks` — every declared path that doesn't exist in the workspace becomes a write-canonical row. Mode-dependent rows (decisions, glossary) follow the workspace's `decision_tracking.mode` / `glossary.mode` (defaulting to `single-file` when unset).
 
-- `write-canonical` rows for the missing canonical files (`acw-state.yaml`, `rules/instance-current-manifest.md`, `tasks-status.md` if absent, and — per `decision_tracking.mode` and `glossary.mode` — either the monolithic file or the INDEX + entries-dir scaffold).
-- `move` and `reshape` rows for the substrate-shaped patterns the workspace already has.
-- `instance-specific` declarations for substrate the operator wants kept as-is.
-- `absorption-candidate` rows for net-new patterns that should flow upstream to ACW.
+The hard-stop threshold from D-ACW-022 (`adopt_mode_organic_threshold`, default 5) is no longer enforced. The plan-approval gate is the safety net: operator sees every proposed routing in one coherent view before any write fires. The field stays in `acw-state.yaml` for backward compatibility; decision-log entry recommended on first upgrade post-v0.7.0 to formally retire.
 
-The hard-stop threshold from D-ACW-022 (`adopt_mode_organic_threshold`, default 5) is no longer a blocking gate at adopt time. Instead, the plan-approval gate IS the safety net: the operator sees every proposed routing in one coherent view before any write fires. This supersedes the v0.4.0 hard-stop — that gate existed to prevent steamrolling unregistered workspaces, and the plan-approval gate accomplishes the same thing more transparently.
+The initial `acw-state.yaml` written for an adopted workspace is rendered from `tools/templates/acw-state.yaml.tmpl` (canonical scaffold source). Computed fields the verb fills in:
 
-The threshold remains in `acw-state.yaml` for backward compatibility but is no longer enforced as a bail condition. (Decision-log entry recommended on first upgrade post-v0.7.0 to formally retire the gate.)
+- `version` = canonical's current `<version>`
+- `last_reconciled` = today (UTC)
+- `last_reconciled_version` = `0.0.0` (drives one noisy re-audit; quiets after next upgrade pass)
+- `is_canonical_source` = `false`
+- `project.{name, code, domain}` = operator-supplied
 
-For an unregistered workspace, the initial `acw-state.yaml` written as part of the plan execution carries:
-
-```yaml
-version: "<canonical-current-version>"
-last_reconciled: "<today>"
-last_reconciled_version: "0.0.0"   # drives a noisy first re-audit; quiets after next upgrade pass
-is_canonical_source: false
-project:
-  name: "<operator-supplied>"
-  code: "<operator-supplied>"
-  domain: "<operator-supplied>"
-paths:
-  # canonical defaults; operator can override post-migration
-```
-
-After the migration commit, the next `/acw-instance audit` run will produce a clean plan (most rows `leave-untouched`) and a future `/acw-instance upgrade` will bump `last_reconciled_version` to the current canonical.
+After the migration commit, the next `/acw-instance audit` run produces a clean plan and a future `/acw-instance upgrade` bumps `last_reconciled_version` to current canonical.
 
 ## Safety
 

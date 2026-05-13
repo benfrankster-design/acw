@@ -32,27 +32,29 @@ The verb is opinionated. After v0.6.0 absorbed the cockpit cluster, well-formed 
 
 ## Canonical comparison reference
 
-For each canonical substrate type the workspace touches, compare the workspace's file against canonical:
+Authoritative source: canonical `acw-state.yaml::instance_layer` (each row names its template), `template_layer` (each path names the canonical rule or tool), and the mode keys `decision_tracking.*` / `glossary.*` (frontmatter required, status/kind enums, archive pattern). The skill does not redeclare per-type shape inline.
 
-- **`CLAUDE.md`** — frontmatter, auto-load imports, hard-rule pointers, structure per `tools/templates/CLAUDE.md.tmpl`.
-- **`AGENTS.md`** — directives present, host-agnostic posture per ACW canonical.
-- **`tasks-status.md`** — Pending-only (v0.9.3+ canonical shape) per `rules/task-tracking.md`; completed work archives on completion to `tasks-status-YYYY-Q*.md`; Parked retired (deferred-but-keep routes to `inbox/ideas/`). Three-section shape on a workspace is drift — propose `reshape` plan row to migrate to Pending-only.
-- **`build-log.md`** — chronological narrative entries with date stamps per `tools/templates/build-log.md.tmpl`.
-- **Decisions** — shape depends on `acw-state.yaml::decision_tracking.mode`:
-  - **`single-file` mode (default):** `decisions/decision-log.md` — four sections (Open Questions / Decisions and Rationale / Constraints and Gotchas / Resolved Questions); ids prefixed `D-{CODE}-NNN` per `rules/decision-tracking.md`.
-  - **`wiki` mode:** `decisions/INDEX.md` (auto-loaded thin index) + `decisions/entries/<id>-<slug>.md` (atomic per-decision files with frontmatter `id, title, date, status, kind, updated`) + `decisions/open-questions/` + `decisions/constraints/` subdirs. INDEX regenerates from entries.
-  - Mode-mismatch (e.g., file shape doesn't match declared mode) → `[?]` plan row.
-- **`incidents.jsonl`** — one event per line; schema per `rules/incident-tracking.md`.
-- **Glossary** — shape depends on `acw-state.yaml::glossary.mode`:
-  - **`single-file` mode (default):** `glossary.md` — `## <term>` sections per `tools/templates/glossary.md.tmpl`.
-  - **`wiki` mode:** `glossary/INDEX.md` + `glossary/entries/<slug>.md` (frontmatter `term, status`).
-- **`research/`** — `01-problem-framing.md`, `evolution.md`, `sources.md`, `research-state.yaml`, `sessions/`, `queries/`, `queries/_consumed/`.
-- **`context/`** — `goals.md`, `objectives.md`, `how-i-work.md`, `key-people.md`.
-- **`integrations/README.md`** — present per `tools/templates/integrations-README.md.tmpl`.
-- **`acw-state.yaml`** — structure per `rules/manifest-discipline.md`; recommended blocks per `rules/instance-current-manifest.md`.
-- **Skills under `skills/`** — frontmatter (name, description, role, capabilities), classification table, gotchas.md presence per `rules/skill-format.md`.
+For each in-scope path, fetch the canonical source named by its row and compare. The comparison is mechanical:
 
-Differences become plan rows: `reshape` if format is fixable in place at the canonical location, `move` if location is wrong, `write-canonical` if missing.
+- File at canonical location AND matches the canonical template/format → `leave-untouched`.
+- File present but format differs (frontmatter, sections, ids, append-only structure) → `reshape`.
+- File missing entirely → `write-canonical` (render from the template named in `instance_layer`).
+- File at wrong location → `move`.
+
+Mode-dependent substrates (decisions, glossary) branch on the workspace's declared mode: if file shape doesn't match the declared mode → `[?]` plan row, candidate routings include reshape-to-declared-mode and switch-mode-to-match-shape.
+
+Rule files that govern specific substrate shapes (consumed by this verb when classifying):
+
+- `rules/decision-tracking.md` — decisions format, both modes.
+- `rules/task-tracking.md` — tasks-status shape (Pending-only canonical since v0.9.3).
+- `rules/manifest-discipline.md` — `acw-state.yaml` structure + canonical-default-paths table.
+- `rules/instance-current-manifest.md` — recommended-blocks registry (consumed by next section).
+- `rules/auto-load-discipline.md` — auto-load gating (consumed by Auto-load discipline section).
+- `rules/skill-format.md` — skill frontmatter + body shape.
+- `rules/incident-tracking.md` — `incidents.jsonl` schema.
+- `rules/substrate-boundary.md` — in-scope / out-of-scope partition.
+
+Differences become plan rows per the action enum.
 
 ## Recommended-blocks registry pass
 
@@ -88,12 +90,9 @@ Skill-shape findings become plan rows under the skill's path; default action is 
 
 ## Auto-load discipline (earned in v0.9.0)
 
-Walk the workspace's `acw-state.yaml::auto_load_at_session_start` block per `rules/auto-load-discipline.md`. The rule defines:
+Authoritative source: `rules/auto-load-discipline.md`. The rule enumerates canonical recommendations (with mode-portable variants for decisions and glossary surfaces) and declared demotion candidates. The skill fetches the rule and applies its lists; it does not carry a copy.
 
-- **Canonical recommendations** — the four files ACW recommends with stated claims. Mode-portable: decisions surface is `decisions/decision-log.md` in single-file mode, `decisions/INDEX.md` in wiki mode. Glossary surface is `glossary.md` in single-file mode, `glossary/INDEX.md` in wiki mode. Plus `rules/instance-hard-rules.md` and `tasks-status.md` (mode-invariant).
-- **Declared demotion candidates** — paths that fail the gate (consumer-skill loads them directly, single-operator-doesn't-need-it, only-audit-reads-it). Currently named in the rule: `rules/manifest-discipline.md`, `rules/instance-current-manifest.md`, `rules/multi-instance-topology.md`, `incidents.jsonl`.
-
-For each entry in the workspace's `auto_load_at_session_start`, classify and add to the migration plan:
+For each entry in the workspace's `acw-state.yaml::auto_load_at_session_start`, classify against the rule and add to the migration plan:
 
 | Verdict | Trigger | Plan action |
 |---|---|---|
