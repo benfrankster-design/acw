@@ -59,9 +59,18 @@ For each queued prompt:
 
 For each unread file the spine collected (`read: false` in frontmatter, or no `read` field), surface to operator: source project, date, topic, one-line summary. Do not auto-act. Operator decides per file: act on it, archive (move to a `_read/` subdirectory of the buffer), or ignore.
 
+**Acted-on tracking.** When the operator chooses "act on it" and the resulting work lands in this session (decision, incident, hard-rule edit, canonical patch, etc.), the buffer note source is recorded so `/acw-session end` Phase 2 buffer sweep can move it to `_buffer/_read/` automatically. Active session's acted-on buffer notes are tracked in the capture file under `## Buffer notes acted on` (one bullet per source filename). The `end` verb reads this section and performs the moves.
+
 ## Step 5 — Drift check
 
-Read `rules/instance-current-manifest.md` (the local cache; updated by `/acw-instance upgrade`). For each entry whose **earned in** version is newer than `acw-state.yaml::last_reconciled_version` (semantic-version comparison, NOT date), check the state file:
+**Short-circuit (cheap path).** `/acw-instance upgrade` writes the local manifest cache and `last_reconciled_version` in the same atomic step and stamps `synced_to: <version>` in the manifest's frontmatter. Read ONLY the manifest's frontmatter (cheap — first ~10 lines). If `synced_to` is present AND equal to `acw-state.yaml::last_reconciled_version`, skip the walk and emit "no drift" silently — every entry's earned-in version is at-or-before `last_reconciled_version` by construction, so gaps are structurally impossible.
+
+Fall through to the full walk if any of the following:
+- `synced_to` is absent (instance pre-dates this field; never upgraded since v0.9.9; manually-written manifest).
+- `synced_to` mismatches `last_reconciled_version` (broken upgrade, manual edit, or the operator copied a newer canonical without bumping state).
+- `last_reconciled_version` is absent in `acw-state.yaml` (never-upgraded instance).
+
+**Full walk (fallback).** Read `rules/instance-current-manifest.md` (the local cache; updated by `/acw-instance upgrade`). For each entry whose **earned in** version is newer than `acw-state.yaml::last_reconciled_version` (semantic-version comparison, NOT date), check the state file:
 
 - Block absent → flag.
 - Block present-but-empty (`block: []` or `block: {}`) → do NOT flag (deliberate opt-out).

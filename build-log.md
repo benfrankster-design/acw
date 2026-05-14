@@ -9,6 +9,22 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-13 — v0.9.9 drift short-circuit + buffer sweep + synced_to: hardening (Session 20)
+
+Three coupled fixes shipped together as v0.9.9 (D-ACW-049), all triggered by a single `_buffer/` note from cops.
+
+**Cops's note (turn 0).** `/acw-session start` Step 5 was reading the full body of `rules/instance-current-manifest.md` (~390 lines, ~10–12k tokens) on every session start. With `last_reconciled_version == ACW current version` the walk is structurally guaranteed to surface zero gaps. The full read was wasted context for the 99% case.
+
+**Drift short-circuit.** Step 5 now reads only the manifest's frontmatter (cheap, ~10 lines). When `synced_to == acw-state.yaml::last_reconciled_version`, skip the walk and emit "no drift" silently. Falls through to the full walk when `synced_to` absent or mismatches (broken upgrade, manual edit, never-upgraded instance).
+
+**Buffer sweep.** Operator pulled the buffer-lifecycle gap into scope mid-session: "when buffer items are read and moved to decisions the buffer note should move to `_read`." Capture file gains `## Buffer notes acted on` section; `/acw-session end` Phase 2 append-only subset reads it and moves each listed file to `_buffer/_read/`. Closes the cross-instance handoff lifecycle.
+
+**`synced_to:` hardening.** First short-circuit attempt used file mtime as the "has the cache been touched?" signal. Operator asked for the bulletproof version. Added `synced_to: "<version>"` string field to the manifest's frontmatter, written by `/acw-instance upgrade` whenever it overwrites the file. Survives `git pull`, sync clients, workspace copies. start.md updated to use exact equality.
+
+**Self-demonstrating.** When asked "is there anything you loaded up to this point that was redundant?", the agent identified the exact failure cops had flagged — the manifest read — by looking at its own context-loading from this very session. The cops note moved to `_buffer/_read/` manually since the new sweep logic landed in the same session.
+
+Net: `/acw-session start` ~10k tokens cheaper per invocation across all reconciled instances, `_buffer/` lifecycle closed, version-stamp primitive added that other surfaces can adopt later.
+
 ## 2026-05-13 — v0.9.8 wiki mode canonical-only + context/contacts/ opt-in (Session 19)
 
 Doctrine simplification + new optional pattern.

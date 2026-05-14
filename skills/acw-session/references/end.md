@@ -75,6 +75,7 @@ last_completed_phase: 1
 - New sources → append to `paths.sources` (only if file already exists)
 - New conceptual shifts → prepend to `paths.evolution` (only if file already exists)
 - Hard-rule changes → append to instance hard-rules file (only if changes are unambiguous)
+- **Buffer sweep:** read the active capture's `## Buffer notes acted on` section (populated by `/acw-session start` Step 4 + operator action). For each filename listed, move `paths.buffer_dir/<filename>` to `paths.buffer_dir/_read/<filename>`. Create `_read/` if absent. Skip silently if section absent or empty.
 - **Skip in append-only subset:** glossary edits, manifest classification prompt, host-entry-file maintenance, canonical-edit detection branch, meta-layer trigger walk, cross-repo writes, cross-project notifications, research-state updates.
 
 **Full profile additionally runs:**

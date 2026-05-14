@@ -3,6 +3,7 @@ class: operational
 authority: canonical
 stability: experimental
 loaded_by_agent: yes
+synced_to: "0.9.9"
 ---
 
 # Instance Current Manifest
@@ -12,6 +13,8 @@ Declarative registry of recommended blocks an ACW instance should carry to be cu
 Each entry below documents one recommended block: what it is, why it helps, whether it's required, how to add it, and the ACW version in which it earned its build. The drift check uses the **earned in** field to suppress alerts for blocks that landed before the instance's `last_reconciled` date.
 
 The current ACW version is declared in `acw-state.yaml::version`. An instance is "current" when every recommended block whose `earned in` is at-or-before the ACW version is present in its state file.
+
+The `synced_to:` frontmatter field on this file declares the ACW version this cache snapshot represents. `/acw-instance upgrade` writes it whenever it overwrites this file from canonical. `/acw-session start` Step 5 reads it: when `synced_to == acw-state.yaml::last_reconciled_version`, the drift walk is structurally guaranteed empty and gets skipped (the cheap path). Mismatch (or absent field) triggers the full walk.
 
 ---
 
@@ -323,6 +326,14 @@ The current ACW version is declared in `acw-state.yaml::version`. An instance is
 - **Required:** No. Pre-v0.9.7 instances continue to function — `@`-imports in `CLAUDE.md` still load. Migration is recommended for drift elimination and host-portability.
 - **How to add:** Run `/acw-instance upgrade`. The verb detects pre-v0.9.7 shape, proposes the three-file migration under the standard plan-approval gate, and executes (CLAUDE.md trim + `.claude/settings.json` write + `.claude/hooks/load-context.py` copy from canonical template + AGENTS.md directive 7 update + addition of "Auto-load (Resource / When / Why)" and "What NOT to Load" sections). Manual path: copy `tools/templates/load-context.py.tmpl` to `.claude/hooks/load-context.py`, copy `tools/templates/settings.json.tmpl` to `.claude/settings.json`, replace `CLAUDE.md` body with `See AGENTS.md.\n`, update AGENTS.md from canonical.
 - **Earned in:** `0.9.7`. Earned-by-incident: scaffold drift on `cs-ops-spec` instance (2026-05-13) produced nine unearned `@`-imports against four earned manifest entries. See `decisions/entries/D-ACW-047`.
+
+## `synced_to:` frontmatter on this file — v0.9.9
+
+- **What:** A `synced_to: "<version>"` string field in the frontmatter of `rules/instance-current-manifest.md`. Written by `/acw-instance upgrade` whenever it overwrites this file from canonical; declares "this cache snapshot represents ACW version X."
+- **Why it helps:** Lets `/acw-session start` Step 5 short-circuit the drift walk by reading only this file's frontmatter (cheap) instead of the full ~390-line body. When `synced_to == acw-state.yaml::last_reconciled_version`, every entry's earned-in version is at-or-before reconciled by construction, so gaps are structurally impossible. Saves ~10k tokens per session start on the common case (recently-upgraded instance). Earned-by-incident: cops instance flagged the redundant full-body read on 2026-05-13 in a `_buffer/` note; the mtime-based heuristic was the v0.9.8 patch, this field is the hardened version.
+- **Required:** No. Pre-v0.9.9 manifests have no `synced_to:` field; the short-circuit detects absence and falls through to the full walk. Functionally identical to pre-v0.9.9 behavior with one extra ~10-line frontmatter read. The field lands automatically the next time `/acw-instance upgrade` overwrites the file.
+- **How to add:** Run `/acw-instance upgrade`. The verb writes the field as part of the canonical refresh step. Manual path: edit `rules/instance-current-manifest.md` frontmatter, set `synced_to: "<your last_reconciled_version>"`.
+- **Earned in:** `0.9.9`.
 
 ## `adopt_mode_organic_threshold`
 

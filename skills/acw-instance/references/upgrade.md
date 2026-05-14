@@ -269,6 +269,8 @@ After bulk execution, for each existing `divergent_pending_review` entry with `s
 
 Overwrite `<workspace>/rules/instance-current-manifest.md` with the fetched canonical content. The local file is now an up-to-date snapshot of "what canonical looks like at last reconciliation."
 
+After overwrite, set the `synced_to:` frontmatter field on the local file to the canonical's current `<version>` (string, quoted). This field is the cheap-path signal `/acw-session start` Step 5 reads to skip the drift walk when nothing can have changed.
+
 If `rules/instance-current-manifest.md` was missing entirely (common in unregistered adoption), this write also lands as part of bulk execution, before this step.
 
 ## Bump versions
