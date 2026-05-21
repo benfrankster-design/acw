@@ -9,6 +9,28 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-21 — Graphify probe + canonical audit + integration decision (Session 23)
+
+Same calendar day as Sessions 21 and 22. Continued the codemap track after the operator caught me citing Graphify's architecture from secondary-source articles without ever installing or running it.
+
+**The catch.** I'd described Graphify's CLI surface, output format, and integration patterns from blog posts (betterstack, pyshine, medium) — confidently, as if I'd used it. Operator pushed back with one line: "you didn't install it? pip install graphifyy". Right.
+
+**The install.** Package on PyPI is `graphifyy` (two y's); CLI binary is `graphify`. Version 0.8.14. Installed cleanly with full Tree-sitter language pack. `graphify update <path>` ran against three files in skills/codemap/ — 19 nodes, 16 edges, 4 communities, zero LLM cost. AST-only Stage 1 confirmed free.
+
+**The probe.** Ran against Python code from tools/ to see edge types beyond `contains`. Confirmed `calls`, `inherits`, `rationale_for` as native AST-stage edges. Confidence tags as documented (EXTRACTED on AST-only). Also discovered the `confidence_score` numeric field (0.0-1.0) I hadn't documented.
+
+**The audit.** Wrote `.acw/raw/2026-05-21-graphify-audit-canonical-vs-reality.md`. Three breaking errors, four moderate, three minor across `rules/codemap.md`, `skills/codemap/*`, both migration manifests, `tools/scaffold-instance.py`, and the template. Most consequential: output location is `graphify-out/` at cwd (no `--output-dir` flag); LLM is Gemini not Claude; the ACW-decision bridge is NOT native to Graphify.
+
+**The integration decision.** Graphify ships `graphify claude install` which writes a section into CLAUDE.md plus a PreToolUse hook. This conflicts with ACW's "CLAUDE.md is a thin pointer" convention (D-ACW-047). Operator chose ACW's auto-load: `.acw/codemap/GRAPH_REPORT.md` lands in `acw-state.yaml::auto_load_at_session_start` per the coding-project / library profile defaults; SessionStart hook loads it like every other substrate module; CLAUDE.md stays thin. Graphify is now treated as an internal AST engine we delegate to, not a co-equal integration partner.
+
+**The Stage 2 question.** Graphify's semantic extraction uses Gemini API. ACW's recommended pattern: AST-only as the default (free, deterministic, sufficient for most navigation); ACW-specific `implements_decision` bridge via Claude becomes the semantic layer (linkage between code and decision entries); Graphify's native Stage 2 stays opt-in via `acw-state.yaml::env_secrets` declaration of `GEMINI_API_KEY`.
+
+**Decisions ready to codify (Session 24):** D-ACW-052 (ACW's auto-load wins over graphify claude install; AST-only default; env_secrets pattern). C-005 (no Graphify content in any instance's CLAUDE.md).
+
+**The 90-minute patch plan landed in Session 23 capture.** Ten files to patch in order to fix the audit findings. Session capture at `.acw/sessions/2026-05-21--graphify-probe-and-codemap-audit.md` carries the full plan forward.
+
+**Honest framing.** Earlier ACW codemap work (rules/codemap.md, skills/codemap/SKILL.md) was authored confidently in a domain I hadn't touched. The architecture survives the audit; the specifics need correction. Single focused commit fixes it.
+
 ## 2026-05-21 — Phase 2: migration manifests, substrate-map, scaffolder, rules/ closure (Session 22)
 
 Same calendar day as Session 21 (the v0.10.0 ship); continued work focused on landing the foundation pieces v0.10.0 deferred.
