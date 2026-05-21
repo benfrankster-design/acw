@@ -9,6 +9,32 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-21 — Codemap canonical correction sweep + D-ACW-052/C-005 (Session 24)
+
+Executed the 90-minute patch plan from Session 23's capture. All ten files corrected against the audit at `.acw/raw/2026-05-21-graphify-audit-canonical-vs-reality.md`.
+
+**Decisions landed.** D-ACW-052 (codemap integration via ACW's auto-load, NOT `graphify claude install`; AST-only is default; Stage 2 Gemini opt-in via env_secrets; `implements_decision` bridge runs via Claude). C-005 (stop-work on writing Graphify content into any instance's CLAUDE.md). Both registered in `.acw/decisions/INDEX.md`.
+
+**`rules/codemap.md` rewrite.** Substantial corrections: output structure shows Graphify native (`graphify-out/`) vs ACW relocated (`.acw/codemap/`) forms; node types match probe (`document`, `code`, `rationale`); edge types match probe (`calls`, `contains`, `rationale_for`, `inherits` confirmed AST-stage); confidence tagging documents the numeric `confidence_score` companion field; Stage 2 LLM is Gemini (not Claude, not local); `implements_decision` is ACW-specific bridge running via Claude (not Graphify-native); build triggers no longer reference pre-commit hooks (Graphify ships post-commit, ACW uses on-demand); skill contract gains pass-through verbs (query, path, explain).
+
+**`rules/confidence-tagging.md` patch.** Added `confidence_score: 0.0–1.0` numeric companion field documentation. Convention: EXTRACTED → 1.0, INFERRED → explicit float required, AMBIGUOUS → not assigned.
+
+**`rules/instance-current-manifest.md` patch.** New entry: `env_secrets` block (earned v0.10.1). Schema with `name`, `required_by`, `when`, `notes`. Documents `.env` (gitignored) or shell-env supply pattern. Authority: D-ACW-052.
+
+**`skills/codemap/SKILL.md` rewrite.** Command table expanded with pass-through verbs (query, path, explain) plus the underlying Graphify call per row. Pre-flight gates expanded: CLAUDE.md integrity check (refuses if Graphify-managed block detected per C-005), env_secrets check (for `--semantic` runs). Output structure corrected to combined `graph.json` (no nodes/edges/communities split). New "What this skill MUST NOT do" section enforces C-005, no auto-rebuild hooks, no `graph.json` mutation, AST-only default.
+
+**`skills/codemap/gotchas.md` rewrite.** Eleven gotchas covering: two-y package name, no `--output-dir` flag, `cache/` not `.cache/`, Gemini not Claude for Stage 2, `implements_decision` is ACW-specific, `graphify claude install` forbidden per C-005, profile gating, AMBIGUOUS triage, branch-switch cache staleness, single combined `graph.json`, and wrapper-authoring readiness.
+
+**`skills/codemap/references/implementation-plan.md` rewrite.** Replaced "investigation deferred" framing. Now contains: probe findings (CLI verbs, output structure, edge schema), wrapper job (output relocation, `implements_decision` bridge via Claude, pass-through verbs), reference files to author, dogfood target (cs-atlas post-v0.10.0), estimated effort (1-2 hours).
+
+**Migration manifests.** Both `migrations/0.9.9-to-0.10.0.yaml` and `migrations/pre-acw-to-0.10.0.yaml` had their `.acw/codemap/.cache` create_dir step replaced with a NOTE — Graphify creates `cache/` (no dot) on first run, so the migration doesn't need to pre-create it.
+
+**`tools/templates/acw-state.yaml.tmpl` patch.** Added commented-out `env_secrets:` scaffold block with `GEMINI_API_KEY` example. Default value `[]`. Instances opting into Graphify Stage 2 uncomment and populate.
+
+**What did NOT change in scaffolder.** `tools/scaffold-instance.py` doesn't directly create `.acw/codemap/cache/` — only references `codemap` as a module name (lines 201, 204) and prints a hint to run `/codemap rebuild` (line 358). All correct. No patch needed.
+
+**Patch sweep complete.** Wrapper authoring (`references/rebuild.md`, `status.md`, `audit.md`, plus the three pass-through references) is the next discrete piece, queued in tasks-status.
+
 ## 2026-05-21 — Graphify probe + canonical audit + integration decision (Session 23)
 
 Same calendar day as Sessions 21 and 22. Continued the codemap track after the operator caught me citing Graphify's architecture from secondary-source articles without ever installing or running it.

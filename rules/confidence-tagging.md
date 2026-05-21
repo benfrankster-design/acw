@@ -17,6 +17,16 @@ Discipline borrowed from Graphify (https://graphify.net) for distinguishing fact
 | `INFERRED` | Derived from prose, similarity, or LLM reasoning. Variable confidence. | 0.0–1.0 (explicit number required) | "This decision appears to address the concern in OQ-COPS-008" noticed by `/metabolize` over prose. |
 | `AMBIGUOUS` | Conflicting signals detected. Confidence withheld. Human review required. | (not assigned) | Two decisions appear to contradict, or a cross-reference is unresolvable. |
 
+### The `confidence_score` numeric field
+
+Every tagged link MAY also carry a numeric `confidence_score: 0.0–1.0` companion field alongside the tag. Convention:
+
+- **EXTRACTED** → `confidence_score: 1.0` always.
+- **INFERRED** → `confidence_score: <explicit float>` required. The number is the discipline; tagging INFERRED without a score is hand-waving.
+- **AMBIGUOUS** → `confidence_score` not assigned (omit the field entirely).
+
+This mirrors Graphify's native edge schema (the `/codemap` skill's underlying engine emits both fields per edge). Wiki-shaped substrate uses `score:` in frontmatter; structured logs use `"confidence_score":` in JSON. Either name maps to the same semantic field.
+
 ## What gets tagged
 
 Any link between substrate entries:

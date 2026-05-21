@@ -120,9 +120,9 @@ steps:
     path: .acw/codemap
     only_if: { field: profile, in: [coding-project, library] }
 
-  - kind: create_dir
-    path: .acw/codemap/.cache
-    only_if: { field: profile, in: [coding-project, library] }
+  # NOTE: do NOT pre-create .acw/codemap/cache/. Graphify creates `cache/` (no
+  # leading dot) on its first `update` run; pre-creating it is unnecessary and
+  # the earlier `.cache` spelling was wrong per the 2026-05-21 audit.
 
   # ---------------------------------------------------------------------------
   # Step 5 — Initialize required empty dirs per acw-state.yaml::empty_dirs

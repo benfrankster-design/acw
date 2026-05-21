@@ -111,6 +111,19 @@ synapse_log_path: null
 # Phase 1). Empty list means no voice opinion.
 voice: []
 
+# Declarative registry of env-var secrets this instance's skills may require.
+# Each entry: name (env var), required_by (skill/verb), when (always |
+# on-opt-in | on-feature-X), notes (one-line). Operator supplies values via
+# per-instance .env (gitignored) or shell env — never committed. See
+# rules/instance-current-manifest.md § "env_secrets block — v0.10.1".
+# Uncomment and populate when an opt-in feature requires an external API.
+# env_secrets:
+#   - name: GEMINI_API_KEY
+#     required_by: "/codemap rebuild --semantic"
+#     when: on-opt-in
+#     notes: "Graphify Stage 2 semantic extraction. AST-only default works without this."
+env_secrets: []
+
 deferred_canonical_source: .acw/DEFERRED.md
 deferred_derived_view: .acw/deferred/
 deferred_drift_check: tools/log-incident.py check-drift

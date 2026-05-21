@@ -372,6 +372,26 @@ The `synced_to:` frontmatter field on this file declares the ACW version this ca
 - **How to add:** Run `/acw-instance upgrade`. The verb writes the field as part of the canonical refresh step. Manual path: edit `rules/instance-current-manifest.md` frontmatter, set `synced_to: "<your last_reconciled_version>"`.
 - **Earned in:** `0.9.9`.
 
+## `env_secrets` block — v0.10.1
+
+- **What:** A `env_secrets:` list block in `acw-state.yaml` declaring environment-variable secrets this instance's skills may require. Each entry: `name` (env var name), `required_by` (skill or verb that uses it), `when` (always / on-opt-in / on-feature-X), `notes` (one-line explanation).
+- **Why it helps:** ACW skills increasingly delegate to external tools whose API keys live in env vars (Graphify Stage 2 → Gemini, future skills → other providers). Without a declarative registry, skills check env vars implicitly and fail with cryptic errors. The `env_secrets:` block lets a skill's pre-flight read the registry, verify the variable is set in `os.environ`, and refuse cleanly with a pointer to which secret is missing and why. Operator supplies values via per-instance `.env` (gitignored) or shell env — not committed.
+- **Required:** No. Empty list or absent block means no declared secrets; skills that need secrets implement their own check inline. Recommended for any instance running `/codemap rebuild --semantic` or other skills with optional external-API features.
+- **How to add:** Edit `acw-state.yaml`. Add a top-level block:
+  ```yaml
+  env_secrets:
+    - name: GEMINI_API_KEY
+      required_by: "/codemap rebuild --semantic"
+      when: on-opt-in
+      notes: "Graphify Stage 2 semantic extraction. AST-only default works without this."
+    - name: GOOGLE_API_KEY
+      required_by: "/codemap rebuild --semantic"
+      when: on-opt-in
+      notes: "Alternate name accepted by Graphify; either GEMINI_API_KEY or GOOGLE_API_KEY satisfies."
+  ```
+- **Per-instance secret store:** Values live in a per-instance `.env` at workspace root (MUST be in `.gitignore`) or in the operator's shell env. Never committed.
+- **Earned in:** `0.10.1`. Earned-by-incident: Graphify Stage 2 surfaces a non-trivial env-var dependency that the operator's stack does not have by default; the `/codemap` wrapper needs a declarative way to know what's required vs optional, and the manifest is the right place for that registry. Per D-ACW-052.
+
 ## `adopt_mode_organic_threshold`
 
 - **What:** A scalar integer in `acw-state.yaml` setting the threshold above which `/acw-instance upgrade` adopt-mode bails (with pointer to `/acw-instance audit`) instead of offering automatic adoption. Counts markdown files in `decisions/` and `rules/` excluding canonical files copied from ACW.
