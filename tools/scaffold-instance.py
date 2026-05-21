@@ -187,16 +187,61 @@ def copy_tree(src: Path, dst: Path, dry_run: bool) -> None:
             copy_verbatim(f, dst / f.relative_to(src), dry_run)
 
 
+PROFILE_DEFAULT_MODULES = {
+    "org-brain": [
+        "decisions", "glossary", "sessions", "build-log", "incidents",
+        "tasks-status", "raw", "plans", "briefings", "inbox", "archives", "research",
+    ],
+    "spec-project": [
+        "decisions", "glossary", "sessions", "tasks-status", "incidents",
+        "raw", "plans", "build-log", "research",
+    ],
+    "coding-project": [
+        "decisions", "sessions", "tasks-status", "incidents",
+        "codemap", "raw", "build-log",
+    ],
+    "library": [
+        "decisions", "codemap", "raw", "build-log",
+    ],
+    "custom": [],
+}
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Scaffold an ACW instance.")
+    parser = argparse.ArgumentParser(description="Scaffold an ACW instance (v0.10.0+ .acw/ dotfolder shape).")
     parser.add_argument("target_dir")
     parser.add_argument("--code", required=True, help="Project code, e.g. NP")
     parser.add_argument("--domain", required=True, help="Primary domain")
     parser.add_argument("--name", default=None, help="Project name (defaults to code)")
     parser.add_argument("--host", default="claude-code",
         choices=["claude-code", "gpt", "gemini", "none"])
+    parser.add_argument(
+        "--profile",
+        default="spec-project",
+        choices=list(PROFILE_DEFAULT_MODULES.keys()),
+        help="Instance type. Determines default substrate module set per rules/instance-types.md. "
+             "Defaults to spec-project.",
+    )
+    parser.add_argument(
+        "--modules",
+        default=None,
+        help="Comma-separated explicit module list, overrides profile defaults. Required when --profile=custom.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+
+    # Resolve effective module list
+    if args.modules is not None:
+        effective_modules = [m.strip() for m in args.modules.split(",") if m.strip()]
+    else:
+        effective_modules = PROFILE_DEFAULT_MODULES[args.profile]
+
+    if args.profile == "custom" and not effective_modules:
+        print(
+            "scaffold: --profile=custom requires --modules to declare the explicit module list",
+            file=sys.stderr,
+        )
+        return 2
 
     target = Path(args.target_dir).resolve()
     project_name = args.name or args.code
@@ -207,6 +252,8 @@ def main() -> int:
         "PROJECT_CODE": args.code,
         "DOMAIN": args.domain,
         "DATE": today,
+        "PROFILE": args.profile,
+        "MODULES_YAML": "\n".join(f"  - {m}" for m in effective_modules) if effective_modules else "[]",
     }
 
     if not STATE_FILE.is_file():
@@ -293,18 +340,22 @@ def main() -> int:
     print(f"  Project name: {project_name}")
     print(f"  Project code: {args.code}")
     print(f"  Domain: {args.domain}")
+    print(f"  Profile: {args.profile}")
+    print(f"  Modules: {', '.join(effective_modules) if effective_modules else '(none — custom profile with empty list; fill in .acw/acw-state.yaml::modules)'}")
     print(f"  Host: {args.host}")
     print()
     print("Placeholders to fill before first commit:")
     print("  research/01-problem-framing.md (operator-fill sections)")
-    print("  glossary.md (no terms yet)")
+    print("  .acw/glossary/INDEX.md (no terms yet)")
     print("  threat-model.md (asset inventory + threat actors)")
     print()
     print("First-session checklist:")
     print("  1. Edit research/01-problem-framing.md")
     print("  2. Add domain-specific hard rules to rules/instance-hard-rules.md")
-    print("  3. cd <target> && python tools/lint-vocab.py glossary.md --content-dir .")
+    print("  3. cd <target> && python tools/lint-vocab.py .acw/glossary/INDEX.md --content-dir .")
     print("  4. cd <target> && python -m unittest discover tests")
+    if args.profile in ("coding-project", "library"):
+        print("  5. Run /codemap rebuild to initialize .acw/codemap/ (requires Graphify installed)")
     return 0
 
 

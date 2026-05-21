@@ -9,6 +9,30 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-21 — Phase 2: migration manifests, substrate-map, scaffolder, rules/ closure (Session 22)
+
+Same calendar day as Session 21 (the v0.10.0 ship); continued work focused on landing the foundation pieces v0.10.0 deferred.
+
+**Architectural correction first.** Mid-session the operator pushed back on the v0.10.1 framing I'd queued. I had Phase 2 work as "encode the v0.10.0 migration steps into the `/acw-instance` skill itself." Operator pointed out this inverts the source-of-truth: skill carries version-specific knowledge, must be redistributed every version bump. Right shape: skill is a thin portable executor; canonical IS the SoT. Migration knowledge lives in canonical as declarative data files. New version means a new manifest file in `migrations/`, never a skill change.
+
+Reframed and re-executed.
+
+**`rules/migration-manifest.md`.** Schema for the new `migrations/` directory. Documents the YAML shape (`from_version`, `to_version`, `breaking`, `prerequisites`, `operator_prompts`, `steps[]`) and the step-kind enum (`create_dir`, `git_mv`, `update_acw_state` with `path_prefix_substrate` / `rename_keys` / `add_fields` / `set_fields`, `update_file`, `rebuild_index`, `add_file`, `remove_gitignore_rule`, `run_hook`). Reserved future step kinds for forward-compat (`delete_file`, `delete_dir`, `validate_invariant`, `archive_to`).
+
+**`migrations/0.9.9-to-0.10.0.yaml`.** The v0.10.0 migration expressed as declarative data, not skill code. Seven steps: retire the `.acw/` gitignore rule, create `.acw/`, batch `git mv` substrate (with the `_buffer → raw` rename folded in), patch `acw-state.yaml` (substrate path prefix + key rename + new profile/modules fields), patch entry-point doc text references, rebuild INDEX files, conditional `.acw/codemap/` init for coding-project/library profiles. Operator prompt for `profile:` selection at execution time.
+
+**`migrations/README.md`.** Operator-facing index of available migrations.
+
+**`rules/` migration question resolved.** Closed OQ-COPS-019 (from cs-ops-spec, deferred to canonical) as "stays at workspace root." Rationale in D-ACW-051: rules are closer in shape to project configuration than to operator working memory; load-bearing convention; different mental model; discoverability for new agents. C-004 codifies as constraint.
+
+**`/substrate-map` skill.** New thin skill that renders the implicit cross-reference graph across ACW substrate as an on-demand markdown view. Walks frontmatter cross-refs and prose ID mentions, emits `.acw/substrate-map.md` with confidence tagging applied per `rules/confidence-tagging.md`. Read-only on source substrate. Operator-invoked. Sibling to `/codemap` (which covers code structure); both compose, neither replaces the other. Skill at `skills/substrate-map/SKILL.md` + `gotchas.md`.
+
+**Scaffolder updated for v0.10.0.** `tools/scaffold-instance.py` gained `--profile` and `--modules` arguments. Profile choices: org-brain, spec-project, coding-project, library, custom. Default modules per profile codified at the top of the script (mirrors `rules/instance-types.md`). `--profile=custom` requires `--modules`. Template tokens `{{PROFILE}}` and `{{MODULES_YAML}}` added. `tools/templates/acw-state.yaml.tmpl` updated to v0.10.0 shape — paths block `.acw/`-prefixed, `profile:` and `modules:` fields added, `raw_dir:` replaces `buffer_dir:`, `decision_tracking` and `glossary` sub-blocks point at `.acw/` paths.
+
+**Deferred to follow-up sessions.** `/codemap` skill (needs Graphify CLI investigation — the wrapper's only valuable if it correctly handles the actual CLI surface, and I haven't probed it yet). `/acw-instance upgrade` executor verification (needs reading the current skill prose to identify which step kinds from the manifest schema are already supported vs. need to be added). Skill audit pass for hardcoded paths (mechanical sweep, real time, dedicated session).
+
+**Net effect.** v0.10.0 foundation is complete. Multi-instance upgrades (the five downstream instances) are unblocked once the executor verification lands — and that's a small follow-up because most of the step kinds are already what `/acw-instance upgrade` does.
+
 ## 2026-05-21 — v0.10.0 .acw/ dotfolder, instance types, codemap, confidence tagging (Session 21)
 
 Four cross-cutting changes landed together as v0.10.0. The catalyst was substrate hygiene work in two downstream instances on the same day; the framing crystallized into a single coherent release.

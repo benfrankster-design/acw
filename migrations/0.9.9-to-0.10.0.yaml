@@ -1,0 +1,153 @@
+# Migration manifest — 0.9.9 to 0.10.0
+#
+# Authority: D-ACW-050 (.acw/ dotfolder + instance types + codemap + confidence tagging)
+# Schema: rules/migration-manifest.md
+#
+# This file IS the migration. /acw-instance upgrade reads it and executes the
+# steps generically. Skill code does not change per version bump.
+
+from_version: "0.9.9"
+to_version: "0.10.0"
+breaking: true
+description: "Relocate ACW operator-metadata substrate to .acw/; rename _buffer/ to raw/; add profile + modules declarations; introduce codemap and confidence-tagging conventions."
+authority: "D-ACW-050"
+
+prerequisites:
+  - kind: clean_working_tree
+  - kind: minimum_version
+    minimum: "0.9.7"
+
+operator_prompts:
+  - field: profile
+    prompt: "Instance type for this workspace? (See rules/instance-types.md for descriptions.)"
+    enum: [org-brain, spec-project, coding-project, library, custom]
+    default: spec-project
+    affects: update_acw_state.add_fields.profile
+
+  - field: modules
+    prompt: "If profile is 'custom', declare the explicit module list (one per line, empty list aborts)."
+    type: list
+    only_if: { field: profile, equals: custom }
+    affects: update_acw_state.add_fields.modules
+
+steps:
+
+  # ---------------------------------------------------------------------------
+  # Step 1 — Remove the obsolete .acw/ gitignore rule (if present).
+  # Pre-v0.10.0, some instances ignored .acw/ as runtime cache. v0.10.0 flips
+  # the meaning: .acw/ is canonical substrate, MUST be tracked.
+  # ---------------------------------------------------------------------------
+  - kind: remove_gitignore_rule
+    rule: ".acw/"
+    reason: "v0.10.0 flips .acw/ from runtime-cache to canonical substrate; ignore rule must be retired."
+
+  # ---------------------------------------------------------------------------
+  # Step 2 — Create .acw/ at workspace root.
+  # ---------------------------------------------------------------------------
+  - kind: create_dir
+    path: .acw
+
+  # ---------------------------------------------------------------------------
+  # Step 3 — Move all ACW operator-metadata substrate under .acw/.
+  # Tracked files preserve git history via git mv. The _buffer → raw rename
+  # is folded into this batch (single move per file).
+  # ---------------------------------------------------------------------------
+  - kind: git_mv
+    moves:
+      # Wiki-shaped substrate
+      - { from: decisions, to: .acw/decisions }
+      - { from: glossary, to: .acw/glossary }
+      - { from: sessions, to: .acw/sessions }
+      - { from: plans, to: .acw/plans }
+
+      # Transient
+      - { from: _buffer, to: .acw/raw }         # rename + relocate
+      - { from: inbox, to: .acw/inbox }
+      - { from: deferred, to: .acw/deferred }
+      - { from: archives, to: .acw/archives }
+      - { from: briefings, to: .acw/briefings }
+
+      # Flat / dashboard / log files
+      - { from: acw-state.yaml, to: .acw/acw-state.yaml }
+      - { from: build-log.md, to: .acw/build-log.md }
+      - { from: incidents.jsonl, to: .acw/incidents.jsonl }
+      - { from: tasks-status.md, to: .acw/tasks-status.md }
+      - { from: DEFERRED.md, to: .acw/DEFERRED.md }
+      - { from: CHANGELOG.md, to: .acw/CHANGELOG.md }
+
+  # ---------------------------------------------------------------------------
+  # Step 4 — Patch the relocated acw-state.yaml.
+  # Prefix every substrate path key with .acw/, rename buffer_dir → raw_dir,
+  # add profile and modules fields, bump version.
+  # rules/ stays at workspace root per D-ACW-051; no rules_dir key added.
+  # research/, threat-model.md, runbooks/, integrations/, context/ stay at
+  # root as project artifacts (NOT under .acw/).
+  # ---------------------------------------------------------------------------
+  - kind: update_acw_state
+    path_prefix_substrate:
+      prefix: .acw/
+      keys:
+        - decisions_index
+        - decisions_entries_dir
+        - decisions_open_questions_dir
+        - decisions_constraints_dir
+        - tasks_status
+        - build_log
+        - glossary_index
+        - glossary_entries_dir
+        - incidents
+        - session_captures_dir
+        - plans_dir
+        - briefings_dir
+        - inbox_dir
+        - archives_dir
+    rename_keys:
+      buffer_dir: raw_dir
+    add_fields:
+      profile: spec-project               # overwritten by operator_prompts.profile
+      modules: null                       # null = use profile defaults
+    set_fields:
+      version: "0.10.0"
+      last_reconciled_version: "0.10.0"
+      last_reconciled: "<DATE>"
+
+  # ---------------------------------------------------------------------------
+  # Step 5 — Patch text references in entry-point docs.
+  # AGENTS.md and CLAUDE.md may reference substrate paths in prose tables; the
+  # executor finds and replaces known patterns. Misses (operator-customized
+  # prose) surface in audit output for manual fixup.
+  # ---------------------------------------------------------------------------
+  - kind: update_file
+    path: AGENTS.md
+    replace:
+      - { find: "decisions/INDEX.md", with: ".acw/decisions/INDEX.md" }
+      - { find: "decisions/decision-log.md", with: ".acw/decisions/decision-log.md" }
+      - { find: "tasks-status.md", with: ".acw/tasks-status.md" }
+      - { find: "glossary/INDEX.md", with: ".acw/glossary/INDEX.md" }
+      - { find: "glossary.md", with: ".acw/glossary.md" }
+
+  # ---------------------------------------------------------------------------
+  # Step 6 — Rebuild INDEX files from entries.
+  # After moves, INDEX files contain relative-path references that still
+  # resolve (entries moved with INDEX, all within the same dir). Rebuild is
+  # belt-and-suspenders — verifies all entries are accounted for and refreshes
+  # the file's frontmatter.
+  # ---------------------------------------------------------------------------
+  - kind: rebuild_index
+    paths:
+      - .acw/decisions/INDEX.md
+      - .acw/glossary/INDEX.md
+
+  # ---------------------------------------------------------------------------
+  # Step 7 — If profile is coding-project or library, initialize codemap dir.
+  # The .acw/codemap/ directory exists but is empty until /codemap rebuild
+  # runs (separate skill, not part of upgrade). This step just stubs the
+  # directory so the path is valid.
+  # ---------------------------------------------------------------------------
+  - kind: create_dir
+    path: .acw/codemap
+    only_if: { field: profile, in: [coding-project, library] }
+
+  - kind: create_dir
+    path: .acw/codemap/.cache
+    only_if: { field: profile, in: [coding-project, library] }

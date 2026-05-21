@@ -17,7 +17,17 @@ project:
 
 version: "0.1.0"
 last_reconciled: "{{DATE}}"
-last_reconciled_version: "0.9.1"
+last_reconciled_version: "0.10.0"
+
+# Instance type — declares which substrate modules this instance uses.
+# Profile defaults are documented in rules/instance-types.md.
+# One of: org-brain | spec-project | coding-project | library | custom
+profile: {{PROFILE}}
+
+# Explicit module list — overrides profile defaults if both are set.
+# Omit or leave null to use profile defaults.
+modules:
+{{MODULES_YAML}}
 
 # Declares whether this instance publishes canonical content downstream to
 # other instances. Default false — this instance is a downstream consumer of
@@ -41,17 +51,17 @@ canonical_runtime_files:
   - rules/skill-format.md
   - rules/task-tracking.md
   - rules/incident-tracking.md
-  - decisions/INDEX.md
-  - DEFERRED.md
-  - glossary/INDEX.md
+  - .acw/decisions/INDEX.md
+  - .acw/DEFERRED.md
+  - .acw/glossary/INDEX.md
   - threat-model.md
-  - incidents.jsonl
-  - tasks-status.md
-  - build-log.md
+  - .acw/incidents.jsonl
+  - .acw/tasks-status.md
+  - .acw/build-log.md
   - tools/lint-vocab.py
   - tools/log-incident.py
   - AGENTS.md
-  - acw-state.yaml
+  - .acw/acw-state.yaml
 
 # Files auto-loaded into agent context at session start. Hosts implement via
 # their native mechanism (Claude Code: @-imports in CLAUDE.md). See AGENTS.md
@@ -61,16 +71,16 @@ canonical_runtime_files:
 # drop requires a decision-log entry). Bare-path entries are accepted but
 # flagged as legacy-pending-review by /acw-instance audit.
 auto_load_at_session_start:
-  - path: decisions/INDEX.md
+  - path: .acw/decisions/INDEX.md
     claim: "Recently decided history must be visible to agents at session start; without it agents re-litigate settled choices. INDEX is the thin auto-loaded surface; bodies in entries/ load on demand."
     earned_by: structural
   - path: rules/instance-hard-rules.md
     claim: "Stop-work rules must be visible to every agent at session start; loading them on demand is too late."
     earned_by: structural
-  - path: tasks-status.md
+  - path: .acw/tasks-status.md
     claim: "Pending work surface must be visible at session start; without it agents propose duplicate work and lose continuity."
     earned_by: structural
-  - path: glossary/INDEX.md
+  - path: .acw/glossary/INDEX.md
     claim: "Vocabulary canon prevents drift to colloquial English in agent output. INDEX is the thin auto-loaded surface; bodies in entries/ load on demand."
     earned_by: structural
 
@@ -101,8 +111,8 @@ synapse_log_path: null
 # Phase 1). Empty list means no voice opinion.
 voice: []
 
-deferred_canonical_source: DEFERRED.md
-deferred_derived_view: deferred/
+deferred_canonical_source: .acw/DEFERRED.md
+deferred_derived_view: .acw/deferred/
 deferred_drift_check: tools/log-incident.py check-drift
 
 role_schema:
@@ -124,11 +134,11 @@ canon_authority:
 
 decision_tracking:
   mode: wiki
-  index: decisions/INDEX.md
-  entries_dir: decisions/entries
-  open_questions_dir: decisions/open-questions
-  constraints_dir: decisions/constraints
-  archive_pattern: "decisions/decision-log-YYYY-Q*.md"
+  index: .acw/decisions/INDEX.md
+  entries_dir: .acw/decisions/entries
+  open_questions_dir: .acw/decisions/open-questions
+  constraints_dir: .acw/decisions/constraints
+  archive_pattern: ".acw/decisions/decision-log-YYYY-Q*.md"
   regenerate_index_cmd: "python tools/migrate_to_wiki.py"
   entry_frontmatter_required: [id, title, date, status, kind, updated]
   status_values: [proposed, accepted, superseded, deprecated, rejected, open, partial-resolved, resolved]
@@ -136,34 +146,39 @@ decision_tracking:
 
 glossary:
   mode: wiki
-  index: glossary/INDEX.md
-  entries_dir: glossary/entries
+  index: .acw/glossary/INDEX.md
+  entries_dir: .acw/glossary/entries
   regenerate_index_cmd: "python tools/migrate_to_wiki.py"
   entry_frontmatter_required: [term, status]
   status_values: [active, deprecated]
 
-# Substrate file paths. Wiki mode is canonical (v0.9.8+). The bookend skills
-# read from this block; instances may override any path.
+# Substrate file paths. v0.10.0+ canonical shape: ACW operator-metadata
+# substrate lives under .acw/; rules/ stays at workspace root per D-ACW-051;
+# project artifacts (research/, threat-model.md, etc.) stay at root.
+# The bookend skills read from this block; instances may override any path.
 paths:
-  decisions_index: decisions/INDEX.md
-  decisions_entries_dir: decisions/entries
-  decisions_open_questions_dir: decisions/open-questions
-  decisions_constraints_dir: decisions/constraints
-  tasks_status: tasks-status.md
-  build_log: build-log.md
-  glossary_index: glossary/INDEX.md
-  glossary_entries_dir: glossary/entries
+  decisions_index: .acw/decisions/INDEX.md
+  decisions_entries_dir: .acw/decisions/entries
+  decisions_open_questions_dir: .acw/decisions/open-questions
+  decisions_constraints_dir: .acw/decisions/constraints
+  tasks_status: .acw/tasks-status.md
+  build_log: .acw/build-log.md
+  glossary_index: .acw/glossary/INDEX.md
+  glossary_entries_dir: .acw/glossary/entries
   threat_model: threat-model.md
-  incidents: incidents.jsonl
+  incidents: .acw/incidents.jsonl
   evolution: research/evolution.md
   sources: research/sources.md
   research_state: research/research-state.yaml
   problem_framing: research/01-problem-framing.md
-  session_captures_dir: sessions
+  session_captures_dir: .acw/sessions
   research_queries_dir: research/queries
   research_queries_consumed_dir: research/queries/_consumed
-  buffer_dir: _buffer
-  plans_dir: plans
+  raw_dir: .acw/raw
+  plans_dir: .acw/plans
+  briefings_dir: .acw/briefings
+  inbox_dir: .acw/inbox
+  archives_dir: .acw/archives
 
 release_gates:
   - "tools/lint-vocab.py exits 0 on this instance's content"

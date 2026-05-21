@@ -20,6 +20,7 @@ Archived entries: see `decision-log-YYYY-Q*.md` files in this directory.
 
 - [D-ACW-049](entries/D-ACW-049-v099-drift-shortcircuit-buffer-sweep-and-synced-to-frontmatter.md) — v0.9.9: drift-walk short-circuit + buffer-sweep convention + `synced_to:` frontmatter on instance-current-manifest _(2026-05-13)_
 - [D-ACW-050](entries/D-ACW-050-acw-substrate-under-dotfolder-and-instance-types.md) — v0.10.0: `.acw/` dotfolder, instance types (org-brain/spec-project/coding-project/library/custom), codemap module, confidence tagging _(2026-05-21)_
+- [D-ACW-051](entries/D-ACW-051-rules-stays-at-root.md) — `rules/` stays at workspace root; does not migrate under `.acw/` (resolves OQ-COPS-019) _(2026-05-21)_
 - [D-ACW-048](entries/D-ACW-048-wiki-mode-canonical-only-and-contacts-opt-in.md) — v0.9.8: wiki mode canonical-only for decisions and glossary; context/contacts/ as earn-by-discipline opt-in _(2026-05-13)_
 - [D-ACW-047](entries/D-ACW-047-claude-md-thin-pointer-auto-load-via-sessionstart-hook.md) — v0.9.7: CLAUDE.md becomes thin pointer; auto-load moves to SessionStart hook _(2026-05-13)_
 - [D-ACW-044](entries/D-ACW-044-skill-redundancy-refactor-and-substrate-boundary-rule.md) — v0.9.4: skill-redundancy refactor for /acw-instance + new rules/substrate-boundary.md _(2026-05-13)_
@@ -74,3 +75,4 @@ Archived entries: see `decision-log-YYYY-Q*.md` files in this directory.
 - [C-001](constraints/C-001-skills-capture-session-directory-still-exists-on-disk.md) — `skills/capture-session/` directory still exists on disk
 - [C-002](constraints/C-002-synapse-copies-still-stale.md) — Synapse copies still stale
 - [C-003](constraints/C-003-substrate-under-dotfolder.md) — ACW operator-metadata substrate must live under `.acw/` _(authority: D-ACW-050)_
+- [C-004](constraints/C-004-rules-stays-at-workspace-root.md) — `rules/` stays at workspace root _(authority: D-ACW-051)_
