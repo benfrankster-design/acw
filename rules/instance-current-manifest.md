@@ -18,6 +18,35 @@ The `synced_to:` frontmatter field on this file declares the ACW version this ca
 
 ---
 
+## `profile` field — v0.10.0
+
+- **What:** A top-level `profile:` field in `acw-state.yaml` declaring the instance type.
+- **Why it helps:** Skills read the profile to know which substrate modules to expect, validate, and operate on. Profile defaults provide a starting module set without per-instance enumeration.
+- **Required:** No (defaults to `spec-project` with a warning at audit time prompting explicit declaration). Required from v0.11.0 forward.
+- **How to add:** Add to `acw-state.yaml`:
+  ```yaml
+  profile: spec-project           # one of: org-brain | spec-project | coding-project | library | custom
+  ```
+- **Companion field:** `modules:` — optional explicit override of profile defaults. See `rules/instance-types.md`.
+- **Earned in:** `0.10.0`.
+
+## `modules` field — v0.10.0
+
+- **What:** A top-level `modules:` list in `acw-state.yaml` enumerating which substrate modules this instance adopts.
+- **Why it helps:** Allows instances to deviate from profile defaults. A `coding-project` that doesn't need `incidents` can omit it; a `library` that wants `glossary` can add it.
+- **Required:** No. Profile defaults apply when absent.
+- **How to add:** Add to `acw-state.yaml`:
+  ```yaml
+  modules:
+    - decisions
+    - sessions
+    - tasks-status
+    - codemap
+    - raw
+    - build-log
+  ```
+- **Earned in:** `0.10.0`.
+
 ## `project` block
 
 - **What:** A `project:` block in `acw-state.yaml` with `name`, `code`, `domain` fields.
@@ -40,23 +69,31 @@ The `synced_to:` frontmatter field on this file declares the ACW version this ca
 - **How to add:** Edit `acw-state.yaml`. Add a top-level block matching the canonical defaults:
   ```yaml
   paths:
-    decisions_log: decisions/decision-log.md
-    tasks_status: tasks-status.md
-    build_log: build-log.md
-    glossary: glossary.md
+    decisions_index: .acw/decisions/INDEX.md
+    decisions_entries_dir: .acw/decisions/entries
+    decisions_open_questions_dir: .acw/decisions/open-questions
+    decisions_constraints_dir: .acw/decisions/constraints
+    tasks_status: .acw/tasks-status.md
+    build_log: .acw/build-log.md
+    glossary_index: .acw/glossary/INDEX.md
+    glossary_entries_dir: .acw/glossary/entries
     threat_model: threat-model.md
-    incidents: incidents.jsonl
+    incidents: .acw/incidents.jsonl
     evolution: research/evolution.md
     sources: research/sources.md
     research_state: research/research-state.yaml
     problem_framing: research/01-problem-framing.md
-    session_captures_dir: research/sessions
+    session_captures_dir: .acw/sessions
     research_queries_dir: research/queries
     research_queries_consumed_dir: research/queries/_consumed
-    buffer_dir: _buffer
+    raw_dir: .acw/raw
+    plans_dir: .acw/plans
+    codemap_dir: .acw/codemap            # coding-project / library only
+    codemap_report: .acw/codemap/GRAPH_REPORT.md
   ```
   Override any key the instance places elsewhere; omit keys that match the default.
-- **Earned in:** `0.2.0-rc4`.
+- **0.10.0 change:** All ACW operator-metadata substrate paths now prefix `.acw/`. The `buffer_dir` key is renamed to `raw_dir`. The `decisions_log` single-file key is deprecated; wiki-mode `decisions_index` + `decisions_entries_dir` is canonical.
+- **Earned in:** `0.2.0-rc4`. Updated for `.acw/` convention in `0.10.0`.
 
 ## `auto_load_at_session_start`
 

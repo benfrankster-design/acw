@@ -47,9 +47,15 @@ ENV/
 Thumbs.db
 desktop.ini
 
-# ACW runtime state (per-instance, never committed)
-.acw/
+# Runtime leases (never committed)
 leases.jsonl
+
+# v0.10.0 note: .acw/ used to mean "runtime cache, never commit." From v0.10.0
+# forward (D-ACW-050), .acw/ is canonical substrate (decisions, glossary,
+# sessions, etc.) and MUST be tracked. Do NOT re-add `.acw/` to this file.
+# Per-instance ephemeral runtime state, if any, belongs at .acw/raw/ where
+# it's transient by convention and excluded by .acw/raw/.gitkeep semantics
+# rather than a blanket ignore.
 
 # Logs outside the incident ledger
 *.log

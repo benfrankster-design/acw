@@ -96,32 +96,62 @@ When the lint warns about an unclassified file: pick its layer, add it to the ma
 
 ## Canonical default paths
 
+> **0.10.0 change:** All ACW operator-metadata substrate now lives under `.acw/` (the dotfolder convention). The `buffer_dir` key is renamed to `raw_dir` and its directory renamed from `_buffer/` to `raw/`. Pre-0.10.0 instances upgrade via `/acw-instance upgrade` which executes the migration.
+
 The bookend skills and any other consumer that needs to locate substrate read paths from `acw-state.yaml::paths`. If a key is absent from that block, consumers fall back to the canonical defaults below. Defaults match the layout produced by `tools/scaffold-instance.py` for a fresh instance.
 
-| Key | Default path |
-|---|---|
-| `decisions_log` | `decisions/decision-log.md` |
-| `tasks_status` | `tasks-status.md` |
-| `build_log` | `build-log.md` |
-| `glossary` | `glossary.md` |
-| `threat_model` | `threat-model.md` |
-| `incidents` | `incidents.jsonl` |
-| `evolution` | `research/evolution.md` |
-| `sources` | `research/sources.md` |
-| `research_state` | `research/research-state.yaml` |
-| `problem_framing` | `research/01-problem-framing.md` |
-| `session_captures_dir` | `sessions` |
-| `research_queries_dir` | `research/queries` |
-| `research_queries_consumed_dir` | `research/queries/_consumed` |
-| `buffer_dir` | `_buffer` |
-| `plans_dir` | `plans` |
-| `runbooks_dir` | `runbooks` |
-| `integrations_dir` | `integrations` |
-| `briefings_dir` | `briefings` |
-| `context_dir` | `context` |
-| `inbox_dir` | `inbox` |
+| Key | Default path | Notes |
+|---|---|---|
+| `decisions_index` | `.acw/decisions/INDEX.md` | wiki shape |
+| `decisions_entries_dir` | `.acw/decisions/entries` | wiki shape |
+| `decisions_open_questions_dir` | `.acw/decisions/open-questions` | wiki shape |
+| `decisions_constraints_dir` | `.acw/decisions/constraints` | wiki shape |
+| `tasks_status` | `.acw/tasks-status.md` | flat dashboard |
+| `build_log` | `.acw/build-log.md` | flat narrative |
+| `glossary_index` | `.acw/glossary/INDEX.md` | wiki shape |
+| `glossary_entries_dir` | `.acw/glossary/entries` | wiki shape |
+| `threat_model` | `threat-model.md` | project artifact, NOT under .acw/ |
+| `incidents` | `.acw/incidents.jsonl` | flat jsonl log |
+| `evolution` | `research/evolution.md` | project artifact |
+| `sources` | `research/sources.md` | project artifact |
+| `research_state` | `research/research-state.yaml` | project artifact |
+| `problem_framing` | `research/01-problem-framing.md` | project artifact |
+| `session_captures_dir` | `.acw/sessions` | wiki shape |
+| `research_queries_dir` | `research/queries` | project artifact |
+| `research_queries_consumed_dir` | `research/queries/_consumed` | project artifact |
+| `raw_dir` | `.acw/raw` | transient (was `buffer_dir: _buffer` pre-0.10.0) |
+| `plans_dir` | `.acw/plans` | wiki shape |
+| `runbooks_dir` | `runbooks` | project artifact OR `.acw/runbooks` per instance call |
+| `integrations_dir` | `integrations` | project artifact |
+| `briefings_dir` | `.acw/briefings` | wiki or transient per instance |
+| `context_dir` | `context` | project artifact |
+| `inbox_dir` | `.acw/inbox` | transient |
+| `archives_dir` | `.acw/archives` | transient-archive |
+| `codemap_dir` | `.acw/codemap` | flat with sidecar JSON (coding-project/library only) |
+| `codemap_report` | `.acw/codemap/GRAPH_REPORT.md` | auto-loaded report |
 
 An instance that wants to override one or more of these declares the override in its `acw-state.yaml::paths` block. Defaults remain in effect for any key the instance does not override.
+
+### Substrate vs. project artifact
+
+The defaults table distinguishes substrate (under `.acw/`) from project artifact (at root). `research/` stays at root because it's a project artifact in spec-project and org-brain instances — the actual research output, not ACW metadata. Same logic for `threat-model.md`, `integrations/`, `runbooks/` (per instance call), `context/`. See `rules/substrate-boundary.md` for the full delineation.
+
+### Profile and modules
+
+`acw-state.yaml` declares which instance type the workspace is and which substrate modules it adopts:
+
+```yaml
+profile: coding-project       # one of: org-brain | spec-project | coding-project | library | custom
+modules:                      # optional explicit override; profile defaults otherwise
+  - decisions
+  - sessions
+  - tasks-status
+  - codemap
+  - raw
+  - build-log
+```
+
+See `rules/instance-types.md` for the profile enum, default modules per profile, and skill consumption contract. Skills read `profile` and `modules` to know which substrate modules to operate on. Modules absent from the declaration are not expected by audit.
 
 ## Manifest tooling spec
 

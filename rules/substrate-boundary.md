@@ -11,9 +11,11 @@ Defines what the `/acw-instance audit|upgrade` verbs treat as **substrate** (in-
 
 This file is the authoritative source for the project-content exclusion list. The skill `skills/acw-instance/` references this rule; do not duplicate the lists into skill prose.
 
+> **0.10.0 change:** ACW operator-metadata substrate lives under `.acw/`. The `.acw/` dotfolder is the canonical home for decisions, glossary, sessions, raw, plans, briefings, inbox, archives, deferred, codemap, tasks-status, build-log, incidents, DEFERRED.md, CHANGELOG.md, and acw-state.yaml. Pre-0.10.0 instances upgrade via `/acw-instance upgrade`. The instance's `rules/` directory remains at the workspace root (load-bearing convention for skill discovery); project artifacts (`research/`, `threat-model.md`, code directories, etc.) also remain at root.
+
 ## Substrate (in-scope)
 
-Authoritative source: canonical `acw-state.yaml` blocks `template_layer`, `instance_layer[].path`, `paths.*`, `empty_dirs`, `meta_layer`. Every path declared in those blocks is in-scope by definition.
+Authoritative source: canonical `acw-state.yaml` blocks `template_layer`, `instance_layer[].path`, `paths.*`, `empty_dirs`, `meta_layer`. Every path declared in those blocks is in-scope by definition. Per the 0.10.0 convention, all such paths are prefixed `.acw/` unless they are project artifacts (e.g., `research/`, `threat-model.md`) explicitly declared at root.
 
 Substrate-shaped patterns at non-canonical locations are also in-scope:
 

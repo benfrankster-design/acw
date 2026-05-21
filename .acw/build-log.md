@@ -9,6 +9,26 @@ loaded_by_agent: no
 
 Append-only, newest-first narrative of build progress per session.
 
+## 2026-05-21 — v0.10.0 .acw/ dotfolder, instance types, codemap, confidence tagging (Session 21)
+
+Four cross-cutting changes landed together as v0.10.0. The catalyst was substrate hygiene work in two downstream instances on the same day; the framing crystallized into a single coherent release.
+
+**The catalyst.** cs-ops-spec hit a moment where the operator wanted the spec's deliverable folder (`research/spec/`) and the ACW operator-metadata substrate (`decisions/`, `sessions/`, `glossary/`, `_buffer/`, etc.) to stop competing for attention at the project root. Independently, cs-atlas was being prepped for first push to `bitbucket.org/GiveSendGoG1/gsg-cs-atlas` and the operator pushed back on shipping ACW substrate to a code repo where consumers cloning the library would see a journal of how it was built. Both instances independently arrived at the same answer: substrate goes under a `.acw/` dotfolder; the public-facing repo shows only the artifact and entry-point docs.
+
+**The dotfolder convention.** `.acw/` follows the same shape as `.git/`, `.github/`, `.vscode/`, `.claude/` — a hidden-by-default folder for "tooling state, not artifact." Editors open dotfolder files transparently; the hidden-by-default behavior is for file browsers. The convention removes a category of mental friction for anyone cloning an instance.
+
+**The `_buffer → raw` rename.** Coupled with the dotfolder move. "Buffer" suggested transient holding; "raw" matches the actual semantic — unmetabolized inputs awaiting routing through the enrichment principle (raw → metabolize → enriched).
+
+**Instance types.** Same session surfaced the broader framing: ACW is becoming the substrate convention for any directory-based work where humans and AI both read and write. Org brains, spec projects, coding projects, libraries. Each has different substrate needs. Codified `profile: org-brain | spec-project | coding-project | library | custom` plus optional `modules:` override. Profile defaults documented in new `rules/instance-types.md`.
+
+**Codemap + confidence tagging.** Operator asked about Graphify, the codebase knowledge graph approach. Two principles fit cleanly: codemap substrate module for coding instances (Graphify wrapper, two-stage AST + LLM extraction, stored under `.acw/codemap/`); confidence-tagged edges (EXTRACTED / INFERRED / AMBIGUOUS) generalized across all substrate. Codified in new `rules/codemap.md` and `rules/confidence-tagging.md`.
+
+**Authoring sequence.** Wrote four new rule files. Updated three existing rule files. Migrated ACW's own substrate to `.acw/` via `git mv` as the reference implementation. Bumped 0.9.9 → 0.10.0. D-ACW-050 captures the decision; C-003 codifies the constraint.
+
+**Deferred to v0.10.1.** `/acw-instance upgrade` skill mechanics to execute the migration on downstream instances. `/codemap` skill (Graphify wrapper). `/substrate-map` skill (rendered cross-ref view). Skill audit pass to verify all existing skills read paths from config rather than hardcoding.
+
+**Originating evidence.** cs-ops-spec D-COPS-035 / C-COPS-001 / OQ-COPS-019 and cs-atlas D-CATL-001, both 2026-05-21. Two absorption candidates retained as provenance under `.acw/raw/`.
+
 ## 2026-05-13 — v0.9.9 drift short-circuit + buffer sweep + synced_to: hardening (Session 20)
 
 Three coupled fixes shipped together as v0.9.9 (D-ACW-049), all triggered by a single `_buffer/` note from cops.

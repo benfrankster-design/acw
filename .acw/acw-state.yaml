@@ -18,14 +18,37 @@
 # Edited only via a decision-log entry. Every edit bumps `version` or
 # `last_reconciled`.
 
-version: "0.9.9"
-last_reconciled: "2026-05-13"
+version: "0.10.0"
+last_reconciled: "2026-05-21"
 
 # Version this instance is synced to in the recommended-blocks registry
 # (rules/instance-current-manifest.md). Used by /acw-session start drift
 # check to compare against each entry's earned-in version. Bumped
 # automatically by /acw-instance upgrade after a successful reconciliation.
-last_reconciled_version: "0.9.9"
+last_reconciled_version: "0.10.0"
+
+# Instance type — declares which substrate modules this instance uses.
+# Profile defaults documented in rules/instance-types.md.
+# ACW itself is canonical-source for the convention, so it's spec-project-shaped:
+# substrate (decisions/sessions/glossary/etc.) is the artifact.
+profile: spec-project
+
+# Explicit module override. Listed for clarity even where profile defaults
+# would supply the same. ACW canonical adopts the full spec-project module set
+# plus archives/briefings/inbox because it serves cross-instance routing.
+modules:
+  - decisions
+  - glossary
+  - sessions
+  - tasks-status
+  - incidents
+  - raw
+  - plans
+  - build-log
+  - briefings
+  - inbox
+  - archives
+  - deferred
 
 # Declares whether this instance publishes canonical content downstream to
 # other instances. ACW itself sets this to true (it IS the upstream source for
@@ -61,21 +84,25 @@ project:
 template_layer:
   # Generic doctrine — copied verbatim
   - AGENTS.md
-  - DEFERRED.md
+  - .acw/DEFERRED.md
   - rules/auto-load-discipline.md
   - rules/canon-governance.md
   - rules/canon-schema.yaml
   - rules/canon.yaml
   - rules/capability-broker.md
+  - rules/codemap.md
+  - rules/confidence-tagging.md
   - rules/decision-tracking.md
   - rules/incident-tracking.md
   - rules/instance-current-manifest.md
+  - rules/instance-types.md
   - rules/manifest-discipline.md
   - rules/multi-instance-topology.md
   - rules/pipeline-roles.md
   - rules/promotion-ritual.md
   - rules/skill-format.md
   - rules/substrate-boundary.md
+  - rules/substrate-shape.md
   - rules/task-tracking.md
   - rules/vocabulary-lint.md
   - skills/example-skill/
@@ -94,13 +121,13 @@ instance_layer:
   #
   # Wiki mode is canonical (v0.9.8+, D-ACW-048): decisions and glossary
   # always scaffold as INDEX + entries/ shape. Single-file mode is retired.
-  - path: acw-state.yaml
+  - path: .acw/acw-state.yaml
     template: tools/templates/acw-state.yaml.tmpl
-  - path: glossary/INDEX.md
+  - path: .acw/glossary/INDEX.md
     template: tools/templates/glossary-INDEX.md.tmpl
   - path: threat-model.md
     template: tools/templates/threat-model.md.tmpl
-  - path: decisions/INDEX.md
+  - path: .acw/decisions/INDEX.md
     template: tools/templates/decisions-INDEX.md.tmpl
   - path: rules/instance-hard-rules.md
     template: tools/templates/instance-hard-rules.md.tmpl
@@ -112,11 +139,11 @@ instance_layer:
     template: tools/templates/sources.md.tmpl
   - path: research/research-state.yaml
     template: tools/templates/research-state.yaml.tmpl
-  - path: tasks-status.md
+  - path: .acw/tasks-status.md
     template: tools/templates/tasks-status.md.tmpl
-  - path: build-log.md
+  - path: .acw/build-log.md
     template: tools/templates/build-log.md.tmpl
-  - path: incidents.jsonl
+  - path: .acw/incidents.jsonl
     template: null    # empty initial state, no token substitution
   # README.md — ACW's own README at root is meta_layer (about ACW itself).
   # This entry instructs the scaffolder to render a fresh README into new
@@ -150,7 +177,7 @@ meta_layer:
   - AUTHOR.md
   - SKEPTIC.md
   - ORCHESTRATION.md
-  - CHANGELOG.md
+  - .acw/CHANGELOG.md
   - README.md
   - LICENSE-CODE
   - LICENSE-CONTENT
@@ -159,9 +186,9 @@ meta_layer:
   - research/10-multi-instance-topology.md
   - research/11-session-continuity-prior-art.md
   # Tasks-status archives — ACW's history; not propagated. v0.9.5+ shape:
-  # archives/tasks-status/YYYY-MM.md (monthly, in dedicated folder).
-  # Pre-v0.9.5 quarterly archive grandfathered at archives/tasks-status/2026-Q2.md.
-  - archives/tasks-status/2026-Q2.md
+  # .acw/archives/tasks-status/YYYY-MM.md (monthly, in dedicated folder).
+  # Pre-v0.9.5 quarterly archive grandfathered at .acw/archives/tasks-status/2026-Q2.md.
+  - .acw/archives/tasks-status/2026-Q2.md
   # Research notes about ACW's own design phase — not propagated.
   - research/02-literature-survey.md
   - research/03-synthesis.md
@@ -181,20 +208,21 @@ meta_layer:
 # Empty directories the scaffold tool creates with .gitkeep so the
 # canonical layout is present from session zero.
 empty_dirs:
-  - sessions
+  - .acw/sessions
   - research/queries
   - research/queries/_consumed
   - skills
-  - deferred
-  - _buffer
+  - .acw/deferred
+  - .acw/raw
   - runbooks
-  - briefings
-  - inbox
-  - plans
-  - decisions/entries
-  - decisions/open-questions
-  - decisions/constraints
-  - glossary/entries
+  - .acw/briefings
+  - .acw/inbox
+  - .acw/plans
+  - .acw/archives
+  - .acw/decisions/entries
+  - .acw/decisions/open-questions
+  - .acw/decisions/constraints
+  - .acw/glossary/entries
 
 # =============================================================================
 # Operational substrate references
@@ -205,16 +233,16 @@ empty_dirs:
 # per rules/auto-load-discipline.md (earned in v0.9.0). Bare-path entries
 # remain valid (treated as legacy-pending-review by the audit verb).
 auto_load_at_session_start:
-  - path: decisions/INDEX.md
+  - path: .acw/decisions/INDEX.md
     claim: "Recently decided history must be visible to agents at session start; without it agents re-litigate settled choices. INDEX is the thin auto-loaded surface; bodies in entries/ load on demand."
     earned_by: structural
   - path: rules/instance-hard-rules.md
     claim: "Stop-work rules must be visible to every agent at session start; loading them on demand is too late."
     earned_by: structural
-  - path: tasks-status.md
+  - path: .acw/tasks-status.md
     claim: "Pending work surface must be visible at session start; without it agents propose duplicate work and lose continuity."
     earned_by: structural
-  - path: glossary/INDEX.md
+  - path: .acw/glossary/INDEX.md
     claim: "Vocabulary canon prevents drift to colloquial English in agent output. INDEX is the thin auto-loaded surface; bodies in entries/ load on demand."
     earned_by: structural
 
@@ -247,28 +275,31 @@ voice: []
 # rules/manifest-discipline.md. If a key is absent from this block, consumers
 # fall back to the canonical default for that key.
 paths:
-  decisions_index: decisions/INDEX.md
-  decisions_entries_dir: decisions/entries
-  decisions_open_questions_dir: decisions/open-questions
-  decisions_constraints_dir: decisions/constraints
-  tasks_status: tasks-status.md
-  build_log: build-log.md
-  glossary_index: glossary/INDEX.md
-  glossary_entries_dir: glossary/entries
+  decisions_index: .acw/decisions/INDEX.md
+  decisions_entries_dir: .acw/decisions/entries
+  decisions_open_questions_dir: .acw/decisions/open-questions
+  decisions_constraints_dir: .acw/decisions/constraints
+  tasks_status: .acw/tasks-status.md
+  build_log: .acw/build-log.md
+  glossary_index: .acw/glossary/INDEX.md
+  glossary_entries_dir: .acw/glossary/entries
   threat_model: threat-model.md
-  incidents: incidents.jsonl
+  incidents: .acw/incidents.jsonl
   evolution: research/evolution.md
   sources: research/sources.md
   research_state: research/research-state.yaml
   problem_framing: research/01-problem-framing.md
-  session_captures_dir: sessions
+  session_captures_dir: .acw/sessions
   research_queries_dir: research/queries
   research_queries_consumed_dir: research/queries/_consumed
-  buffer_dir: _buffer
-  plans_dir: plans
+  raw_dir: .acw/raw
+  plans_dir: .acw/plans
+  briefings_dir: .acw/briefings
+  inbox_dir: .acw/inbox
+  archives_dir: .acw/archives
 
-deferred_canonical_source: DEFERRED.md
-deferred_derived_view: deferred/
+deferred_canonical_source: .acw/DEFERRED.md
+deferred_derived_view: .acw/deferred/
 deferred_drift_check: tools/log-incident.py check-drift
 
 # Normative shape of the role enum.

@@ -25,18 +25,21 @@ This file is the entry point for any agent opening this workspace. It is deliber
 
 7. **Auto-load every file listed in `acw-state.yaml::auto_load_at_session_start` at the start of any session in this workspace.** Each agent host implements via its native mechanism. Claude Code uses the SessionStart hook at `.claude/hooks/load-context.py`, registered in `.claude/settings.json`; the hook reads `acw-state.yaml` at runtime and injects file contents as `additionalContext`. `CLAUDE.md` is a thin pointer (`See AGENTS.md.`) and carries no `@`-imports. Other hosts (Codex, Gemini, etc.) implement equivalent SessionStart behavior pointing at the same yaml; agents that read `acw-state.yaml` directly need no host-specific hook. The list is maintained additively by `/acw-session end`; removal requires an explicit decision-log entry. Auto-load entries themselves earn their slot per `rules/auto-load-discipline.md` — every entry declares a structured claim. See the **Auto-load (Resource / When / Why)** and **What NOT to Load** sections below.
 
-8. **When writing runtime code (a Next.js app, server, CLI tool, agent, etc.) inside an instance, locate it under a named subdirectory at instance root** — `web/`, `server/`, `agents/`, `app/`, `tools/<scoped-name>/`, or whatever name fits. Substrate (`decisions/`, `rules/`, `sessions/`, `acw-state.yaml`, `CLAUDE.md`, `AGENTS.md`) stays at root. Substrate is governance and moves on a slow, decision-driven clock; runtime is operational and moves on a fast, build-driven clock. Co-locating the two at instance root conflates the clocks: build artifacts collide with substrate in `git status`, package managers see substrate as project-root noise, deployment configs (Vercel, Docker) point at a path that also carries decisions/. If the workspace already has runtime code at root and migrating is expensive, log an incident and propose a path forward — do not silently accept the conflation. See `rules/multi-instance-topology.md` § "Runtime code in shipping instances."
+8. **When writing runtime code (a Next.js app, server, CLI tool, agent, etc.) inside an instance, locate it under a named subdirectory at instance root** — `web/`, `server/`, `agents/`, `app/`, `tools/<scoped-name>/`, or whatever name fits. ACW operator-metadata substrate lives under `.acw/` (v0.10.0+); `rules/`, `AGENTS.md`, `CLAUDE.md`, project artifacts (`research/`, `threat-model.md`) stay at root. Substrate is governance and moves on a slow, decision-driven clock; runtime is operational and moves on a fast, build-driven clock. Co-locating the two conflates the clocks: build artifacts collide with substrate in `git status`, package managers see substrate as project-root noise, deployment configs (Vercel, Docker) point at a path that also carries substrate. If the workspace already has runtime code at root and migrating is expensive, log an incident and propose a path forward — do not silently accept the conflation. See `rules/multi-instance-topology.md` § "Runtime code in shipping instances" and `rules/instance-types.md` for instance-type profiles.
 
 ## Auto-load (Resource / When / Why)
 
-Canonical recommendations from `rules/auto-load-discipline.md`. Instances override (drop a canonical entry, add an instance-specific entry) per the discipline gate; each override carries its own structured claim in `acw-state.yaml::auto_load_at_session_start`.
+Canonical recommendations from `rules/auto-load-discipline.md`. Instances override (drop a canonical entry, add an instance-specific entry) per the discipline gate; each override carries its own structured claim in `.acw/acw-state.yaml::auto_load_at_session_start`.
+
+> **v0.10.0:** Substrate paths prefix `.acw/`. Pre-0.10.0 instances upgrade via `/acw-instance upgrade`. See `rules/instance-types.md` for the profile + modules declaration.
 
 | Resource | When | Why |
 |---|---|---|
-| `decisions/decision-log.md` (single-file mode) or `decisions/INDEX.md` (wiki mode) | session-start | Recently decided history must be visible at session start; without it agents re-litigate settled choices. |
+| `.acw/decisions/INDEX.md` (wiki mode is canonical from v0.9.8) | session-start | Recently decided history must be visible at session start; without it agents re-litigate settled choices. |
 | `rules/instance-hard-rules.md` | session-start | Stop-work rules must be visible at every session start; loading them on-demand is too late. |
-| `tasks-status.md` | session-start | Pending work surface must be visible at session start; without it agents propose duplicate work. |
-| `glossary.md` (single-file mode) or `glossary/INDEX.md` (wiki mode) | session-start | Vocabulary canon prevents drift to colloquial English in agent output. |
+| `.acw/tasks-status.md` | session-start | Pending work surface must be visible at session start; without it agents propose duplicate work. |
+| `.acw/glossary/INDEX.md` (wiki mode) | session-start | Vocabulary canon prevents drift to colloquial English in agent output. |
+| `.acw/codemap/GRAPH_REPORT.md` (coding-project / library only) | session-start | Code structure summary so the agent navigates pre-computed graph instead of re-reading source. |
 
 ## What NOT to Load
 

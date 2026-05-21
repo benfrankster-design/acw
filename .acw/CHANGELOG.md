@@ -12,6 +12,58 @@ All notable changes to ACW (Agentic Contract Workspace) will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] — 2026-05-21
+
+**Breaking schema change.** ACW operator-metadata substrate relocates under `.acw/` dotfolder. Instance types become first-class. New substrate modules and tagging discipline introduced.
+
+### Changed (breaking)
+
+- **All substrate paths now prefix `.acw/`.** `decisions/`, `glossary/`, `sessions/`, `_buffer/`, `plans/`, `briefings/`, `inbox/`, `archives/`, `deferred/`, `acw-state.yaml`, `build-log.md`, `incidents.jsonl`, `tasks-status.md`, `DEFERRED.md`, `CHANGELOG.md` move under `.acw/`. Rules, project artifacts (`research/`, `threat-model.md`), and entry-point docs stay at root. Pre-0.10.0 instances upgrade via `/acw-instance upgrade` (skill mechanics pending in v0.10.1).
+- **`_buffer/` renamed to `raw/`.** The `acw-state.yaml::paths` key `buffer_dir:` renamed to `raw_dir:`. New name aligns with the enrichment-vs-memory principle (raw → metabolize → enriched).
+- `rules/manifest-discipline.md` — canonical default paths re-pointed to `.acw/`; `raw_dir` documented; profile + modules fields introduced.
+- `rules/instance-current-manifest.md` — `profile` and `modules` entries added to recommended-blocks registry; paths examples updated.
+- `rules/substrate-boundary.md` — `.acw/` convention noted; substrate vs project-artifact delineation clarified.
+- ACW's own substrate migrated via `git mv` (history preserved); serves as the canonical reference implementation.
+
+### Added
+
+- `rules/instance-types.md` — profile enum (`org-brain | spec-project | coding-project | library | custom`), default modules per profile, module-to-path mapping, skill consumption contract.
+- `rules/confidence-tagging.md` — EXTRACTED / INFERRED / AMBIGUOUS tagging discipline applied to all substrate cross-references. Borrowed from Graphify, generalized across substrate.
+- `rules/substrate-shape.md` — wiki vs flat vs transient shape selection criteria; per-module canonical shape assignments.
+- `rules/codemap.md` — codemap substrate module contract for coding-project and library instances. Two-stage extraction (Tree-sitter AST + LLM semantic), confidence-tagged edges, file-level cache for incremental rebuilds. Wraps Graphify rather than reinventing.
+- `acw-state.yaml::profile` — top-level field declaring instance type. Defaults to `spec-project` with warning if absent.
+- `acw-state.yaml::modules` — optional explicit override of profile defaults.
+
+### Influence
+
+- Graphify (https://graphify.net) — codebase knowledge graph approach; source of confidence tagging discipline and codemap shape.
+- Karpathy LLM-wiki framing — substrate-as-wiki pattern already in place; this release codifies where it applies (wiki shape) vs doesn't (flat / transient shapes).
+- synapse/Rules/Procedures/enrichment-vs-memory.md — principle the `raw/` rename surfaces.
+
+### Originating evidence
+
+Two downstream instances independently arrived at the `.acw/` convention 2026-05-21:
+- cs-ops-spec: D-COPS-035, C-COPS-001, OQ-COPS-019
+- cs-atlas: D-CATL-001
+
+Both absorption candidates filed to ACW canonical, metabolized into D-ACW-050.
+
+### Decisions
+
+- D-ACW-050 — v0.10.0: `.acw/` dotfolder + instance types + codemap + confidence tagging
+
+### Constraints
+
+- C-003 — ACW operator-metadata substrate must live under `.acw/` (authority: D-ACW-050)
+
+### Deferred to v0.10.1+
+
+- `/acw-instance upgrade` skill mechanics to execute the migration on downstream instances. Without this, downstream upgrade is manual.
+- `/codemap` skill implementation (Graphify CLI wrapper, output routed to `.acw/codemap/`).
+- `/substrate-map` skill — rendered cross-reference graph view on demand.
+- Skill audit pass — verify all existing skills read substrate paths from `acw-state.yaml::paths` rather than hardcoding. Patch any hardcodes.
+- `rules/` migration question (OQ-COPS-019) — recommendation is keep at root for now.
+
 ## [0.9.7] — 2026-05-13
 
 CLAUDE.md becomes a thin pointer. Auto-load moves to a Claude Code SessionStart hook. Drift surface eliminated.
