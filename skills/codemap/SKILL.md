@@ -23,7 +23,7 @@ capabilities:
 
 # codemap
 
-> **Implementation status (2026-05-21):** SKILL contract authored; Graphify CLI surface probed and documented (graphifyy 0.8.14). Wrapper authoring is the next discrete piece — `references/rebuild.md`, `status.md`, `audit.md` not yet written. This file defines the contract; `references/implementation-plan.md` covers the concrete wrapper steps now that the probe is done. Per D-ACW-052: ACW auto-load wins over `graphify claude install`. Per C-005: stop-work on writing Graphify content into CLAUDE.md.
+> **Implementation status (2026-05-21):** Contract + all six reference files authored (`rebuild`, `status`, `audit`, `query`, `path`, `explain`). Graphify CLI surface probed (graphifyy 0.8.14). Per D-ACW-052: ACW auto-load wins over `graphify claude install`. Per C-005: stop-work on writing Graphify content into CLAUDE.md. The Python wrapper code that executes the references' contracts is not yet written — references are the executable specification an agent or operator follows when invoking each verb. Dogfood target: cs-atlas post-v0.10.0 upgrade.
 
 Object-centered orchestrator. Object: the codebase knowledge graph for this instance. Verbs: operations on it.
 

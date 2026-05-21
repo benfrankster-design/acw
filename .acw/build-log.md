@@ -33,7 +33,23 @@ Executed the 90-minute patch plan from Session 23's capture. All ten files corre
 
 **What did NOT change in scaffolder.** `tools/scaffold-instance.py` doesn't directly create `.acw/codemap/cache/` — only references `codemap` as a module name (lines 201, 204) and prints a hint to run `/codemap rebuild` (line 358). All correct. No patch needed.
 
-**Patch sweep complete.** Wrapper authoring (`references/rebuild.md`, `status.md`, `audit.md`, plus the three pass-through references) is the next discrete piece, queued in tasks-status.
+**Patch sweep complete.** Wrapper reference authoring landed in the same session — see below.
+
+## 2026-05-21 — Codemap wrapper reference authoring (Session 24, continued)
+
+Authored all six `skills/codemap/references/` files immediately after the patch sweep. The reference files are the executable specification an agent or operator follows when invoking each verb.
+
+**`rebuild.md`.** Three modes (default / `--ast-only` / `--semantic`). Pre-flight runs the SKILL.md gates in order: profile, module, Graphify availability (binary `graphify`, package `graphifyy`), CLAUDE.md integrity per C-005, env_secrets gate (only for Stage 2 paths), codemap dir. Stage 1 invokes `graphify update <project-root>` with Pattern A (`cwd=.acw/codemap/`) as the recommended relocation pattern. Stage 2 re-runs with Gemini env vars set. ACW bridge walks `.acw/decisions/entries/`, emits `implements_decision` edges to `acw-edges.json` sidecar (literal-id-match path always; LLM judgment path gated by `ANTHROPIC_API_KEY` env_secret), appends a "Code-to-decision bridges" section to `GRAPH_REPORT.md`. Failure modes documented (Graphify non-zero, Stage 2 quota, bridge LLM, acw-edges write).
+
+**`status.md`.** Read-only. Reads `manifest.json`, `graph.json`, `acw-edges.json`, source mtimes, decision-entry mtimes. Reports last AST/Stage 2/bridge timestamps, node and edge counts by file_type/relation/confidence, staleness signals, cache size. Exit codes 0/2/3.
+
+**`audit.md`.** Five walks: AMBIGUOUS edges, low-confidence INFERRED (threshold 0.5 default), stale bridge edges (deleted decision targets, deleted source symbols), orphan nodes, optional `graphify benchmark`. Reports a one-line clean/needs-attention summary. Exit codes 0/1/2.
+
+**`query.md`, `path.md`, `explain.md`.** Pass-through verbs. `query` and `path` stream Graphify's stdout unchanged. `explain` is the one verb that joins Graphify's native output with ACW's `acw-edges.json` bridge view — appends a "ACW substrate links:" section with `implements_decision` edges for the queried node.
+
+**Implementation status updated.** SKILL.md's status note now reflects "all six references authored; Python wrapper code is the remaining gap." References ARE the executable specification — an agent following them step by step can perform a manual rebuild today, which is the dogfood path against cs-atlas.
+
+**Tasks-status updated.** Wrapper-authoring task is closed (collapsed into the dogfood task). NEXT is cs-atlas dogfood: finish its v0.10.0 upgrade, install graphifyy, follow `rebuild.md` manually, verify GRAPH_REPORT.md loads via SessionStart hook, run literal-match-only bridge over `.acw/decisions/entries/`, refine references if friction surfaces.
 
 ## 2026-05-21 — Graphify probe + canonical audit + integration decision (Session 23)
 
