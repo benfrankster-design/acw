@@ -1,0 +1,197 @@
+# Migration manifest — 0.9.7 to 0.9.8
+#
+# Authority: D-ACW-048 (wiki mode canonical-only for decisions and glossary;
+#            context/contacts/ as earn-by-discipline opt-in)
+# Schema: rules/migration-manifest.md
+#
+# Authored 2026-05-21 to unblock the _command instance (currently on v0.9.7,
+# chains through 0.9.8 → 0.9.9 → 0.10.0). Other pre-v0.9.8 single-file
+# instances (cs-copilot, gsg-copilot) will use this same manifest.
+#
+# Pre-v0.10.0: substrate at workspace root (decisions/, glossary/), NOT under
+# .acw/. The path prefixes flip to .acw/ later, in 0.9.9-to-0.10.0.yaml.
+
+from_version: "0.9.7"
+to_version: "0.9.8"
+breaking: true
+description: "Mandatory single-file → wiki migration for decisions/ and glossary/. Splits live decisions/decision-log.md and any rolling-window archives into per-entry wiki files. Same for glossary.md. Updates acw-state.yaml::decision_tracking and ::glossary blocks to wiki shape; updates ::paths from single-file to wiki keys; updates ::auto_load_at_session_start to point at INDEX files. Context/contacts/ is earn-by-discipline opt-in, surfaced in audit but not in this manifest."
+authority: "D-ACW-048"
+
+prerequisites:
+  - kind: clean_working_tree
+
+operator_prompts:
+  - field: has_single_file_decisions
+    prompt: "Does this workspace have a single-file decisions/decision-log.md to migrate to wiki shape?"
+    type: boolean
+    default: true
+    affects: only_if.has_single_file_decisions
+
+  - field: has_decision_archives
+    prompt: |
+      Does this workspace have rolling-window archive files matching
+      decisions/decision-log-YYYY-Q*.md that should also be re-split into
+      wiki shape? (Answer 'yes' if any quarterly archives exist; the hook
+      will glob and process all of them.)
+    type: boolean
+    default: true
+    affects: only_if.has_decision_archives
+
+  - field: has_single_file_glossary
+    prompt: "Does this workspace have a single-file glossary.md to migrate to wiki shape?"
+    type: boolean
+    default: true
+    affects: only_if.has_single_file_glossary
+
+steps:
+
+  # ---------------------------------------------------------------------------
+  # Step 1 — Create wiki directory skeleton for decisions.
+  # The wiki shape needs entries/, open-questions/, constraints/ subdirectories
+  # plus an INDEX.md at the top. migrate_to_wiki.py expects these to exist (or
+  # creates them); ensuring up front makes the migration deterministic.
+  # ---------------------------------------------------------------------------
+  - kind: create_dir
+    path: decisions/entries
+
+  - kind: create_dir
+    path: decisions/open-questions
+
+  - kind: create_dir
+    path: decisions/constraints
+
+  # ---------------------------------------------------------------------------
+  # Step 2 — Split the live decisions/decision-log.md into wiki shape.
+  # The tool reads the single-file source, parses its sections (Decisions and
+  # Rationale, Open Questions, Constraints and Gotchas, Resolved Questions),
+  # writes one file per entry into the appropriate subdirectory, and renders
+  # decisions/INDEX.md.
+  # ---------------------------------------------------------------------------
+  - kind: run_hook
+    script: tools/migrate_to_wiki.py
+    only_if: { field: has_single_file_decisions, equals: true }
+    rationale: "Existing tool already implements single-file → wiki migration. Wraps it as a manifest step rather than reimplementing per-version."
+
+  # ---------------------------------------------------------------------------
+  # Step 3 — Re-split any rolling-window quarterly archives into wiki shape.
+  # Per D-ACW-048: every pre-existing decisions/decision-log-YYYY-Q*.md gets
+  # re-split into per-entry wiki files. All historical decisions land in
+  # decisions/entries/ alongside live ones. After the split, the archive files
+  # are deleted by Step 5.
+  #
+  # The hook globs decisions/decision-log-*-Q*.md and runs migrate_to_wiki.py
+  # with --archive=<path> against each.
+  # ---------------------------------------------------------------------------
+  - kind: run_hook
+    script: tools/migration-hooks/v0.9.8-split-decision-archives.py
+    only_if: { field: has_decision_archives, equals: true }
+    rationale: "Variable-length list of archive files (one per quarter the instance has been running); declarative form would require unrolling each archive as a separate step."
+
+  # ---------------------------------------------------------------------------
+  # Step 4 — Migrate the single-file glossary.md to wiki shape.
+  # Same tool, different source. Wiki glossary: glossary/INDEX.md +
+  # glossary/entries/<term-slug>.md.
+  # ---------------------------------------------------------------------------
+  - kind: create_dir
+    path: glossary/entries
+    only_if: { field: has_single_file_glossary, equals: true }
+
+  - kind: run_hook
+    script: tools/migration-hooks/v0.9.8-migrate-glossary-to-wiki.py
+    only_if: { field: has_single_file_glossary, equals: true }
+    rationale: "migrate_to_wiki.py is decisions-shaped; glossary has different section structure (single list of term entries, not a multi-section log). Dedicated hook keeps the tool simple."
+
+  # ---------------------------------------------------------------------------
+  # Step 5 — Delete the single-file legacy sources after wiki content
+  # verification. The hook re-reads the migrated wiki content and confirms
+  # every entry from the source is present at its canonical destination
+  # before deleting. On verification failure, hook exits non-zero and the
+  # migration aborts with sources intact.
+  # ---------------------------------------------------------------------------
+  - kind: run_hook
+    script: tools/migration-hooks/v0.9.8-delete-legacy-sources.py
+    rationale: "Verify-before-delete is content-sensitive and needs to inspect both source and destination shapes. Declarative deletion would skip verification."
+
+  # ---------------------------------------------------------------------------
+  # Step 6 — Update acw-state.yaml::decision_tracking and ::glossary blocks
+  # from single-file shape to wiki shape, update ::paths keys from single-
+  # file (decisions_log, glossary) to wiki (decisions_index,
+  # decisions_entries_dir, decisions_open_questions_dir,
+  # decisions_constraints_dir, glossary_index, glossary_entries_dir), and
+  # update ::auto_load_at_session_start to point at INDEX files instead of
+  # the old single-file paths.
+  #
+  # This is a structural block change, not a key/value upsert. The hook
+  # reads the current state, mutates the relevant blocks per D-ACW-048
+  # § "Consequences", and writes back preserving comments and other blocks.
+  # ---------------------------------------------------------------------------
+  - kind: run_hook
+    script: tools/migration-hooks/v0.9.8-reshape-acw-state.py
+    rationale: "Block-level replacement (single-file decision_tracking → wiki decision_tracking + new glossary block + paths key rename + auto_load entry rewrites) exceeds the update_acw_state subop set (add_fields / set_fields / rename_keys / path_prefix_substrate). Hook is the right level."
+
+  # ---------------------------------------------------------------------------
+  # Step 7 — Remove the meta_layer entries for any quarterly archives that
+  # were re-split and deleted in steps 3/5. The archives are gone; their
+  # registry rows should go too.
+  # ---------------------------------------------------------------------------
+  - kind: run_hook
+    script: tools/migration-hooks/v0.9.8-trim-meta-layer.py
+    only_if: { field: has_decision_archives, equals: true }
+    rationale: "Conditional based on whether archives existed pre-migration. Hook reads the now-non-existent archive paths from meta_layer and removes them."
+
+  # ---------------------------------------------------------------------------
+  # Step 8 — Bump version.
+  # ---------------------------------------------------------------------------
+  - kind: update_acw_state
+    set_fields:
+      version: "0.9.8"
+      last_reconciled_version: "0.9.8"
+      last_reconciled: "<DATE>"
+
+# ---------------------------------------------------------------------------
+# Hooks referenced by this manifest (to be authored in tools/migration-hooks/
+# on first execution; v0.9.3 pattern):
+#
+# - v0.9.8-split-decision-archives.py
+#   Input: decisions/decision-log-*-Q*.md (glob), decisions/entries/
+#   Behavior: for each archive, invoke `python tools/migrate_to_wiki.py
+#             --archive=<path>` which splits per-entry into entries/.
+#
+# - v0.9.8-migrate-glossary-to-wiki.py
+#   Input: glossary.md, glossary/entries/, glossary/INDEX.md
+#   Behavior: parse term entries from single-file glossary, write one file
+#             per term into entries/<slug>.md, render INDEX.md.
+#
+# - v0.9.8-delete-legacy-sources.py
+#   Input: decisions/decision-log.md, decisions/decision-log-*-Q*.md (glob),
+#          glossary.md, decisions/entries/, glossary/entries/
+#   Behavior: read each source, walk its entries, confirm each entry's wiki
+#             destination exists and contains the same id/title. Only after
+#             every entry verifies, delete the sources via `git rm` (or rm
+#             on untracked workspaces). Exit non-zero on any verification
+#             failure with details on which entries failed.
+#
+# - v0.9.8-reshape-acw-state.py
+#   Input: acw-state.yaml
+#   Behavior: replace decision_tracking block with wiki shape (mode: wiki,
+#             index, entries_dir, open_questions_dir, constraints_dir,
+#             archive_pattern, regenerate_index_cmd, entry_frontmatter_
+#             required, status_values, kind_values). Add glossary block in
+#             wiki shape (mode, index, entries_dir, regenerate_index_cmd,
+#             entry_frontmatter_required, status_values). Update paths:
+#             drop decisions_log, glossary; add decisions_index,
+#             decisions_entries_dir, decisions_open_questions_dir,
+#             decisions_constraints_dir, glossary_index, glossary_entries_dir.
+#             Update auto_load_at_session_start entries that pointed at the
+#             single-file paths to point at the new INDEX paths instead.
+#             Preserve all other blocks, comments, and key ordering.
+#
+# - v0.9.8-trim-meta-layer.py
+#   Input: acw-state.yaml::meta_layer
+#   Behavior: remove any entries matching the pattern
+#             decisions/decision-log-YYYY-Q*.md. Preserve other meta_layer
+#             entries.
+#
+# Hooks are deferred to first execution per v0.9.3 convention. The first
+# instance to run this manifest authors them under operator eye.
+# ---------------------------------------------------------------------------

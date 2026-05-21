@@ -18,6 +18,7 @@ Schema: `rules/migration-manifest.md`.
 | File | From | To | Breaking | Authority |
 |---|---|---|---|---|
 | `0.9.2-to-0.9.3.yaml` | 0.9.2 | 0.9.3 | no | D-ACW-039 |
+| `0.9.7-to-0.9.8.yaml` | 0.9.7 | 0.9.8 | yes | D-ACW-048 |
 | `0.9.9-to-0.10.0.yaml` | 0.9.9 | 0.10.0 | yes | D-ACW-050 |
 | `pre-acw-to-0.10.0.yaml` | pre-acw | 0.10.0 | yes | D-ACW-050 |
 
@@ -25,9 +26,9 @@ Schema: `rules/migration-manifest.md`.
 
 ## Intermediate version gaps
 
-Manifests exist for: `0.9.2 → 0.9.3`, `0.9.9 → 0.10.0`, `pre-acw → 0.10.0`.
+Manifests exist for: `0.9.2 → 0.9.3`, `0.9.7 → 0.9.8`, `0.9.9 → 0.10.0`, `pre-acw → 0.10.0`.
 
-Gaps in the version chain (`0.9.3 → 0.9.4`, ..., `0.9.8 → 0.9.9`): no migration manifest exists because those version bumps shipped no file-shape changes that require migration (changelogs documented configuration-field additions and skill-prose refinements only). Instances at those intermediate versions advance `last_reconciled_version` without manifest execution.
+Gaps in the version chain (`0.9.3 → 0.9.4`, `0.9.4 → 0.9.5`, `0.9.5 → 0.9.6`, `0.9.6 → 0.9.7`, `0.9.8 → 0.9.9`): no migration manifest exists for these hops because those version bumps shipped no file-shape changes that require migration (changelogs documented configuration-field additions and skill-prose refinements only). Instances at those intermediate versions advance `last_reconciled_version` without manifest execution.
 
 If a future audit discovers a file-shape change retroactively that needed a manifest, author the manifest at that point and apply it to instances that skipped.
 

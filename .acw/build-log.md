@@ -35,6 +35,34 @@ Executed the 90-minute patch plan from Session 23's capture. All ten files corre
 
 **Patch sweep complete.** Wrapper reference authoring landed in the same session — see below.
 
+## 2026-05-21 — 0.9.7-to-0.9.8 migration manifest authored (Session 24, continued)
+
+Closed the last canonical-side blocker for downstream upgrade dogfooding. With this manifest in place, every chain in the five-instance audit walks end-to-end against current canonical.
+
+**`migrations/0.9.7-to-0.9.8.yaml`.** Authority D-ACW-048. Eight steps:
+
+1. Create `decisions/entries/`, `decisions/open-questions/`, `decisions/constraints/` skeleton.
+2. Run `tools/migrate_to_wiki.py` on live `decisions/decision-log.md` (gated by `has_single_file_decisions` operator prompt).
+3. Glob and re-split every `decisions/decision-log-YYYY-Q*.md` rolling-window archive via a new hook (gated by `has_decision_archives` prompt).
+4. Migrate `glossary.md` to wiki shape via a new hook (gated by `has_single_file_glossary` prompt); create `glossary/entries/` skeleton first.
+5. Verify-before-delete legacy sources via a new hook.
+6. Reshape `acw-state.yaml::decision_tracking` and `::glossary` blocks to wiki shape; flip `paths` keys; update `auto_load_at_session_start` entries from single-file to INDEX paths. Block-level replacement via dedicated hook (exceeds `update_acw_state` subop set).
+7. Trim `meta_layer` of the now-deleted quarterly-archive entries.
+8. Bump version to 0.9.8.
+
+Five new hooks are declared in the manifest's trailing comment block (split-decision-archives, migrate-glossary-to-wiki, delete-legacy-sources, reshape-acw-state, trim-meta-layer). Per the v0.9.3 convention, they author on first execution against a real instance — the manifest is the spec, the hooks are the implementation.
+
+**Path convention.** Pre-v0.10.0 substrate lives at workspace root (`decisions/`, `glossary/`), NOT under `.acw/`. This manifest uses root paths intentionally; the `.acw/` prefix flip happens later, in `0.9.9-to-0.10.0.yaml`.
+
+**`migrations/README.md` updated.** Index table gains a row for the new manifest. The "Intermediate version gaps" section now correctly omits 0.9.7→0.9.8 from the gap list.
+
+**Effect on downstream chains.**
+- `_command` (v0.9.7) — chain is now complete end-to-end: `0.9.7-to-0.9.8.yaml` → (0.9.8-to-0.9.9 not needed, no file-shape change) → `0.9.9-to-0.10.0.yaml`.
+- `cs-copilot`, `gsg-copilot` — if any are at single-file decision-log shape, the v0.9.8 manifest fires automatically as the audit detects legacy shape.
+- All five instances from the Session 23 audit are now executor-unblocked. Hooks land on first run.
+
+**Next.** Operator dogfoods from frank-context per their plan.
+
 ## 2026-05-21 — `/acw-instance upgrade` executor closure (Session 24, continued)
 
 Closed the three executor gaps that blocked manifest-driven upgrades across the downstream instances.
