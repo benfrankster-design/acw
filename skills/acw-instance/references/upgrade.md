@@ -154,16 +154,164 @@ If an instance is multiple versions behind (e.g., `0.9.7 → 0.10.0`), the audit
 
 For instances at versions older than 0.9.9 where intermediate migration manifests do not yet exist in canonical, the audit falls back to the version-specific sections later in this file (v0.5.0, v0.9.7, v0.9.8). Equivalent manifests will be authored over time; until then, the embedded logic ships the upgrade safely.
 
-### Executor verification status (2026-05-21)
+### Executor verification status (2026-05-21, updated Session 24)
 
-Step kinds the current executor handles via existing plan-row actions: `create_dir`, `git_mv`, `update_acw_state` (subset — full `path_prefix_substrate` / `rename_keys` / `add_fields` / `set_fields` coverage needs verification on first manifest run), `update_file` (subset — needs explicit refuse-on-conflict path), `rebuild_index`, `add_file`.
+All step kinds required by `migrations/0.9.9-to-0.10.0.yaml` and `migrations/pre-acw-to-0.10.0.yaml` are now specified for execution. Concrete behavior for each appears in "Step kind execution detail" below.
 
-Step kinds needing executor work before first manifest execution:
-- `remove_gitignore_rule` — straightforward .gitignore line removal; ~10 lines of executor logic.
-- `only_if` conditional — needs the audit phase to evaluate against operator-prompt answers before emitting the row. Audit-phase work, not executor-phase.
-- `run_hook` — defer; no manifest uses it yet.
+| Step kind | Status | Notes |
+|---|---|---|
+| `create_dir` | ready | Idempotent. Plan-row action: `write-canonical` (dir). |
+| `git_mv` (single + batch) | ready | Standard. Use `git mv` if tracked; plain `mv` otherwise. |
+| `git_mv` with `optional: true` | **ready (Session 24)** | Skip-if-source-missing tolerance for pre-acw bootstrap. Detail below. |
+| `update_acw_state` | ready | Full `path_prefix_substrate` / `rename_keys` / `add_fields` / `set_fields` coverage. Detail below. |
+| `update_file` | ready | Targeted text replace; refuse-on-conflict. Detail below. |
+| `rebuild_index` | ready | Calls `python tools/migrate_to_wiki.py` or `acw-state.yaml::decision_tracking.regenerate_index_cmd`. |
+| `add_file` | ready | Renders from `content_template` with `content_tokens` substitution. |
+| `remove_gitignore_rule` | **ready (Session 24)** | Read .gitignore, drop matching line, write back. Detail below. |
+| `only_if` conditional | **ready (Session 24)** | Evaluated in audit phase against `operator_prompts` answers; rows filter before plan emission. Detail below. |
+| `run_hook` | ready (limited) | Executes a script in `tools/migration-hooks/`. Used by pre-acw bootstrap (`migrate_to_wiki.py`, `bootstrap-empty-dirs.py`). |
 
 Recommended: dry-run `migrations/0.9.9-to-0.10.0.yaml` against a copy of a v0.9.9 instance before running for real. The dry-run path emits the plan without executing; gaps surface as warnings.
+
+### Step kind execution detail (v0.10.0+ manifest support)
+
+The mapping table earlier in this file shows how each step kind translates into the existing plan-row action enum. This section nails down execution behavior for the step kinds that had open questions before Session 24.
+
+**`remove_gitignore_rule`.**
+
+Manifest schema:
+
+```yaml
+- kind: remove_gitignore_rule
+  rule: ".acw/"           # exact line text to remove
+  reason: "..."           # surfaced in plan-row and log
+```
+
+Plan-row action: `reshape` on `<workspace>/.gitignore`. Plan-row description: `[reshape] .gitignore: remove rule "<rule>" — <reason>`.
+
+Execution:
+
+1. Read `<workspace>/.gitignore`. If file is absent, treat as no-op (idempotent — the rule is already not present) and print `[skip] .gitignore: rule already absent (no .gitignore file)`.
+2. Walk lines. For each line where `line.strip() == rule.strip()` (whitespace-tolerant exact match), drop the line. Preserve comments, blank lines, and all other rules verbatim.
+3. If no line matched, treat as no-op and print `[skip] .gitignore: rule "<rule>" not found (already removed)`.
+4. If one or more lines matched, write the modified content back. Use `git add .gitignore` on tracked workspaces so the change lands in the migration commit.
+5. Print `[reshape] .gitignore: removed "<rule>" (<N> line(s)) ✓`.
+
+Refuse-on-ambiguity policy: this step does NOT do partial-line matching or regex matching. If an operator's `.gitignore` has the rule as part of a longer line (`.acw/  # legacy`), the line is preserved untouched and a `[?]` plan row is emitted asking the operator to confirm whether to remove the longer form.
+
+**`only_if` conditional.**
+
+Manifest schema (on any step):
+
+```yaml
+- kind: create_dir
+  path: .acw/codemap
+  only_if: { field: profile, in: [coding-project, library] }
+```
+
+Supported predicates:
+
+| Form | Meaning |
+|---|---|
+| `{ field: <name>, equals: <value> }` | True when the named field's resolved value equals `<value>` exactly. |
+| `{ field: <name>, in: [<v1>, <v2>, ...] }` | True when the value is one of the listed options. |
+| `{ field: <name>, not_equals: <value> }` | Inverse of `equals`. |
+| `{ field: <name>, present: true }` | True when the field resolved to a non-null, non-empty value. |
+| `{ all: [<predicate>, <predicate>, ...] }` | Conjunction. |
+| `{ any: [<predicate>, <predicate>, ...] }` | Disjunction. |
+
+Field resolution order (first hit wins):
+
+1. Operator-prompt answers from this manifest's `operator_prompts` block (collected at `[?]` resolution time, before bulk execution).
+2. Existing keys in the workspace's `acw-state.yaml` (read at audit time).
+3. Default value declared on the operator-prompt entry, if the operator was not prompted (e.g., chain-mode where this manifest's prompt defaults applied because an earlier manifest already answered).
+
+Execution:
+
+- The audit phase resolves `only_if` predicates after all `operator_prompts` have answers (including defaults). Steps whose predicate evaluates `false` produce no plan rows.
+- During the upgrade phase, predicate evaluation does NOT happen again. The plan already contains only the rows that matched. This avoids re-prompting and keeps execution deterministic.
+- If a predicate references a `field:` that does not exist in operator prompts, the workspace state, or as a default, the audit phase logs a warning and treats the predicate as `false` (the conservative choice — skip rather than execute on an unknown).
+
+Print at plan time: rows whose `only_if` matched appear normally; rows whose `only_if` did not match are listed in a single line below the plan: `Skipped by only_if: <N> rows (<one-line summary of which steps>)`.
+
+**`git_mv` with `optional: true`.**
+
+Manifest schema:
+
+```yaml
+- kind: git_mv
+  moves:
+    - { from: decisions, to: .acw/decisions, optional: true }
+    - { from: _buffer, to: .acw/raw, optional: true }
+```
+
+Per-move flag, not per-step. Used in the pre-acw bootstrap manifest where the source workspace may have only a subset of substrate paths.
+
+Execution:
+
+For each move with `optional: true`:
+
+1. Check whether `<from>` exists in the workspace.
+2. If absent → skip this move silently. Print `[skip] git_mv <from> → <to>: source absent (optional)`.
+3. If present → execute as a normal `git mv` (or plain `mv` on untracked workspaces).
+4. The plan-row generation in audit phase still emits one row per declared move; rows for absent sources are tagged `[would-skip]` so the operator sees what was planned and what will no-op.
+
+Moves without `optional: true` retain hard-fail behavior: missing source aborts the bulk execution with an error.
+
+**`update_acw_state` subops (full coverage).**
+
+Manifest schema:
+
+```yaml
+- kind: update_acw_state
+  path_prefix_substrate:
+    prefix: .acw/
+    keys: [decisions_index, tasks_status, ...]
+  rename_keys:
+    buffer_dir: raw_dir
+  add_fields:
+    profile: spec-project          # default; operator prompt may overwrite
+    modules: null
+  set_fields:
+    version: "0.10.0"
+    last_reconciled_version: "0.10.0"
+    last_reconciled: "<DATE>"
+```
+
+Plan-row action: `reshape` on `acw-state.yaml`. One row per logical sub-operation declared, grouped under one plan-row group.
+
+Execution order within the step:
+
+1. `path_prefix_substrate`: for each key in `keys`, read its current value from `acw-state.yaml::paths`; if the value does not already start with `prefix`, prepend `prefix` to the value; write back. Idempotent (already-prefixed keys are no-ops).
+2. `rename_keys`: for each `<old>: <new>` pair, if `<old>` exists in `acw-state.yaml::paths`, move its value to `<new>` and remove `<old>`. Idempotent (missing `<old>` is no-op).
+3. `add_fields`: for each `<key>: <value>` pair at the top level of `acw-state.yaml`, if the key is absent OR null, set to `<value>`. Operator-prompt answers (per `operator_prompts.<field>.affects`) override the manifest's default before this step fires.
+4. `set_fields`: for each `<key>: <value>` pair at the top level, set unconditionally. Used for version bumps. `<DATE>` token resolves to today (UTC, `YYYY-MM-DD`).
+
+Use `tools/manifest.py` (key/value upsert) for the writes; do not hand-edit. Preserve comments and key ordering for all blocks the step does not touch.
+
+**`update_file` (text replace with refuse-on-conflict).**
+
+Manifest schema:
+
+```yaml
+- kind: update_file
+  path: AGENTS.md
+  replace:
+    - { find: "decisions/INDEX.md", with: ".acw/decisions/INDEX.md" }
+    - { find: "tasks-status.md", with: ".acw/tasks-status.md" }
+```
+
+Plan-row action: `reshape` on `<path>`. Plan-row description lists how many replace pairs landed.
+
+Execution:
+
+1. Read `<path>`. Refuse if absent (the file is expected; abort step).
+2. For each replace pair, count occurrences of `find` in the current text. Apply the replacement.
+3. If a `find` value does not appear in the file: log a single warning line per missing pair (`[update_file] AGENTS.md: pattern "<find>" not found — operator-customized prose may need manual fixup`). Continue with remaining pairs.
+4. If any `find` value appears alongside `with` already (i.e., the replacement is partially applied), the step still runs — the find/replace is idempotent for exact-string matches.
+5. Write the modified content back.
+
+The "refuse on conflict" intent here is narrow: refuse only if the file itself is missing. Missing patterns inside the file produce warnings, not failures, because operator-customized prose is a normal and expected occurrence.
 
 ## Bulk execution
 

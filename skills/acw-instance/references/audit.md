@@ -43,6 +43,33 @@ For each in-scope path, fetch the canonical source named by its row and compare.
 
 **Wiki mode is canonical (v0.9.8+, D-ACW-048).** If `decisions/decision-log.md` or `glossary.md` (single-file legacy shape) is detected, emit a mandatory `reshape` plan row that migrates the file to wiki shape via `tools/migrate_to_wiki.py`. Not an `[?]` ambiguous row — the migration is required, not optional. The audit also emits `write-canonical` rows for `decisions/INDEX.md` and `glossary/INDEX.md` if they don't yet exist alongside the legacy single-file source.
 
+## Migration manifest pass (v0.10.0+)
+
+Authoritative source: `rules/migration-manifest.md` (schema) + the YAML files under canonical `migrations/`. Execution behavior in `references/upgrade.md` § "Step kind execution detail."
+
+The audit reads the workspace's current ACW version (`acw-state.yaml::last_reconciled_version`, or `pre-acw` if no state file exists) and chains the relevant migration manifests in version order. For each manifest in the chain:
+
+1. **Read the manifest.** Pull `from_version`, `to_version`, `prerequisites`, `operator_prompts`, `steps`.
+2. **Evaluate `prerequisites`.** Each prerequisite is a step-kind in the manifest schema (`clean_working_tree`, `minimum_version`, etc.). If any prerequisite fails, abort plan generation and surface the failure as a halt condition. The plan-approval gate is not reached.
+3. **Collect operator-prompt entries.** Each entry in `operator_prompts` becomes a `[?]` resolution row at the TOP of the plan, in declared order. Each row carries the prompt text, the `enum` or `type`, the `default`, and the `affects` mapping. These are answered at plan-approval time, before any `only_if` evaluation.
+4. **Resolve `only_if` predicates.** With operator-prompt answers in hand (defaults applied if the operator was not prompted in chain-mode), walk every step. For each step with an `only_if` predicate, evaluate per the predicate forms documented in upgrade.md. Steps whose predicate evaluates `false` produce NO plan rows. Steps whose predicate evaluates `true` (or have no `only_if`) proceed to row generation.
+5. **Generate plan rows per step.** Map each step kind to the plan-row action per the table in upgrade.md ("How manifests map to existing plan-row actions"). Group multi-move `git_mv` steps into one row group so a single failure surfaces cleanly. For `git_mv` moves with `optional: true`, emit the row tagged `[would-skip-if-absent]` so the operator can see the planned no-op cases.
+6. **Append manifest summary to plan.** At the end of the manifest's row block, print:
+
+   ```
+   ─── Manifest: 0.9.9-to-0.10.0.yaml (authority: D-ACW-050) ───
+     Operator prompts: <N>  (resolved at plan-approval time)
+     Steps planned:    <N>
+     Steps skipped by only_if: <N>
+     Optional moves that will no-op (source absent): <N>
+   ```
+
+Chain mode: when the workspace is multiple versions behind (e.g., `0.9.7 → 0.10.0`), the audit reads each manifest in version order (`0.9.7-to-0.9.8.yaml`, `0.9.8-to-0.9.9.yaml`, `0.9.9-to-0.10.0.yaml`), emitting each manifest's rows in chain order. Operator prompts from earlier manifests surface first. The audit does NOT actually advance state between manifests — it evaluates prerequisites for each against the state the previous manifest WOULD HAVE produced, conservatively (if the previous manifest's `update_acw_state` would set `version: 0.9.8`, the next manifest's `minimum_version: 0.9.8` is considered satisfied).
+
+When an intermediate manifest file is missing from canonical (e.g., `0.9.7-to-0.9.8.yaml` not yet authored), the audit falls back to the version-specific sections in upgrade.md (v0.5.0 / v0.9.7 / v0.9.8) for that hop, then resumes manifest-driven mode at the next available `from_version`. Missing intermediate manifests are surfaced in the plan header as a one-line note so the operator knows fallback paths fired.
+
+For unregistered workspaces being adopted (no `acw-state.yaml`), the entry point is `migrations/pre-acw-to-0.10.0.yaml`. The audit detects substrate-shaped signals (per the spine), confirms adoption is appropriate, then runs the pre-acw manifest's prompts and step generation in the same way.
+
 Rule files that govern specific substrate shapes (consumed by this verb when classifying):
 
 - `rules/decision-tracking.md` — decisions format, both modes.

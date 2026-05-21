@@ -35,6 +35,32 @@ Executed the 90-minute patch plan from Session 23's capture. All ten files corre
 
 **Patch sweep complete.** Wrapper reference authoring landed in the same session — see below.
 
+## 2026-05-21 — `/acw-instance upgrade` executor closure (Session 24, continued)
+
+Closed the three executor gaps that blocked manifest-driven upgrades across the downstream instances.
+
+**`upgrade.md` — new "Step kind execution detail" section.** Concrete behavior for the five step kinds that had open questions:
+
+- `remove_gitignore_rule` — whitespace-tolerant exact-line removal; idempotent (no-op when rule absent or file missing); writes back through `git add .gitignore` on tracked workspaces; emits `[?]` row when the rule appears as part of a longer line (refuses partial-line matching).
+- `only_if` conditional — predicate forms: `equals`, `in`, `not_equals`, `present`, `all` (conjunction), `any` (disjunction). Field resolution order: operator-prompt answers → existing `acw-state.yaml` keys → declared defaults. Audit-phase evaluation only; not re-evaluated at execution time. Unknown fields conservatively treat predicate as false.
+- `git_mv` with `optional: true` — per-move flag (not per-step). Skip-if-source-missing tolerance for pre-acw bootstrap where workspaces have only a subset of substrate paths. Audit emits `[would-skip-if-absent]` plan rows for visibility. Non-optional moves retain hard-fail behavior on missing source.
+- `update_acw_state` subops — full coverage of `path_prefix_substrate` (idempotent), `rename_keys` (idempotent), `add_fields` (only when key absent or null; operator prompts override), `set_fields` (unconditional, `<DATE>` token resolution). Uses `tools/manifest.py`, preserves comments and key ordering.
+- `update_file` — refuse only on missing file; missing patterns produce warnings, not failures (operator-customized prose is expected); idempotent across re-runs.
+
+**`upgrade.md` — "Executor verification status" table refreshed.** All step kinds required by `0.9.9-to-0.10.0.yaml` and `pre-acw-to-0.10.0.yaml` are marked ready. The three previously-blocking kinds (`remove_gitignore_rule`, `only_if`, `optional: true` on git_mv) carry "ready (Session 24)" markers.
+
+**`audit.md` — new "Migration manifest pass (v0.10.0+)" section.** Documents how the audit reads manifests, evaluates prerequisites, collects operator-prompt entries as `[?]` rows, resolves `only_if` predicates against operator-prompt answers, generates plan rows per step, and prints a per-manifest summary block. Covers chain mode for multi-hop upgrades (e.g., 0.9.7 → 0.10.0 walks three manifests in order), conservative prerequisite evaluation against the state previous manifests would have produced, and fallback to version-specific upgrade.md sections when intermediate manifests are missing.
+
+**Effect on downstream instances.** Per the five-instance audit:
+
+- **frank-context** is now unblocked. `migrations/0.9.9-to-0.10.0.yaml` can run end-to-end against it.
+- **cs-atlas** is now unblocked. `migrations/pre-acw-to-0.10.0.yaml` can run with `optional: true` skips for the substrate paths it doesn't have yet.
+- **cs-copilot** is now unblocked on the pre-acw bootstrap path. Same mechanism as cs-atlas.
+- **cs-ops-spec** was already at v0.10.0 shape; needs profile/modules verification (no executor work).
+- **_command** still needs `0.9.7-to-0.9.8.yaml` authored (a separate task — the executor is now ready when it lands).
+
+`tools/manifest.py` is referenced as the write surface for `acw-state.yaml` mutations. The script already exists per earlier sessions; concrete coverage of the four subops (`path_prefix_substrate`, `rename_keys`, `add_fields`, `set_fields`) needs verification on first manifest run against a live downstream instance — this is the dry-run recommendation in the verification-status section.
+
 ## 2026-05-21 — Codemap wrapper reference authoring (Session 24, continued)
 
 Authored all six `skills/codemap/references/` files immediately after the patch sweep. The reference files are the executable specification an agent or operator follows when invoking each verb.
