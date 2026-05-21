@@ -17,7 +17,19 @@ Schema: `rules/migration-manifest.md`.
 
 | File | From | To | Breaking | Authority |
 |---|---|---|---|---|
+| `0.9.2-to-0.9.3.yaml` | 0.9.2 | 0.9.3 | no | D-ACW-039 |
 | `0.9.9-to-0.10.0.yaml` | 0.9.9 | 0.10.0 | yes | D-ACW-050 |
+| `pre-acw-to-0.10.0.yaml` | pre-acw | 0.10.0 | yes | D-ACW-050 |
+
+`pre-acw-to-0.10.0.yaml` is a bootstrap manifest — special-cased for workspaces using substrate patterns but never registered as ACW instances (no `acw-state.yaml`). Distinct from version-to-version manifests in that it creates the `acw-state.yaml` from scratch with operator-supplied identity.
+
+## Intermediate version gaps
+
+Manifests exist for: `0.9.2 → 0.9.3`, `0.9.9 → 0.10.0`, `pre-acw → 0.10.0`.
+
+Gaps in the version chain (`0.9.3 → 0.9.4`, ..., `0.9.8 → 0.9.9`): no migration manifest exists because those version bumps shipped no file-shape changes that require migration (changelogs documented configuration-field additions and skill-prose refinements only). Instances at those intermediate versions advance `last_reconciled_version` without manifest execution.
+
+If a future audit discovers a file-shape change retroactively that needed a manifest, author the manifest at that point and apply it to instances that skipped.
 
 ## Conventions
 

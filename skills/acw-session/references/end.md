@@ -69,7 +69,7 @@ last_completed_phase: 1
 
 **Append-only subset** (quick + synapse-only + research-only):
 - New decisions → write per `distribution-rules.md::Decisions` for `dm`
-- Tasks completed → write dated session block to `archives/tasks-status/YYYY-MM.md` (current month) AND remove from Pending. Tasks newly started → append to Pending. New deferred-but-keep idea → write to `inbox/ideas/`, NOT to tasks-status. Per `distribution-rules.md::paths.tasks_status`.
+- Tasks completed → write dated session block to `<paths.archives_dir>/tasks-status/YYYY-MM.md` (current month) AND remove from Pending. Tasks newly started → append to Pending. New deferred-but-keep idea → write to `<paths.inbox_dir>/ideas/`, NOT to tasks-status. Per `distribution-rules.md::paths.tasks_status`. (v0.9.x instances resolve `archives_dir` to `archives`; v0.10.0+ to `.acw/archives`.)
 - New incidents → append JSONL lines to `paths.incidents`
 - Build-log entry → prepend to `paths.build_log`
 - New sources → append to `paths.sources` (only if file already exists)
@@ -89,7 +89,7 @@ Glossary writes per `distribution-rules.md::Glossary` for `gm`.
 **Auto-load list maintenance.** If Phase 2 creates a new top-level substrate file that meets the substrate-worthy test, append its path to `acw-state.yaml::auto_load_at_session_start` via `manifest.append`. Additive only.
 
 **Symmetric archive registration.** Detect new archive files and propose `acw-state.yaml::meta_layer` append. Scope is mode-aware:
-- **tasks-status archive** (`archives/tasks-status/YYYY-MM.md`) — applies always.
+- **tasks-status archive** (`<paths.archives_dir>/tasks-status/YYYY-MM.md`) — applies always.
 - **decision-log archive** — applies only when `dm == 'single-file'` (file matching `decision_tracking.archive_pattern`). In wiki mode this is structurally moot (no rolling-window archive); skip silently.
 
 Operator confirms before append.

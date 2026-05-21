@@ -54,7 +54,7 @@ Hand spine output (config, paths, mode flags, buffer state, recent captures) to 
 
 - Spine is read-only on substrate. All writes happen in verb-specific work.
 - Cross-repo writes refuse without `cross_repo_writes` declaration.
-- Append-only files (`build_log`, `incidents`, `evolution`, captures, `archives/tasks-status/YYYY-MM.md`, wiki-mode decision entries past acceptance) are never edited past entries.
+- Append-only files (`build_log`, `incidents`, `evolution`, captures, `<paths.archives_dir>/tasks-status/YYYY-MM.md`, wiki-mode decision entries past acceptance) are never edited past entries.
 - `end` canonical-edit detection branches on `is_canonical_source` (publishers prompt for version bump + push; consumers warn local edits won't propagate).
 - Idempotency: `end` uses `.current-session` resume token to skip phases already completed in a hash-matching prior run.
 

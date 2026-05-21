@@ -1,0 +1,143 @@
+# Migration manifest — pre-ACW to 0.10.0 (bootstrap)
+#
+# Authority: D-ACW-050 (.acw/ dotfolder + instance types + codemap)
+# Schema: rules/migration-manifest.md
+#
+# For workspaces that use substrate-shaped patterns (decisions/, incidents.jsonl,
+# tasks-status.md) but never registered as ACW instances (no acw-state.yaml).
+# This manifest bootstraps them into the v0.10.0 canonical shape in one pass.
+#
+# Concrete target: cs-atlas, which has decisions/decision-log.md,
+# incidents.jsonl, tasks-status.md, _buffer/, and Python code/data/schemas at
+# root but no acw-state.yaml.
+
+from_version: "pre-acw"
+to_version: "0.10.0"
+breaking: true
+description: "Bootstrap a pre-ACW workspace into v0.10.0 canonical shape. Creates acw-state.yaml from scratch with operator-supplied profile + modules; relocates substrate to .acw/; converts single-file decision-log to wiki shape if present."
+authority: "D-ACW-050"
+
+prerequisites:
+  - kind: clean_working_tree
+
+operator_prompts:
+  - field: project_code
+    prompt: "Project code for this workspace (e.g., CATL for cs-atlas)?"
+    type: string
+    default: null    # operator must supply
+    affects: add_file.acw-state.tokens.PROJECT_CODE
+
+  - field: project_name
+    prompt: "Human-readable project name?"
+    type: string
+    default: null
+    affects: add_file.acw-state.tokens.PROJECT_NAME
+
+  - field: domain
+    prompt: "Primary domain (one phrase)?"
+    type: string
+    default: null
+    affects: add_file.acw-state.tokens.DOMAIN
+
+  - field: profile
+    prompt: "Instance type? See rules/instance-types.md for descriptions."
+    enum: [org-brain, spec-project, coding-project, library, custom]
+    default: coding-project   # most pre-ACW workspaces with code default here
+    affects: add_file.acw-state.tokens.PROFILE
+
+  - field: modules
+    prompt: "If profile is 'custom', declare the explicit module list."
+    type: list
+    only_if: { field: profile, equals: custom }
+    affects: add_file.acw-state.tokens.MODULES_YAML
+
+  - field: has_single_file_decisions
+    prompt: "Does this workspace have a single-file decisions/decision-log.md that needs wiki migration?"
+    type: boolean
+    default: true             # cs-atlas has this; most pre-ACW workspaces too
+    affects: run_hook.wiki_migration
+
+steps:
+
+  # ---------------------------------------------------------------------------
+  # Step 1 — Bootstrap acw-state.yaml with operator-supplied identity.
+  # Written at the new canonical location (.acw/acw-state.yaml) from scratch.
+  # ---------------------------------------------------------------------------
+  - kind: create_dir
+    path: .acw
+
+  - kind: add_file
+    path: .acw/acw-state.yaml
+    content_template: tools/templates/acw-state.yaml.tmpl
+    content_tokens:
+      PROJECT_NAME: "<operator_prompts.project_name>"
+      PROJECT_CODE: "<operator_prompts.project_code>"
+      DOMAIN: "<operator_prompts.domain>"
+      PROFILE: "<operator_prompts.profile>"
+      MODULES_YAML: "<operator_prompts.modules>"     # null = use profile defaults
+      DATE: "<DATE>"
+
+  # ---------------------------------------------------------------------------
+  # Step 2 — Convert single-file decision-log to wiki shape if present.
+  # Operator confirms via has_single_file_decisions prompt. The hook runs
+  # tools/migrate_to_wiki.py and rewrites decisions/decision-log.md as
+  # decisions/entries/ + decisions/INDEX.md.
+  #
+  # Done BEFORE relocation so the wiki structure exists at the source path
+  # before the git_mv batch in Step 3.
+  # ---------------------------------------------------------------------------
+  - kind: run_hook
+    script: tools/migrate_to_wiki.py
+    only_if: { field: has_single_file_decisions, equals: true }
+    rationale: "Existing tool already implements single-file → wiki migration. Wraps it as a manifest step rather than reimplementing."
+
+  # ---------------------------------------------------------------------------
+  # Step 3 — Relocate substrate under .acw/.
+  # Only moves directories/files that exist; missing items are skipped.
+  # _buffer rename to raw folds in.
+  # ---------------------------------------------------------------------------
+  - kind: git_mv
+    moves:
+      - { from: decisions, to: .acw/decisions, optional: true }
+      - { from: glossary, to: .acw/glossary, optional: true }
+      - { from: sessions, to: .acw/sessions, optional: true }
+      - { from: plans, to: .acw/plans, optional: true }
+      - { from: _buffer, to: .acw/raw, optional: true }
+      - { from: inbox, to: .acw/inbox, optional: true }
+      - { from: deferred, to: .acw/deferred, optional: true }
+      - { from: archives, to: .acw/archives, optional: true }
+      - { from: briefings, to: .acw/briefings, optional: true }
+      - { from: build-log.md, to: .acw/build-log.md, optional: true }
+      - { from: incidents.jsonl, to: .acw/incidents.jsonl, optional: true }
+      - { from: tasks-status.md, to: .acw/tasks-status.md, optional: true }
+      - { from: DEFERRED.md, to: .acw/DEFERRED.md, optional: true }
+      - { from: CHANGELOG.md, to: .acw/CHANGELOG.md, optional: true }
+
+  # ---------------------------------------------------------------------------
+  # Step 4 — Initialize codemap dir for coding-project / library profiles.
+  # ---------------------------------------------------------------------------
+  - kind: create_dir
+    path: .acw/codemap
+    only_if: { field: profile, in: [coding-project, library] }
+
+  - kind: create_dir
+    path: .acw/codemap/.cache
+    only_if: { field: profile, in: [coding-project, library] }
+
+  # ---------------------------------------------------------------------------
+  # Step 5 — Initialize required empty dirs per acw-state.yaml::empty_dirs
+  # (from canonical at this version).
+  # ---------------------------------------------------------------------------
+  - kind: run_hook
+    script: tools/migration-hooks/bootstrap-empty-dirs.py
+    rationale: "Reads canonical acw-state.yaml::empty_dirs and creates each with .gitkeep. Pure data-driven; reusable across bootstrap manifests."
+
+# ---------------------------------------------------------------------------
+# Step kind: `optional: true` on git_mv moves
+# ---------------------------------------------------------------------------
+# Adds tolerance for pre-ACW workspaces that have only a subset of substrate
+# paths. The standard git_mv step (in version-to-version manifests) requires
+# all moves to succeed; the bootstrap manifest needs to handle partial state.
+# This `optional: true` flag is added to the step-kind schema; document in
+# rules/migration-manifest.md when the executor lands the support.
+# ---------------------------------------------------------------------------

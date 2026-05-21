@@ -100,11 +100,11 @@ Shape is mode-invariant.
 
 ## `paths.tasks_status`
 
-Format authority: `rules/task-tracking.md` (Pending-only canonical since v0.9.3; archive shape `archives/tasks-status/YYYY-MM.md` since v0.9.5; session-block format).
+Format authority: `rules/task-tracking.md` (Pending-only canonical since v0.9.3; archive shape `<paths.archives_dir>/tasks-status/YYYY-MM.md` since v0.9.5; session-block format). Pre-v0.10.0 instances resolve `archives_dir` to `archives` at workspace root; v0.10.0+ resolves to `.acw/archives`.
 
 **Always-safe writes (live file):** append new Pending task; remove completed task as part of writing the session block to archive.
 
-**Always-safe writes (archive `archives/tasks-status/YYYY-MM.md`):** append a dated session block to the current month's archive file (create file + folder if absent with archive frontmatter; register in `acw-state.yaml::meta_layer` on first write via Phase 2 symmetric archive-registration).
+**Always-safe writes (archive `<paths.archives_dir>/tasks-status/YYYY-MM.md`):** append a dated session block to the current month's archive file (create file + folder if absent with archive frontmatter; register in `acw-state.yaml::meta_layer` on first write via Phase 2 symmetric archive-registration).
 
 **Never:** write to a Done or Parked section in the live file (sections don't exist in v0.9.3+); touch prior dated entries in archive; auto-delete from Pending without an explicit completion signal.
 

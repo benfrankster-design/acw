@@ -1,0 +1,108 @@
+# Migration manifest — 0.9.2 to 0.9.3
+#
+# Authority: D-ACW-039 (Pending-only tasks-status, archive-on-completion,
+#            inbox/ideas/ replaces Parked section)
+# Schema: rules/migration-manifest.md
+#
+# Authored retroactively 2026-05-21 for instances still on three-section
+# tasks-status shape. The pre-v0.10.0 shape this migrates from was at the
+# workspace root (tasks-status.md, archives/, inbox/); paths in this manifest
+# use workspace-root paths intentionally. Instances at v0.10.0+ already have
+# substrate under .acw/ and the task-tracking shape correct.
+
+from_version: "0.9.2"
+to_version: "0.9.3"
+breaking: false
+description: "Retire three-section tasks-status (Pending/Done/Parked) in favor of Pending-only with archive-on-completion to archives/tasks-status/YYYY-MM.md and Parked replacement via inbox/ideas/."
+authority: "D-ACW-039"
+
+prerequisites:
+  - kind: clean_working_tree
+
+operator_prompts:
+  - field: parked_handling
+    prompt: |
+      How should existing Parked items be handled?
+        (a) Move all to archives as frozen-archive (no triage)
+        (b) Triage to inbox/ideas/ (one file per idea) interactively
+        (c) Mix: present each item and prompt operator per-item
+    enum: [archive-all, triage-to-ideas, per-item]
+    default: archive-all
+    affects: run_hook.parked_handling
+
+steps:
+
+  # ---------------------------------------------------------------------------
+  # Step 1 — Ensure archive folder exists.
+  # ---------------------------------------------------------------------------
+  - kind: create_dir
+    path: archives/tasks-status
+
+  # ---------------------------------------------------------------------------
+  # Step 2 — Ensure inbox/ideas exists (parked replacement surface).
+  # ---------------------------------------------------------------------------
+  - kind: create_dir
+    path: inbox/ideas
+
+  # ---------------------------------------------------------------------------
+  # Step 3 — Split Done content into archives/tasks-status/YYYY-MM.md files.
+  # The hook reads tasks-status.md, extracts the Done section, groups entries
+  # by month (based on their YYYY-MM-DD date headers), and writes each month's
+  # entries to its respective archive file (append-only).
+  # ---------------------------------------------------------------------------
+  - kind: run_hook
+    script: tools/migration-hooks/v0.9.3-archive-done-section.py
+    rationale: "Splitting Done content by month requires parsing dated section headers and writing append-only to multiple files. Pure data manipulation; declarative form would require listing every entry."
+
+  # ---------------------------------------------------------------------------
+  # Step 4 — Handle Parked content per operator choice.
+  # archive-all → write Parked block to current-month archive as final
+  #               frozen-archive section
+  # triage-to-ideas → for each Parked item, prompt operator for keep/discard;
+  #                   write kept items to inbox/ideas/YYYY-MM-DD-<slug>.md
+  # per-item → fully interactive
+  # ---------------------------------------------------------------------------
+  - kind: run_hook
+    script: tools/migration-hooks/v0.9.3-handle-parked-section.py
+    parameters:
+      mode: <operator_prompts.parked_handling>
+    rationale: "Per-item operator interaction over a variable-length list; declarative form would require unrolling each item as an operator_prompt."
+
+  # ---------------------------------------------------------------------------
+  # Step 5 — Rewrite tasks-status.md to Pending-only shape.
+  # The hook reads tasks-status.md, extracts Pending content, writes a fresh
+  # file with only the Pending section + canonical frontmatter
+  # (section_conventions: pending: "Pending").
+  # ---------------------------------------------------------------------------
+  - kind: run_hook
+    script: tools/migration-hooks/v0.9.3-rewrite-pending-only.py
+    rationale: "File-wide rewrite preserving Pending content and frontmatter; declarative update_file replacements would be brittle across instance variations in formatting."
+
+  # ---------------------------------------------------------------------------
+  # Step 6 — Bump version.
+  # ---------------------------------------------------------------------------
+  - kind: update_acw_state
+    set_fields:
+      version: "0.9.3"
+      last_reconciled_version: "0.9.3"
+      last_reconciled: "<DATE>"
+
+# ---------------------------------------------------------------------------
+# Hooks referenced by this manifest (to be authored in tools/migration-hooks/):
+#
+# - v0.9.3-archive-done-section.py
+#   Input: tasks-status.md, archives/tasks-status/
+#   Behavior: parse Done section, group by month, append to YYYY-MM.md per month.
+#
+# - v0.9.3-handle-parked-section.py
+#   Input: tasks-status.md, inbox/ideas/, archives/tasks-status/<current-month>.md, mode
+#   Behavior: per mode parameter, archive / triage / interactive-per-item.
+#
+# - v0.9.3-rewrite-pending-only.py
+#   Input: tasks-status.md
+#   Behavior: keep frontmatter and Pending section only, drop Done and Parked.
+#
+# Hooks are deferred to first execution — authored when a real instance runs
+# this manifest. Pure data manipulation; reasonable to write under operator
+# eye on first run rather than blind-implement.
+# ---------------------------------------------------------------------------

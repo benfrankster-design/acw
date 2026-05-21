@@ -116,6 +116,55 @@ Choose:
 
 Update the plan in memory. After all `[?]` rows resolve, proceed to bulk execution.
 
+## Migration-manifest execution (v0.10.0+)
+
+> **Architectural note (D-ACW-050, D-ACW-051):** From v0.10.0 forward, version-to-version migrations live as declarative data in `migrations/<from>-to-<to>.yaml` per `rules/migration-manifest.md`. The audit reads the relevant manifest(s) and emits plan rows; the upgrade executor walks them under the standard plan-approval gate. The version-specific sections later in this file (v0.5.0 `_inbox/` → `_buffer/`, v0.9.7 CLAUDE.md trim, v0.9.8 single-file → wiki migration) remain for instances on those legacy versions; they will retire when no instance remains at the corresponding source version.
+
+### How manifests map to existing plan-row actions
+
+The manifest step-kind enum from `rules/migration-manifest.md` maps to actions the audit phase already emits and the bulk executor already handles:
+
+| Manifest step kind | Plan-row action | Notes |
+|---|---|---|
+| `create_dir` | `write-canonical` (directory) | Idempotent; no-op on existing. |
+| `git_mv` (single move) | `move` | Standard `git mv` for tracked workspaces. |
+| `git_mv` (moves list with rename) | `move` x N | Batch — emitted as one plan row group; executor walks them as a unit so a single failure surfaces cleanly. |
+| `update_acw_state` | `reshape` (acw-state.yaml in place) | New parameters: `path_prefix_substrate`, `rename_keys`, `add_fields`, `set_fields`. Calls `tools/manifest.py` for each block change. |
+| `update_file` | `reshape` (in place) | Targeted text replace; refuses on conflict (replace target not found). |
+| `rebuild_index` | `reshape` (in place) | Calls `python tools/migrate_to_wiki.py` or the instance's `regenerate_index_cmd` from `acw-state.yaml::decision_tracking`. |
+| `add_file` | `write-canonical` | Renders from a `content_template` with `content_tokens` substitution. |
+| `remove_gitignore_rule` | `reshape` (`.gitignore` in place) | New action: edits `.gitignore` to remove a specific rule line. |
+| `run_hook` | `reshape` (custom) | Executes a script in `tools/migration-hooks/`. Use sparingly; declarative steps preferred. |
+| `only_if` conditional | filter on row generation | Audit phase evaluates `only_if` against `operator_prompts` answers and skips the row if false. |
+| `operator_prompts` | `[?]` row | Each prompt becomes an interactive resolution at plan-approval time, before bulk execution. |
+
+### Audit-phase behavior for manifest-driven workspaces
+
+When the audit detects a `from_version` match in `migrations/<from>-to-<to>.yaml`:
+
+1. Read the manifest.
+2. Evaluate `prerequisites` — abort plan generation with clear message if any prerequisite fails.
+3. For each operator prompt in `operator_prompts`, emit a `[?]` resolution row at the top of the plan with the prompt text, enum, and default.
+4. For each step in `steps`, generate plan rows per the mapping table above. Steps with `only_if` defer row generation until `[?]` resolution time.
+5. The standard plan-approval gate fires once across the full row set.
+
+If an instance is multiple versions behind (e.g., `0.9.7 → 0.10.0`), the audit chains manifests in version order, emitting one combined plan. Each manifest's prerequisites are evaluated against the state the previous manifest would have produced. Operator prompts surface in chain order (earlier-manifest prompts first).
+
+### Pre-v0.10.0 instances without manifest
+
+For instances at versions older than 0.9.9 where intermediate migration manifests do not yet exist in canonical, the audit falls back to the version-specific sections later in this file (v0.5.0, v0.9.7, v0.9.8). Equivalent manifests will be authored over time; until then, the embedded logic ships the upgrade safely.
+
+### Executor verification status (2026-05-21)
+
+Step kinds the current executor handles via existing plan-row actions: `create_dir`, `git_mv`, `update_acw_state` (subset — full `path_prefix_substrate` / `rename_keys` / `add_fields` / `set_fields` coverage needs verification on first manifest run), `update_file` (subset — needs explicit refuse-on-conflict path), `rebuild_index`, `add_file`.
+
+Step kinds needing executor work before first manifest execution:
+- `remove_gitignore_rule` — straightforward .gitignore line removal; ~10 lines of executor logic.
+- `only_if` conditional — needs the audit phase to evaluate against operator-prompt answers before emitting the row. Audit-phase work, not executor-phase.
+- `run_hook` — defer; no manifest uses it yet.
+
+Recommended: dry-run `migrations/0.9.9-to-0.10.0.yaml` against a copy of a v0.9.9 instance before running for real. The dry-run path emits the plan without executing; gaps surface as warnings.
+
 ## Bulk execution
 
 Execute plan rows in this order (dependency-aware):
