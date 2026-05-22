@@ -18,15 +18,17 @@ Archived entries: see `decision-log-YYYY-Q*.md` files in this directory.
 
 ## Decisions
 
-- [D-ACW-052](entries/D-ACW-052-codemap-integration-acw-auto-load.md) — Codemap integration: ACW auto-load wins; Graphify treated as internal AST engine; Stage 2 (Gemini) opt-in via env_secrets; implements_decision bridge runs via Claude _(2026-05-21)_
-- [D-ACW-049](entries/D-ACW-049-v099-drift-shortcircuit-buffer-sweep-and-synced-to-frontmatter.md) — v0.9.9: drift-walk short-circuit + buffer-sweep convention + `synced_to:` frontmatter on instance-current-manifest _(2026-05-13)_
-- [D-ACW-050](entries/D-ACW-050-acw-substrate-under-dotfolder-and-instance-types.md) — v0.10.0: `.acw/` dotfolder, instance types (org-brain/spec-project/coding-project/library/custom), codemap module, confidence tagging _(2026-05-21)_
-- [D-ACW-051](entries/D-ACW-051-rules-stays-at-root.md) — `rules/` stays at workspace root; does not migrate under `.acw/` (resolves OQ-COPS-019) _(2026-05-21)_
-- [D-ACW-048](entries/D-ACW-048-wiki-mode-canonical-only-and-contacts-opt-in.md) — v0.9.8: wiki mode canonical-only for decisions and glossary; context/contacts/ as earn-by-discipline opt-in _(2026-05-13)_
-- [D-ACW-047](entries/D-ACW-047-claude-md-thin-pointer-auto-load-via-sessionstart-hook.md) — v0.9.7: CLAUDE.md becomes thin pointer; auto-load moves to SessionStart hook _(2026-05-13)_
+- [D-ACW-054](entries/D-ACW-054-acw-managed-post-commit-codemap-auto-update.md) — ACW-managed post-commit hook fills codemap update lifecycle gap left by D-ACW-052 _(2026-05-21)_
+- [D-ACW-050](entries/D-ACW-050-acw-substrate-under-dotfolder-and-instance-types.md) — v0.10.0 — .acw/ dotfolder convention, instance types, codemap module, confidence tagging _(2026-05-21)_
+- [D-ACW-051](entries/D-ACW-051-rules-stays-at-root.md) — rules/ stays at workspace root, does not migrate under .acw/ _(2026-05-21)_
+- [D-ACW-052](entries/D-ACW-052-codemap-integration-acw-auto-load.md) — Codemap integration: ACW auto-load wins; Graphify treated as internal AST engine _(2026-05-21)_
+- [D-ACW-053](entries/D-ACW-053-cross-repo-signal-emission-acw-instance.md) — /acw-instance emits three cross-repo signal kinds to ACW/.acw/raw/ _(2026-05-21)_
 - [D-ACW-044](entries/D-ACW-044-skill-redundancy-refactor-and-substrate-boundary-rule.md) — v0.9.4: skill-redundancy refactor for /acw-instance + new rules/substrate-boundary.md _(2026-05-13)_
 - [D-ACW-045](entries/D-ACW-045-wiki-migration-resplits-archives-and-acw-session-redundancy-refactor.md) — v0.9.6: wiki migration re-splits archives + /acw-session redundancy refactor _(2026-05-13)_
 - [D-ACW-046](entries/D-ACW-046-skill-orchestrator-model-pin-traps-parent-context.md) — Skill orchestrator model pin traps parent context — drop from /acw-session _(2026-05-13)_
+- [D-ACW-047](entries/D-ACW-047-claude-md-thin-pointer-auto-load-via-sessionstart-hook.md) — D-ACW-047-claude-md-thin-pointer-auto-load-via-sessionstart-hook _(2026-05-13)_
+- [D-ACW-048](entries/D-ACW-048-wiki-mode-canonical-only-and-contacts-opt-in.md) — D-ACW-048-wiki-mode-canonical-only-and-contacts-opt-in _(2026-05-13)_
+- [D-ACW-049](entries/D-ACW-049-v099-drift-shortcircuit-buffer-sweep-and-synced-to-frontmatter.md) — v0.9.9: drift-walk short-circuit + buffer-sweep convention + synced_to: frontmatter on instance-current-manifest _(2026-05-13)_
 - [D-ACW-043](entries/D-ACW-043-v0-9-3-weekly-cadence-wiki-shape-as-sanctioned-mode-bookend.md) — v0.9.3: weekly cadence + wiki-shape as sanctioned mode + bookend mode-portability + bookend arch improvements + tasks-status Pending-only _(2026-05-12)_
 - [D-ACW-041](entries/D-ACW-041-buffer-lifecycle-read-flag-buffer-read-archive-subdirectory.md) — Buffer lifecycle: `read:` flag + `_buffer/_read/` archive subdirectory _(2026-05-05)_
 - [D-ACW-042](entries/D-ACW-042-v0-9-1-bi-weekly-rolling-window-discipline-for-decision-log.md) — v0.9.1: bi-weekly rolling-window discipline for decision-log; doctrine completion + global synapse trim _(2026-05-05)_
@@ -75,6 +77,6 @@ Archived entries: see `decision-log-YYYY-Q*.md` files in this directory.
 
 - [C-001](constraints/C-001-skills-capture-session-directory-still-exists-on-disk.md) — `skills/capture-session/` directory still exists on disk
 - [C-002](constraints/C-002-synapse-copies-still-stale.md) — Synapse copies still stale
-- [C-003](constraints/C-003-substrate-under-dotfolder.md) — ACW operator-metadata substrate must live under `.acw/` _(authority: D-ACW-050)_
-- [C-004](constraints/C-004-rules-stays-at-workspace-root.md) — `rules/` stays at workspace root _(authority: D-ACW-051)_
-- [C-005](constraints/C-005-no-graphify-content-in-claude-md.md) — No Graphify content in any instance's CLAUDE.md _(authority: D-ACW-052)_
+- [C-003](constraints/C-003-substrate-under-dotfolder.md) — ACW operator-metadata substrate must live under .acw/
+- [C-004](constraints/C-004-rules-stays-at-workspace-root.md) — rules/ stays at workspace root; do not migrate under .acw/
+- [C-005](constraints/C-005-no-graphify-content-in-claude-md.md) — No Graphify content in any instance's CLAUDE.md

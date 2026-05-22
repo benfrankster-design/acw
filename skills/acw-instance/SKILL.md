@@ -110,7 +110,7 @@ For each in-scope file or directory, classify and route. The verb makes the call
 | `delete` | File is empty placeholder, byte-identical canonical copy that was scaffolded but never used, or genuine cruft. Source deletes; no content to preserve. |
 | `leave-untouched` | File is already canonical-shape at canonical location. No action. |
 | `instance-specific` | Substrate-shaped but uniquely this workspace's. Add to `acw-state.yaml::instance_specific_substrate`; file stays in place. Requires decision-log rationale. |
-| `absorption-candidate` | Substrate-shaped, judged better than ACW canonical or net-new pattern ACW lacks. Default: write candidate to ACW `_buffer/`, add to `divergent_pending_review`. Operator can decline in plan review. |
+| `absorption-candidate` | Substrate-shaped, judged better than ACW canonical or net-new pattern ACW lacks. Default: emit as cross-repo signal kind=`absorption` to `ACW/.acw/raw/`, add to `divergent_pending_review`. Operator can decline in plan review. See `references/upgrade.md` § "Cross-repo signal emission" — the same destination receives sibling kinds `bug` (canonical defects found during the run) and `issue` (canonical follow-ups worth surfacing), under one shared authority check. |
 | `[?]` | Genuinely ambiguous; operator clarification needed before plan executes. |
 
 For each block in the canonical recommended-blocks registry (from the fetched manifest), also assess `acw-state.yaml` presence per the comparison rules in `references/upgrade.md` and add gap entries to the plan as `write-canonical` actions on `acw-state.yaml`.
@@ -128,7 +128,7 @@ The plan is the spine output. Audit prints it; upgrade executes it under one app
 ## Safety
 
 - The verb operates only inside the substrate boundary identified in Step 4. Project content is never read for content classification and never written to.
-- Audit writes nothing to the workspace. Optional absorption candidates to ACW's `_buffer/` only on operator confirmation during plan review.
+- Audit writes nothing to the workspace. Optional cross-repo signals (kinds: `absorption`, `bug`, `issue`) to `ACW/.acw/raw/` are only written by the upgrade verb, on operator confirmation during plan review.
 - Upgrade requires a single explicit operator approval before any write fires. Per-file prompts only for `[?]` rows.
 - Upgrade recommends a pre-migration safety commit before destructive operations. For workspaces not yet git-initialized, the verb offers `git init` + initial commit before proceeding.
 - Upgrade uses `git mv` on tracked workspaces (preserves history) and plain `mv` on untracked workspaces.

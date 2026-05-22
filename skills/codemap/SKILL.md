@@ -121,5 +121,5 @@ Three different navigable surfaces. None replaces the others. An agent working i
 
 - **Not a code-search tool.** ripgrep is the right tool for text search. Codemap returns structured relationships.
 - **Not a documentation generator.** `GRAPH_REPORT.md` is a navigation aid, not API documentation.
-- **Not auto-rebuild on every commit.** Operator-driven via `/codemap rebuild`. Auto-load surfaces the latest `GRAPH_REPORT.md` at session start, which is fresh enough for codebase change cadence.
+- **Not the rebuild mechanism for the post-commit hook.** The ACW post-commit hook (`tools/install-hooks.py`) calls `tools/codemap-update.py --ast-only` directly — fast, no skill overhead. `/codemap rebuild` is the operator verb for full, semantic, and bridge rebuilds.
 - **Not adopted by all profiles.** Only `coding-project` and `library`. Spec-project and org-brain don't have code to map.

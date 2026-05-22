@@ -133,8 +133,11 @@ The `implements_decision` bridge is rerun when:
 | Operator: `/codemap rebuild --ast-only` | YES | NO | NO |
 | Operator: `/codemap rebuild --semantic` | NO | YES (requires env_secrets) | YES |
 | New decision landed | optional | NO | YES (operator-triggered) |
+| ACW post-commit hook (`tools/install-hooks.py`) | YES (AST only, background) | NO | NO |
 
-Graphify ships `graphify hook install` (POST-commit, not pre-commit) for auto-rebuild. ACW does NOT use it by default; rebuilds are on-demand via `/codemap`. Auto-load loads the latest `GRAPH_REPORT.md` at session start, which is fresh enough for the codebase change cadence ACW instances see.
+Graphify ships `graphify hook install` but ACW does NOT use it — that hook is Graphify-managed and would run outside ACW's update lifecycle (D-ACW-052, C-005). Instead, ACW ships its own post-commit hook via `tools/install-hooks.py`. The hook calls `tools/codemap-update.py --ast-only` in the background after every commit: fast, deterministic, no LLM cost. The AST graph stays current without operator intervention. Bridge and semantic rebuilds remain operator-invoked because they cost tokens and are non-deterministic.
+
+The hook is opt-in — operators run `python tools/install-hooks.py` after cloning. `.git/hooks/` is not tracked by git; re-run after each fresh clone. Per D-ACW-054.
 
 `graphify claude install` is NEVER used. Per D-ACW-052 and C-005, ACW's auto-load mechanism owns the Claude Code integration; CLAUDE.md stays a thin pointer.
 

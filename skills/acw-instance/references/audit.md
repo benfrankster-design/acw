@@ -1,6 +1,6 @@
 # audit
 
-Read-only verb. Produces a per-file migration plan: source → canonical destination → action. The plan is what `/acw-instance upgrade` executes. The audit verb itself writes nothing to the workspace; optional absorption candidates to ACW's `_buffer/` are surfaced in the plan and only written on operator confirmation during plan review.
+Read-only verb. Produces a per-file migration plan: source → canonical destination → action. The plan is what `/acw-instance upgrade` executes. The audit verb itself writes nothing to the workspace; optional cross-repo signals to `ACW/.acw/raw/` (absorption candidates, plus any canonical bugs or issues detected at audit time) are surfaced in the plan and only written by the upgrade verb on operator confirmation.
 
 ## Mental model
 
@@ -262,7 +262,13 @@ instance-specific (<N>):
   - <path>  — <one-line rationale; will require decision-log entry on upgrade>
 
 absorption-candidate (<N>):
-  - <path>  →  ACW _buffer/<proposed candidate filename>  — <pattern summary>
+  - <path>  →  ACW .acw/raw/<proposed candidate filename>  — <pattern summary>
+
+canonical-bug-pending (<N>; defects in canonical detected at audit time):
+  - <one-line title>  →  ACW .acw/raw/<proposed bug-note filename>  — <observed vs expected>
+
+canonical-issue-pending (<N>; canonical follow-ups worth surfacing):
+  - <one-line title>  →  ACW .acw/raw/<proposed issue-note filename>  — <one-line concern>
 
 pending-review (<N>; existing divergent_pending_review entries):
   - <path>  — sent <date>; status <pending|absorbed|rejected>
@@ -309,4 +315,4 @@ If the operator wants the plan saved (for review, sharing, or later execution), 
 
 ## Output
 
-Migration plan to chat. Zero writes to the workspace. Zero writes to ACW's `_buffer/` (absorption candidates are proposed, not yet written; the upgrade verb writes them on plan execution).
+Migration plan to chat. Zero writes to the workspace. Zero writes to `ACW/.acw/raw/` (absorption candidates, plus any pending canonical bugs/issues, are proposed in the plan; the upgrade verb writes them on plan execution).

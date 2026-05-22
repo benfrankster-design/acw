@@ -80,8 +80,9 @@ Migration plan summary:
   <Q> write-canonical
   <R> deletes
   <S> instance-specific declarations
-  <T> absorption candidates  (will write to ACW _buffer/)
+  <T> absorption candidates  (will write to ACW .acw/raw/ as kind=absorption)
   <U> ambiguous [?] routings  (will resolve interactively before bulk execution)
+  Cross-repo signals: bugs and issues hit during execution will flush to ACW .acw/raw/ at end-of-run (one authority prompt on first emit if cross_repo_writes is undeclared).
 
 Total file operations: <total>
 
@@ -324,8 +325,9 @@ Execute plan rows in this order (dependency-aware):
 5. **`merge`** — read source, integrate into destination per the plan's one-line description, then delete source.
 6. **`delete`** — `git rm` or `rm`.
 7. **`instance-specific`** — append to `acw-state.yaml::instance_specific_substrate` with operator-supplied rationale and a generated decision-log id; create the corresponding decision-log entry.
-8. **`absorption-candidate`** — verify cross-repo write authority, write candidate to ACW `_buffer/`, append to local `divergent_pending_review`. (Detail below.)
+8. **`absorption-candidate`** — emit as kind=`absorption` per "Cross-repo signal emission" below; also append to local `divergent_pending_review`.
 9. **Recommended-blocks gaps** — `tools/manifest.py append` (or upsert) on `acw-state.yaml`. Block-by-block.
+10. **Flush cross-repo signal buffer** — any `bug` or `issue` signals captured during execution emit now per "Cross-repo signal emission" below.
 
 For each row, print one line as it executes: `[move] decisions/old.md → decisions/decision-log.md ✓` or `[reshape] tasks-status.md (in place) ✓` or `[error] <row> — <message>`.
 
@@ -343,16 +345,100 @@ Reshape is the most content-sensitive action. The verb:
 
 For complex reshapes (multi-source merges, content composition from operator inputs), the verb may delegate to a research subagent for content drafting, then verify and write. Today's `_Command` dogfood used 8 parallel research subagents for content proposals; this is supported and recommended for substantial reshape rows.
 
-### Absorption candidate execution
+### Cross-repo signal emission
 
-For each `absorption-candidate` row:
+`/acw-instance` runs surface three kinds of signal that belong upstream in ACW, not in the downstream workspace. All three write to the same canonical destination — `ACW/.acw/raw/` — with a kind-prefixed filename and share one authority check.
 
-1. **Verify cross-repo write authority.** Check this workspace's `acw-state.yaml::cross_repo_writes` for the absolute path of ACW's `_buffer/` directory.
-   - If declared → proceed.
-   - If not declared → prompt: *"Cross-repo write to ACW's `_buffer/` requires declaration in `cross_repo_writes`. Add now? [y/N]"* On `y`: append the path to `cross_repo_writes`. On `n`: skip the absorption write; leave the source file in place; note in summary report.
-2. **Write the absorption candidate** to `ACW/_buffer/YYYY-MM-DD-<workspace>-<topic-slug>-absorption-candidate.md` per the format in `rules/multi-instance-topology.md` § "Absorption candidate format."
-3. **Record divergence locally:** append to `acw-state.yaml::divergent_pending_review` with `path`, `absorption_candidate` (path to the `_buffer/` note), `sent_date: <today>`, `status: pending`.
-4. The source file stays in place pending ACW's absorption review. Do NOT delete or reshape it.
+**The three kinds:**
+
+| Kind | Trigger | Filename suffix | Notes |
+|---|---|---|---|
+| `absorption` | Substrate-shape pattern in the workspace that is net-new to canonical or judged better than canonical. Emitted from `absorption-candidate` plan rows. | `-absorption-candidate.md` | Format per `rules/multi-instance-topology.md` § "Absorption candidate format." Source file stays in workspace pending ACW review. |
+| `bug` | Defect in canonical hit during execution: template file out-of-sync with doctrine, tool errors on canonical input, canonical spec contradicts another canonical spec, recommended-blocks-registry entry references a missing path, etc. | `-canonical-bug.md` | Captured during bulk execution; flushed at end. Does NOT halt execution unless the defect blocks the row outright — the verb records and moves on. |
+| `issue` | Operator-facing concern, ambiguity, or follow-up worth ACW's attention but not a defect. Operator may add at plan-approval time; verb may auto-detect (e.g., "canonical synced_to lags behind canonical version field"). | `-canonical-issue.md` | Lower bar than `bug`; no defect required. |
+
+**Authority check (shared across all three kinds).** Before the first cross-repo write of a run:
+
+1. Check this workspace's `acw-state.yaml::cross_repo_writes` for the absolute path of ACW's `.acw/raw/` directory.
+2. If declared → proceed for all signals this run.
+3. If not declared → prompt once: *"Cross-repo write to ACW's `.acw/raw/` requires declaration in `cross_repo_writes`. Add now? [y/N]"* On `y`: append the absolute path. On `n`: skip ALL cross-repo writes this run; capture-buffer entries are listed in the summary report so the operator can decide whether to copy them by hand.
+
+**Filename pattern (all kinds):**
+
+```
+ACW/.acw/raw/YYYY-MM-DD-<workspace-slug>-<topic-slug><kind-suffix>
+```
+
+`<workspace-slug>` resolves from `acw-state.yaml::project.code` lowercased (e.g., `fc`, `cmd`, `csops`). `<topic-slug>` is generated from the signal's title (kebab-case, ≤40 chars).
+
+**Note body (all kinds) — minimum frontmatter and structure:**
+
+```markdown
+---
+kind: absorption | bug | issue
+source_workspace: <project.name>
+source_workspace_code: <project.code>
+source_run: /acw-instance upgrade
+source_date: YYYY-MM-DD
+source_acw_version: <last_reconciled_version after this run>
+status: pending
+---
+
+# <one-line title>
+
+## Summary
+
+<2–4 sentences. What was observed. Why it warrants ACW's attention.>
+
+## Detail
+
+<For absorption: the pattern, its current location in workspace, the proposed canonical shape.>
+<For bug: the canonical file/path involved, the observed-vs-expected delta, a minimal repro if applicable.>
+<For issue: the concern, the operator's framing if relevant, any candidate resolutions.>
+
+## Source pointer
+
+<Workspace-local pointer (decision-log entry id, file path, run summary line) so the ACW operator can ask back if needed.>
+```
+
+**Per-kind execution detail:**
+
+*`absorption`* (one row per `absorption-candidate` plan row):
+
+1. Render the note per the format above plus `rules/multi-instance-topology.md` § "Absorption candidate format" (which extends the body with diff/rationale fields).
+2. Write to the path above.
+3. Record divergence locally: append to `acw-state.yaml::divergent_pending_review` with `path`, `absorption_candidate` (path to the `.acw/raw/` note), `sent_date: <today>`, `status: pending`.
+4. The source file stays in place pending ACW's review. Do NOT delete or reshape it.
+
+*`bug`* (captured mid-execution; flushed at end-of-run):
+
+1. When the verb encounters a canonical defect during bulk execution, it appends an in-memory signal record (kind=bug, title, detail) to a run-scoped capture buffer. Execution continues unless the defect hard-blocks the current row.
+2. At end-of-run flush (after step 9 of bulk execution), each buffered bug renders to a note and writes to the path above.
+3. No local divergence record is created — bugs are about canonical, not about this workspace.
+4. Each bug emitted is also referenced in this run's decision-log entry under a "Canonical defects surfaced upstream" sub-section.
+
+*`issue`* (added at plan-approval time, or auto-captured mid-run):
+
+1. At plan-approval time, the verb invites a free-text issue note: *"Anything else you noticed about canonical during plan review worth surfacing upstream? Leave blank to skip; otherwise one-line title plus optional detail."* Multiple issues may be added.
+2. The verb may also auto-capture issues during execution for soft-cases (e.g., warning lines from `tools/manifest.py`, `synced_to` field lag, recommended-block entries the operator chose to defer).
+3. At end-of-run flush, each issue renders to a note and writes to the path above.
+4. Issues are referenced in this run's decision-log entry under a "Canonical follow-ups surfaced upstream" sub-section.
+
+**End-of-run summary line.** After bulk execution, print:
+
+```
+Cross-repo signals emitted to ACW/.acw/raw/: <Tabs> absorption, <Tbugs> bug, <Tissues> issue
+```
+
+If authority was declined, print instead:
+
+```
+Cross-repo signals captured but NOT emitted (cross_repo_writes not declared):
+  absorption: <list of titles>
+  bug:        <list of titles>
+  issue:      <list of titles>
+Copy by hand to ACW/.acw/raw/ if you want them landed.
+```
 
 ## Auto-load discipline application
 
@@ -459,7 +545,7 @@ Skip the entire pass if the audit pass produced no plan rows for this migration 
 After bulk execution, for each existing `divergent_pending_review` entry with `status: pending`:
 
 - Compare the entry's file shape against the freshly-fetched canonical. If canonical now matches the workspace's shape → mark `absorbed`, surface to operator, clear the entry.
-- If a rejection notification exists in this workspace's `_buffer/` from ACW (filename pattern `acw-rejection-<topic>.md`) → mark `rejected`, surface to operator. The rejected file then routes via the next `/acw-instance audit` as `move` or `reshape` to canonical.
+- If a rejection notification exists in this workspace's `.acw/raw/` from ACW (filename pattern `acw-rejection-<topic>.md`) → mark `rejected`, surface to operator. The rejected file then routes via the next `/acw-instance audit` as `move` or `reshape` to canonical.
 - Else → keep `pending`, surface a one-line status reminder.
 
 ## Refresh canonical cache
@@ -490,7 +576,9 @@ Body content the skill supplies (both modes):
 
 - **Title:** `Instance migrated to ACW <version>`.
 - **Date:** today (UTC).
-- **Decision:** one-line summary + per-action counts (moves, reshapes, merges, write-canonical, deletes, instance-specific declarations, absorption candidates, recommended-blocks gaps reconciled, canonical manifest fetched).
+- **Decision:** one-line summary + per-action counts (moves, reshapes, merges, write-canonical, deletes, instance-specific declarations, absorption candidates, canonical bugs surfaced, canonical issues surfaced, recommended-blocks gaps reconciled, canonical manifest fetched).
+- **Canonical defects surfaced upstream:** one-line per `bug` signal emitted, each pointing to the `.acw/raw/` filename written. Empty section if none.
+- **Canonical follow-ups surfaced upstream:** one-line per `issue` signal emitted, each pointing to the `.acw/raw/` filename written. Empty section if none.
 - **Rationale:** adopt-and-migrate per `/acw-instance upgrade`; workspace now structurally identical to ACW canonical.
 - **Source:** `/acw-instance upgrade` run on `<date>`.
 - **Pre-migration safety commit:** `<hash>` (if created).
@@ -521,7 +609,12 @@ Operations executed:
   Deleted: <R>
   Declared instance-specific: <S>
   Absorption candidates sent: <T>
+  Canonical bugs surfaced: <Tbugs>
+  Canonical issues surfaced: <Tissues>
   Recommended blocks added to acw-state.yaml: <V>
+
+Cross-repo signals emitted to ACW/.acw/raw/: <list of filenames, grouped by kind>
+[Cross-repo signals captured but NOT emitted (cross_repo_writes undeclared): <list>]  <-- only if authority declined
 
 Skipped: <list of skipped rows with reasons>
 Pending review (respected, not modified): <list>
@@ -562,7 +655,7 @@ After the migration commit, the next `/acw-instance audit` run produces a clean 
 - `git mv` preserves history on tracked workspaces.
 - Source files delete only after content is verified at the canonical destination.
 - Errors halt execution; partial state is preserved; `last_reconciled_version` only bumps after full pass completes.
-- Cross-repo writes (absorption candidates) require explicit `cross_repo_writes` declaration.
+- Cross-repo writes (absorption candidates, canonical bugs, canonical issues — all three signal kinds emitted to `ACW/.acw/raw/`) require explicit `cross_repo_writes` declaration. One prompt per run, not per signal.
 - The verb never demotes layers, never removes blocks from `acw-state.yaml` without operator confirmation via `[?]` row, and never auto-commits the migration.
 
 ## Output
@@ -570,6 +663,6 @@ After the migration commit, the next `/acw-instance audit` run produces a clean 
 - Edits across the substrate boundary identified in Step 4 of the spine.
 - Refresh of `rules/instance-current-manifest.md` from canonical.
 - One or more decision-log entries (one for the migration, one per `instance-specific` declaration).
-- Zero or more absorption candidates in ACW's `_buffer/`.
+- Zero or more cross-repo signals in `ACW/.acw/raw/` (kinds: `absorption`, `bug`, `issue`).
 - Chat summary report.
 - Operator commits the migration manually after review.
