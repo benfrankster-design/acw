@@ -2,7 +2,26 @@
 kind: bug-cluster
 source_instance: cs-ops-spec (COPS)
 date: 2026-05-21
-status: pending
+status: partially-triaged
+fixed_in_session: 25
+fix_summary: |
+  Bug 1 + Bug 4 (regenerate_index_cmd / migrate_to_wiki.py silent no-op):
+    DEFERRED — requires tool change to tools/migrate_to_wiki.py (add
+    --regenerate flag). Tracked as a separate canonical task. Doctrine
+    note added to skills/acw-session/references/distribution-rules.md
+    clarifying that wiki-mode INDEX maintenance is currently by direct
+    edit until --regenerate ships.
+  Bug 2 (resolved-OQ INDEX placement):
+    FIXED — skills/acw-session/references/distribution-rules.md
+    § "Decisions / Mode: wiki" now explicitly states resolved OQs
+    stay under ## Open Questions (annotated `_(status: resolved)_`)
+    with link updated to the entries/ path. Decisions section is
+    reserved for D-NNN entries.
+  Bug 3 (start overwrites tracker without warning):
+    FIXED — skills/acw-session/references/start.md gains a new Step 0a
+    "Unclosed-prior-session check" that reads the existing tracker,
+    inspects the prior session's closing markers, and surfaces an
+    [e]nd / [o]rphan / [q]uit prompt before any writes fire.
 session: 2026-05-21--oq-resolutions-and-sla-research
 ---
 

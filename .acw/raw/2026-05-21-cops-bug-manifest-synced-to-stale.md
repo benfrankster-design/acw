@@ -2,7 +2,10 @@
 kind: bug
 source_instance: cs-ops-spec (COPS)
 date: 2026-05-21
-status: pending
+status: triaged
+disposition: fixed-in-canonical
+fixed_in_session: 25
+fix_summary: "rules/instance-current-manifest.md frontmatter bumped to synced_to: '0.10.1'; Maintenance section gained a normative bump-discipline paragraph requiring synced_to bump on the same commit as any new earned-in entry."
 ---
 
 # Bug: `rules/instance-current-manifest.md` `synced_to` field is stale

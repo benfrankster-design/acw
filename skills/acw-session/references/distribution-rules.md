@@ -34,11 +34,11 @@ Substrate at `paths.decisions_log`; sections resolved via `section_conventions.{
 Substrate at `paths.{decisions_entries_dir, decisions_open_questions_dir, decisions_constraints_dir}`; thin INDEX at `paths.decisions_index`.
 
 **Always-safe writes:**
-- New decision: file at `<decisions_entries_dir>/<id>-<slug>.md` where `slug = slugify(title)[:60]`; id auto-scanned; frontmatter per `decision_tracking.entry_frontmatter_required`.
-- Resolved OQ: move file from `decisions_open_questions_dir` → `decisions_entries_dir`, **preserving the OQ id as filename id**; update frontmatter `kind: decision`, `status: resolved`, add `resolves` + `resolved_by_decision`.
-- New OQ → `decisions_open_questions_dir` (`kind: open-question`, `status: open`).
-- New constraint → `decisions_constraints_dir` (`kind: constraint`, `status: accepted`).
-- Regenerate INDEX after any write via `decision_tracking.regenerate_index_cmd` (or append one line directly if unset).
+- New decision: file at `<decisions_entries_dir>/<id>-<slug>.md` where `slug = slugify(title)[:60]`; id auto-scanned; frontmatter per `decision_tracking.entry_frontmatter_required`. INDEX placement: `## Decisions` section.
+- Resolved OQ: move file from `decisions_open_questions_dir` → `decisions_entries_dir`, **preserving the OQ id as filename id** (the file stays `OQ-NNN-<slug>.md`, NOT renamed to `D-NNN`); update frontmatter `kind: decision`, `status: resolved`, add `resolves` + `resolved_by_decision`. INDEX placement: **stays in `## Open Questions`** with the entry annotated `_(status: resolved)_` and the link updated to the new `entries/` path. This preserves OQ traceability — the `## Decisions` section is reserved for `D-NNN` entries authored as decisions from the start, not OQ resolution records.
+- New OQ → `decisions_open_questions_dir` (`kind: open-question`, `status: open`). INDEX placement: `## Open Questions` with `_(status: open)_`.
+- New constraint → `decisions_constraints_dir` (`kind: constraint`, `status: accepted`). INDEX placement: `## Constraints`.
+- Regenerate INDEX after any write via `decision_tracking.regenerate_index_cmd` (or append one line directly if unset). **Note:** in wiki mode, `tools/migrate_to_wiki.py` is migration-only (single-file → wiki shape); it does NOT regenerate INDEX from existing wiki entries. Until a regenerate-mode lands in that tool, INDEX maintenance in wiki mode is by direct edit (append the link line under the correct section per the placement rules above).
 
 **Operator-confirm writes:** mark a decision superseded (edit prior frontmatter + create new entry + regenerate INDEX); mark a constraint resolved.
 

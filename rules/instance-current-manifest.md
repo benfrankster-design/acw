@@ -3,7 +3,7 @@ class: operational
 authority: canonical
 stability: experimental
 loaded_by_agent: yes
-synced_to: "0.9.9"
+synced_to: "0.10.1"
 ---
 
 # Instance Current Manifest
@@ -452,5 +452,7 @@ If substance signals are below threshold, the skill bails with: "this workspace 
 ## Maintenance
 
 When ACW ships a new recommended block in a future version, append a new entry to this file with the same fields (What / Why it helps / Required / How to add / Earned in). The earned-in version sets the floor for when existing instances start seeing the block as drift.
+
+**Bump the `synced_to:` frontmatter field on this same commit.** The field MUST equal the highest earned-in version present in the file body. If you ship a new entry earned in `0.10.2` without bumping `synced_to`, every downstream consumer that infers "what ACW version does this file represent" from the field gets a wrong answer, and any instance whose `last_reconciled_version` now exceeds the stale `synced_to` will incorrectly fall through to the full drift walk (or, in the opposite direction, silently short-circuit a walk it should have run). The bump is a one-line edit; do it atomically with the new entry.
 
 Adding an entry to this file is itself a substrate shift. The bookend skill's Phase 2 host-entry-file maintenance step may propose updates to `CLAUDE.md` (or other host entry files) when a new block enters the recommended registry.

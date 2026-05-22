@@ -10,6 +10,37 @@ The orchestrator's spine has already loaded `paths`, the `_buffer/` state (Step 
 
 Run before reading anything else. Creates the file `update` and `end` will operate on.
 
+### Step 0a — Unclosed-prior-session check (BEFORE any writes)
+
+Read `<sessions_dir>/.current-session` if present. If the tracker names a session file:
+
+1. Open that file. Inspect its frontmatter / closing section for evidence the prior session was bookended via `/acw-session end`:
+   - `stability: complete` (set by `end`'s Phase 1 cleanup) → session was closed; proceed.
+   - `last_completed_phase: 0` (or any phase < 7) → session was started but never closed.
+   - No `stability` field and no closing markers (no `## Phase N` blocks, no Phase 7 summary) → ambiguous; treat as unclosed.
+2. If unclosed, surface a warning to the operator BEFORE overwriting the tracker:
+
+```
+[acw-session warn] Unclosed prior session detected:
+  Tracker: <sessions_dir>/.current-session
+  Names:   <prior-filename>
+  Status:  last_completed_phase = <N> (or "no phase markers found")
+
+Options:
+  [e] Run /acw-session end against the prior session FIRST (recommended).
+      You'll re-invoke /acw-session start afterwards.
+  [o] Orphan the prior session and proceed.
+      The prior capture file stays on disk but the tracker is overwritten;
+      /acw-session end will require an explicit filename to close it later.
+  [q] Quit; do nothing.
+```
+
+3. Wait for operator choice. On `[e]`: exit cleanly with a single-line reminder to run `/acw-session end <prior-filename>`, then re-invoke start. On `[o]`: proceed to Step 0b; record an entry in the new session's capture file under `## Orphaned prior session` naming the file so it remains discoverable. On `[q]`: exit.
+
+If the tracker is absent or empty, skip the warning and proceed directly to Step 0b.
+
+### Step 0b — Create new capture file and tracker
+
 1. Resolve `<sessions_dir>` from `paths.session_captures_dir` (canonical default `sessions`).
 2. Today's date: `YYYY-MM-DD` (use today's actual date, not the agent's training-data assumption).
 3. Session name: argument to `/acw-session start` if provided (e.g., `/acw-session start auth-refactor`), else `untitled`. Slug: lowercase, hyphens, ASCII only.

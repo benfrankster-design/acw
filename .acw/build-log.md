@@ -35,6 +35,22 @@ Executed the 90-minute patch plan from Session 23's capture. All ten files corre
 
 **Patch sweep complete.** Wrapper reference authoring landed in the same session — see below.
 
+## 2026-05-21 — Cops bug triage: three fixes landed, one deferred (Session 25)
+
+Triaged the two raw signals from cs-ops-spec that arrived during the frank-context dogfood window.
+
+**Fixed in this commit.**
+
+- **`synced_to` stale-frontmatter bug.** `rules/instance-current-manifest.md` frontmatter bumped from `"0.9.9"` to `"0.10.1"` (matches the file's highest earned-in entry, `env_secrets` at v0.10.1). The Maintenance section gains a normative paragraph: bump `synced_to:` atomically with any new earned-in entry. Earlier failure mode: I added the v0.10.1 `env_secrets` entry without bumping the field, which broke cops' session-start short-circuit drift check on v0.10.1-reconciled instances.
+
+- **`/acw-session start` tracker-overwrite warning.** `skills/acw-session/references/start.md` gains a new Step 0a "Unclosed-prior-session check" that reads `.current-session`, inspects the named file for closure markers (`stability: complete`, Phase 7 summary, or explicit `last_completed_phase` field), and surfaces an `[e]nd / [o]rphan / [q]uit` prompt before any tracker overwrite. The orphan path records the prior session file in the new capture's `## Orphaned prior session` block so it stays discoverable.
+
+- **Resolved-OQ INDEX placement rule.** `skills/acw-session/references/distribution-rules.md` § "Decisions / Mode: wiki" now explicitly states resolved OQs stay under `## Open Questions` (annotated `_(status: resolved)_`, link updated to `entries/` path), NOT under `## Decisions`. Decisions section is reserved for `D-NNN` entries authored as decisions from the start. The file also gains a note that `tools/migrate_to_wiki.py` is migration-only; wiki-mode INDEX maintenance is by direct edit until the `--regenerate` flag ships.
+
+**Deferred.** Bug 1 + Bug 4 from the cops bug-cluster (silent no-op of `migrate_to_wiki.py` in wiki mode; missing INDEX regeneration). Both have the same root cause — the tool doesn't have a `--regenerate` flag — and the fix requires actual tool work (Python edits + new behavior path). Queued in `tasks-status.md` as v0.10.1 with full requirements: rebuild INDEX from `entries/` + `open-questions/` + `constraints/` files honoring the resolved-OQ placement rule, plus a `print()` guard for source-absent invocations.
+
+**Raw-signal triage markers.** Both `.acw/raw/2026-05-21-cops-*.md` files updated in-place: frontmatter `status:` changed from `pending` to `triaged` / `partially-triaged`, `fixed_in_session: 25` recorded, `fix_summary` describes per-bug disposition pointing at the canonical edits. Source files stay in `.acw/raw/` per ACW convention (raw signals never delete; status tracks lifecycle).
+
 ## 2026-05-21 — 0.9.7-to-0.9.8 migration manifest authored (Session 24, continued)
 
 Closed the last canonical-side blocker for downstream upgrade dogfooding. With this manifest in place, every chain in the five-instance audit walks end-to-end against current canonical.
